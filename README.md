@@ -79,13 +79,13 @@ Put your music in `~/Music/Tunes`, or add other folders under **Settings**.
 
 Click **Listen on phone** in the left menu and scan the QR code with your phone camera. The phone must be on the same Wi-Fi network. Turning access off invalidates the old link.
 
-On the phone, **Add to Home Screen** in the menu explains how to install Tunes as an app. To listen away from home, install [Tailscale](https://tailscale.com/download) on the computer and the phone (same account) and use the **Away from home (Tailscale)** tab. The computer has to stay on.
+On the phone, **Add to Home Screen** in the menu shows how to install Tunes as an app on that phone (iPhone: Share → Add to Home Screen). To listen away from home, install [Tailscale](https://tailscale.com/download) on the computer and the phone (same account) and use the **Away from home (Tailscale)** tab. The computer has to stay on.
 
 When something is playing on one device, the other one shows a **Continue here** bar. Tap it to pick up the same song at the same second.
 
 ### As an app
 
-In Safari choose **File → Add to Dock**. In Chrome or Brave click the install icon in the address bar.
+Click **Install app** in the left menu. Where the browser can install apps (Chrome, Edge, Brave) that opens its install dialog right away; elsewhere it shows the one or two steps for that browser (Safari: **File → Add to Dock**). On phones the same button is called **Add to Home Screen**.
 
 ## Configuration
 

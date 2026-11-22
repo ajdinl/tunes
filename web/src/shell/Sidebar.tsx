@@ -1,6 +1,8 @@
 // Left sidebar (slides in on phones, folds to icons on desktop).
 import { Icon, IconButton } from '../components/Icon.tsx';
-import { shell, useShell, IS_LOCAL, IS_STANDALONE } from './ui.ts';
+import { shell, useShell, IS_LOCAL } from './ui.ts';
+import { useInstallMethod, promptInstall, IS_PHONE } from '../lib/install.ts';
+import { toast } from '../lib/feedback.ts';
 import { useStore } from '../lib/store.ts';
 import { tr } from '../lib/i18n.ts';
 import { cx } from '../lib/format.ts';
@@ -26,6 +28,8 @@ export function Sidebar() {
   const store = useStore('playlists', 'settings');
   const ui = useShell();
   const route = useRoute();
+  const install = useInstallMethod();
+  const installLabel = IS_PHONE ? tr('Add to Home Screen') : tr('Install app');
 
   const link = (n: NavItem) => {
     const on = route.name === n.name || Boolean(n.alt?.includes(route.name));
@@ -75,9 +79,13 @@ export function Sidebar() {
             {store.settings.phoneOn ? <span className="nav__dot" title={tr('On')} /> : null}
           </button>
         ) : null}
-        {!IS_LOCAL && !IS_STANDALONE ? (
-          <button type="button" className="nav__link nav__phone" title={tr('Add to Home Screen')} onClick={() => shell.set({ install: true })}>
-            <Icon name="plus" size={19} /><span>{tr('Add to Home Screen')}</span>
+        {install ? (
+          <button type="button" className="nav__link nav__phone nav__install" title={installLabel} onClick={async () => {
+            // One click where the browser can install; otherwise the steps for this browser.
+            if (install === 'prompt') { if (await promptInstall()) toast(tr('Tunes is installed')); }
+            else shell.set({ install: true });
+          }}>
+            <Icon name="plus" size={19} /><span>{installLabel}</span>
           </button>
         ) : null}
         {link({ href: '/settings', name: 'settings', label: 'Settings', icon: 'settings' })}

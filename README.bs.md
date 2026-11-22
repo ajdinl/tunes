@@ -33,7 +33,7 @@ Van kuće: instaliraj [Tailscale](https://tailscale.com/download) na računar i 
 
 Kad nešto svira na jednom uređaju, na drugom se pojavi traka **Nastavi ovdje**. Dodirni je i slušanje se nastavlja od iste sekunde, a prvi uređaj se pauzira.
 
-Da izgleda kao prava aplikacija: u Safari-ju odaberi **File → Add to Dock**, a u Chrome-u ili Brave-u klikni ikonicu za instalaciju u adresnoj traci.
+Da izgleda kao prava aplikacija: klikni **Instaliraj aplikaciju** u lijevom meniju. U Chrome-u, Edge-u i Brave-u to odmah otvori instalaciju, a u ostalim preglednicima pokaže samo korake za taj preglednik (Safari: **File → Add to Dock**). Na telefonu se isto dugme zove **Dodaj na početni ekran**.
 
 ## Gdje je šta
 

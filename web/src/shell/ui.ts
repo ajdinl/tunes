@@ -37,5 +37,3 @@ export function useShell(): ShellState {
 }
 
 export const IS_LOCAL = ['localhost', '127.0.0.1', '[::1]', '::1'].includes(location.hostname);
-export const IS_STANDALONE = matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
-export const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);

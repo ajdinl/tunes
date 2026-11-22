@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { test, expect, open, settle, sleep } from './helpers.js';
+import { test, expect, open, settle, sleep, phoneURL } from './helpers.js';
 
 test('choosing an app icon updates favicon, home-screen icon and manifest on every open device', async ({ device, request }) => {
   const laptop = await device();
@@ -47,4 +47,64 @@ test('phone access: the QR link logs the phone in, and the app works with the co
   } finally {
     await request.post('/api/phone', { data: { enabled: false } });
   }
+});
+
+// ---------------------------------------------------------------- installing as an app
+const MAC_SAFARI = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15';
+const FIREFOX = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:133.0) Gecko/20100101 Firefox/133.0';
+const installButton = (page) => page.locator('.nav__install');
+
+test('install: one click where the browser offers it', async ({ page }) => {
+  await open(page, '/');
+  // What Chrome, Edge and Brave fire when the app can be installed.
+  await page.evaluate(() => {
+    const e = new Event('beforeinstallprompt', { cancelable: true });
+    e.prompt = async () => { window.__prompted = true; };
+    e.userChoice = Promise.resolve({ outcome: 'accepted' });
+    dispatchEvent(e);
+  });
+  await expect(installButton(page)).toHaveText('Install app');
+  await installButton(page).click();
+  await expect.poll(() => page.evaluate(() => window.__prompted)).toBe(true);
+  await expect(page.locator('dialog.dlg')).toHaveCount(0);
+  await expect(page.locator('.toast')).toContainText('Tunes is installed');
+  await page.evaluate(() => dispatchEvent(new Event('appinstalled')));
+  await expect(installButton(page)).toHaveCount(0);
+});
+
+test('install: short steps for the browser in use, nothing where it is not possible', async ({ page, browser, baseURL }) => {
+  // Chromium on a computer before it offers the one-click install: the address bar icon.
+  await open(page, '/');
+  await installButton(page).click();
+  const dlg = page.locator('dialog.dlg');
+  await expect(dlg.locator('.dlg__title')).toHaveText('Install app');
+  await expect(dlg).toContainText('install icon at the right end of the address bar');
+  await expect(dlg.locator('.install__h')).toHaveCount(0); // Tailscale is only explained on phones
+  await dlg.locator('.ibtn').click();
+
+  for (const [ua, expected] of [[MAC_SAFARI, 'File → Add to Dock'], [FIREFOX, null]]) {
+    const ctx = await browser.newContext({ baseURL, userAgent: ua, viewport: { width: 1440, height: 900 }, serviceWorkers: 'block' });
+    const p = await ctx.newPage();
+    await open(p, '/');
+    if (expected) {
+      await installButton(p).click();
+      await expect(p.locator('dialog.dlg')).toContainText(expected);
+    } else {
+      await expect(installButton(p)).toHaveCount(0); // Firefox on a computer can't install web apps
+    }
+    await ctx.close();
+  }
+});
+
+test('install: on an iPhone, Share → Add to Home Screen plus Tailscale', async ({ device, baseURL }) => {
+  const phone = await device({ mobile: true });
+  await phone.goto(phoneURL(baseURL, '/'));
+  await settle(phone);
+  await phone.locator('#navToggle').tap();
+  await installButton(phone).tap();
+  const dlg = phone.locator('dialog.dlg');
+  await expect(dlg.locator('.dlg__title')).toHaveText('Add to Home Screen');
+  await expect(dlg).toContainText('Tap the Share button');
+  await expect(dlg).not.toContainText('address bar');
+  await expect(dlg.locator('.install__h')).toHaveText('Listening away from home (Tailscale)');
 });

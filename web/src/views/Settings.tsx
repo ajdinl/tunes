@@ -319,8 +319,8 @@ export function parseCsv(text: string): string[][] {
 
 // ---- player style (per device): small drawings of each look
 const DIAL_OPTS: { value: DialStyle; label: string }[] = [
-  { value: 'dial', label: 'Radio dial' }, { value: 'calm', label: 'Calm' }, { value: 'minimal', label: 'Minimal' },
-  { value: 'color', label: 'Colors' }, { value: 'mirror', label: 'Mirror' },
+  { value: 'minimal', label: 'Minimal' }, { value: 'calm', label: 'Calm' }, { value: 'dial', label: 'Radio dial' },
+  { value: 'mirror', label: 'Mirror' }, { value: 'color', label: 'Colors' },
 ];
 const BARS = [5, 9, 13, 8, 11, 6, 10, 7, 4, 6];
 

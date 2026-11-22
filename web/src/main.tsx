@@ -12,7 +12,8 @@ import { toast } from './lib/feedback.ts';
 import { songs } from './lib/format.ts';
 import { connectEvents, startSession } from './lib/session.ts';
 import { startTooltips } from './lib/tooltips.ts';
-import { IS_LOCAL, IS_STANDALONE, shell } from './shell/ui.ts';
+import { IS_LOCAL, shell } from './shell/ui.ts';
+import { installMethod, IS_PHONE } from './lib/install.ts';
 import * as i18n from './lib/i18n.ts';
 
 // For the end-to-end tests (tests/e2e/helpers.js appModule()) and for poking around in the console.
@@ -20,7 +21,7 @@ Object.assign(window, { __tunes: { player, offline, store, i18n } });
 
 // First visit on a phone: a short reminder that Tunes can be added to the Home Screen.
 function maybeShowInstallHint(): void {
-  if (IS_LOCAL || IS_STANDALONE) return;
+  if (IS_LOCAL || !IS_PHONE || installMethod() === null) return;
   try { if (localStorage.getItem('tunes.installHint')) return; localStorage.setItem('tunes.installHint', '1'); } catch { return; }
   setTimeout(() => toast(tr('Add Tunes to your Home Screen so it opens like an app.'), { action: tr('How?'), onAction: () => shell.set({ install: true }), timeout: 9000 }), 1500);
 }

@@ -4,7 +4,8 @@ import type { ReactNode } from 'react';
 
 import { Icon, IconButton } from '../components/Icon.tsx';
 import { Loading } from '../components/common.tsx';
-import { shell, useShell, IS_IOS } from './ui.ts';
+import { shell, useShell } from './ui.ts';
+import { useInstallMethod, promptInstall, IS_IOS, IS_PHONE } from '../lib/install.ts';
 import { api, store } from '../lib/store.ts';
 import { tr } from '../lib/i18n.ts';
 import { cx } from '../lib/format.ts';
@@ -133,42 +134,57 @@ export function PhoneDialog() {
   );
 }
 
-// ---------------------------------------------------------------- add to Home Screen (phone)
+// ---------------------------------------------------------------- install as an app
+// Only the steps for this browser (lib/install.ts works out which). On phones it also
+// explains Tailscale, so the home-screen app works away from home too.
 const ON_TAILSCALE = location.hostname.endsWith('.ts.net') || /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(location.hostname);
-interface InstallPrompt extends Event { prompt(): void; userChoice: Promise<unknown> }
-let installPrompt: InstallPrompt | null = null;
-window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e as InstallPrompt; });
 
 export function InstallDialog() {
   const ui = useShell();
+  const method = useInstallMethod();
   const [links, setLinks] = useState<{ tailscale: string | null } | null | 'error'>(null);
   const close = () => shell.set({ install: false });
+  const title = IS_PHONE ? tr('Add to Home Screen') : tr('Install app');
 
   useEffect(() => {
-    if (!ui.install || ON_TAILSCALE) return;
+    if (!ui.install || !IS_PHONE || ON_TAILSCALE) return;
     setLinks(null);
     api<{ tailscale: string | null }>('/api/phone/links').then(setLinks).catch(() => setLinks('error'));
   }, [ui.install]);
 
-  const steps = IS_IOS ? (
-    <ol className="phone__steps">
-      <li>{tr('Open this page in Safari.')}</li>
-      <li>{tr('Tap the Share button (the square with an arrow pointing up).')}</li>
-      <li>{tr('Choose “Add to Home Screen”, then “Add”.')}</li>
-    </ol>
-  ) : installPrompt ? (
-    <div className="dlg__actions">
-      <button type="button" className="btn btn--primary" onClick={async () => { installPrompt!.prompt(); await installPrompt!.userChoice; installPrompt = null; close(); }}>
-        <Icon name="plus" size={16} />{tr('Install app')}
-      </button>
-    </div>
-  ) : (
-    <ol className="phone__steps">
-      <li>{tr('Open this page in Chrome.')}</li>
-      <li>{tr('Tap the ⋮ menu in the top right.')}</li>
-      <li>{tr('Choose “Add to Home screen” or “Install app”.')}</li>
-    </ol>
-  );
+  // Installed in the meantime (or this browser can't): nothing left to explain.
+  useEffect(() => { if (ui.install && method === null) close(); }, [ui.install, method]);
+
+  let steps: ReactNode = null;
+  if (method === 'prompt') {
+    steps = (
+      <div className="dlg__actions">
+        <button type="button" className="btn btn--primary" onClick={async () => { close(); if (await promptInstall()) toast(tr('Tunes is installed')); }}>
+          <Icon name="plus" size={16} />{tr('Install app')}
+        </button>
+      </div>
+    );
+  } else if (method === 'ios') {
+    steps = (
+      <ol className="phone__steps">
+        <li>{tr('Open this page in Safari.')}</li>
+        <li>{tr('Tap the Share button (the square with an arrow pointing up).')}</li>
+        <li>{tr('Choose “Add to Home Screen”, then “Add”.')}</li>
+      </ol>
+    );
+  } else if (method === 'android') {
+    steps = (
+      <ol className="phone__steps">
+        <li>{tr('Open this page in Chrome.')}</li>
+        <li>{tr('Tap the ⋮ menu in the top right.')}</li>
+        <li>{tr('Choose “Add to Home screen” or “Install app”.')}</li>
+      </ol>
+    );
+  } else if (method === 'mac-safari') {
+    steps = <p className="install__steps">{tr('In Safari, choose File → Add to Dock.')}</p>;
+  } else if (method === 'desktop') {
+    steps = <p className="install__steps">{tr('Click the install icon at the right end of the address bar, or open the browser menu and choose “Install Tunes”.')}</p>;
+  }
 
   const tsSteps = (link: string | null) => (
     <div>
@@ -183,20 +199,21 @@ export function InstallDialog() {
     </div>
   );
 
-  let ts: ReactNode;
-  if (ON_TAILSCALE) ts = <p>{tr('This version runs over Tailscale, so it works both at home and away. Add this one to your Home Screen.')}</p>;
-  else if (links === null) ts = <p className="loading"><span className="loading__dot" />{tr('Loading…')}</p>;
-  else if (links === 'error') ts = tsSteps(null);
-  else if (links.tailscale) ts = tsSteps(links.tailscale);
-  else ts = <><p className="muted">{tr('Tailscale isn\'t running on the computer. Start it there, then open this window again.')}</p>{tsSteps(null)}</>;
+  let ts: ReactNode = null;
+  if (IS_PHONE) {
+    if (ON_TAILSCALE) ts = <p>{tr('This version runs over Tailscale, so it works both at home and away. Add this one to your Home Screen.')}</p>;
+    else if (links === null) ts = <p className="loading"><span className="loading__dot" />{tr('Loading…')}</p>;
+    else if (links === 'error') ts = tsSteps(null);
+    else if (links.tailscale) ts = tsSteps(links.tailscale);
+    else ts = <><p className="muted">{tr('Tailscale isn\'t running on the computer. Start it there, then open this window again.')}</p>{tsSteps(null)}</>;
+  }
 
   return (
-    <Modal open={ui.install} label={tr('Add to Home Screen')} onClose={close}>
-      <Head title={tr('Add to Home Screen')} onClose={close} />
-      <p className="muted">{tr('Tunes will open like a real app, full screen and with its own icon.')}</p>
+    <Modal open={ui.install} label={title} onClose={close}>
+      <Head title={title} onClose={close} />
+      <p className="muted">{IS_PHONE ? tr('Tunes will open like a real app, full screen and with its own icon.') : tr('Tunes will open in its own window, with its own icon in the Dock or taskbar.')}</p>
       {steps}
-      <h3 className="install__h">{tr('Listening away from home (Tailscale)')}</h3>
-      <div className="install__ts">{ts}</div>
+      {ts ? <><h3 className="install__h">{tr('Listening away from home (Tailscale)')}</h3><div className="install__ts">{ts}</div></> : null}
     </Modal>
   );
 }
