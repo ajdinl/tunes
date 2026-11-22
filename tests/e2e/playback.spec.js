@@ -303,7 +303,7 @@ test('player buttons: above the dial, beside it in one row, or only on hover', a
   const opacity = () => ctrls.evaluate((el) => getComputedStyle(el).opacity);
   const before = await height();
   const expectTipClear = async () => {
-    for (const style of ['dial', 'minimal']) {
+    for (const style of ['minimal', 'dial']) { // ends on the default style
       await page.locator(`.dial-opt[data-style="${style}"]`).click();
       const db = await dial.boundingBox();
       await page.mouse.move(db.x + db.width * 0.42, db.y + db.height / 2);
@@ -327,6 +327,14 @@ test('player buttons: above the dial, beside it in one row, or only on hover', a
   expect((await ctrls.boundingBox()).y + 20).toBeLessThan((await dial.boundingBox()).y);
   expect(Math.abs(mid(await page.locator('.deck__now').boundingBox()) - mid(await dial.boundingBox()))).toBeLessThan(6);
   await expectTipClear();
+  // Minimal is only a line: a lower dial, closer to the buttons, and a lower bar.
+  await page.locator('.dial-opt[data-style="minimal"]').click();
+  await expect.poll(height).toBeLessThan(before - 10);
+  expect(Math.abs(mid(await page.locator('.deck__now').boundingBox()) - mid(await dial.boundingBox()))).toBeLessThan(6);
+  const deckBox = await deck.boundingBox();
+  const cover = await page.locator('.deck__cv').boundingBox();
+  expect(cover.y + cover.height).toBeLessThanOrEqual(deckBox.y + deckBox.height); // the cover still fits
+  await page.locator('.dial-opt[data-style="dial"]').click();
 
   // Beside: one row, like SoundCloud, and a lower bar.
   await pick('beside');

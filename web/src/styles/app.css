@@ -1117,8 +1117,8 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 /* Player style "Minimal" (Settings → Appearance): just the line, no receiver panel. */
 .dial[data-style='minimal'] { background: none; box-shadow: none; }
 .dial[data-style='minimal']::after { display: none; }
-/* The time under the mouse sits right above the line (there is room inside the dial). */
-.dial[data-style='minimal'] .dial__tip { top: calc(50% - 26px); }
+/* The time under the mouse goes right below the line, so the line can sit close to the buttons. */
+.dial[data-style='minimal'] .dial__tip { top: calc(50% + 7px); }
 
 /* Player bar on computers: slightly smaller transport buttons, so the dial gets the room.
    Phones keep the bigger touch targets. */
@@ -1129,6 +1129,9 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
   .deck .deck__ctrls .ibtn svg { width: 18px; height: 18px; }
   .deck .deck__ctrls .play { width: 34px; height: 34px; }
   .deck .deck__ctrls .play svg { width: 18px; height: 18px; }
+  /* Minimal is just a line: a lower dial brings it closer to the buttons and makes the bar lower.
+     36px still lets the cover (60px, lined up with the dial) fit in the bar. */
+  .deck .dial[data-style='minimal'] { height: 36px; }
   /* The song on the left and the tools on the right line up with the dial, not with the
      middle of the whole bar: half of the buttons row (34px) plus the gap (8px) lower. */
   .deck .deck__now, .deck .deck__tools { position: relative; top: 21px; }
