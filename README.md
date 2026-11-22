@@ -71,7 +71,7 @@ npm install
 npm start
 ```
 
-Then open <http://localhost:4545>. `npm start` builds the interface first (about a second), then starts the server. On macOS you can also double-click `start.command`.
+Then open <http://localhost:4545>. `npm start` builds the interface first (about a second), then starts the server. Open windows (a tab, the app in the Dock, the phone) update themselves when a new build of the interface appears: right away if nothing is playing, otherwise they offer a Reload button. On macOS you can also double-click `start.command`.
 
 Put your music in `~/Music/Tunes`, or add other folders under **Settings**.
 

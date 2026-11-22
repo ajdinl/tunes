@@ -23,7 +23,7 @@ npm install
 npm start
 ```
 
-`npm start` prvo napravi interfejs (oko sekunde), pa pokrene server. Treba Node.js 22.18 ili noviji.
+`npm start` prvo napravi interfejs (oko sekunde), pa pokrene server. Otvoreni prozori (tab, aplikacija u Docku, telefon) se sami osvježe kad se pojavi nova verzija interfejsa: odmah ako ništa ne svira, a inače ponude dugme Osvježi. Treba Node.js 22.18 ili noviji.
 
 Za rad na interfejsu: `npm run dev` pokreće Vite sa automatskim osvježavanjem na `http://localhost:5173`, a zahtjeve šalje Tunes serveru koji radi uporedo (`npm start`).
 

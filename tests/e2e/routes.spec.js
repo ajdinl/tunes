@@ -104,3 +104,20 @@ test('paths load directly, and back and forward work', async ({ page }) => {
   await expect(page.locator('#main h1')).toHaveText('Songs');
   expect(await page.evaluate(() => window.__sameDocument)).toBe(true);
 });
+
+test('a new build on the server updates an open window once, then offers a reload', async ({ page }) => {
+  // The server announces a build this window doesn't run.
+  await page.route('**/api/events', (r) => r.fulfill({
+    status: 200, headers: { 'Content-Type': 'text/event-stream' },
+    body: 'retry: 500\n\nevent: version\ndata: {"id":"index-NEWBUILD.js"}\n\n',
+  }));
+  let loads = 0;
+  page.on('load', () => { loads++; });
+  await page.goto('/songs');
+  // Nothing plays, so it reloads by itself, once (the files here never change, so a loop would be easy).
+  await expect.poll(() => page.evaluate(() => sessionStorage.getItem('tunes.reloadedFor')).catch(() => null)).toBe('index-NEWBUILD.js');
+  await expect(page.locator('.toast')).toContainText('A new version of Tunes is ready.');
+  await page.waitForTimeout(2500);
+  expect(loads).toBe(2);
+  await expect(page.locator('.toast .toast__act')).toHaveText('Reload');
+});

@@ -14,13 +14,13 @@ const ENTRY = process.env.TUNES_SERVER_ENTRY || 'server.ts';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-export async function startServer({ port, name = 'tunes-test', settings = {}, waitForLibrary = true } = {}) {
+export async function startServer({ port, name = 'tunes-test', settings = {}, waitForLibrary = true, env = {} } = {}) {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), name + '-'));
   const music = makeLibrary(path.join(base, 'music'));
   const data = makeDataDir(path.join(base, 'data'), music, settings);
   const proc = spawn(process.execPath, ['--import', PRELOAD, ENTRY], {
     cwd: ROOT,
-    env: { ...process.env, PORT: String(port), HOST: '127.0.0.1', DATA_DIR: data },
+    env: { ...process.env, PORT: String(port), HOST: '127.0.0.1', DATA_DIR: data, ...env },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let log = '';

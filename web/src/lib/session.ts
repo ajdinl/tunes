@@ -111,6 +111,7 @@ export function connectEvents(onLibrary: (count: number, changed: number) => voi
   es.addEventListener('icy', (e) => { const d = JSON.parse((e as MessageEvent).data); player.setIcy(d.sid, d.title); });
   es.addEventListener('icon', (e) => store.setIcon(JSON.parse((e as MessageEvent).data).icon));
   es.addEventListener('session', (e) => setRemote(JSON.parse((e as MessageEvent).data)));
+  es.addEventListener('version', (e) => onVersion(JSON.parse((e as MessageEvent).data).id));
   es.addEventListener('takeover', (e) => {
     const d = JSON.parse((e as MessageEvent).data);
     if (d.deviceId !== DEVICE_ID) yieldTo(d.device);
@@ -126,4 +127,26 @@ export function startSession(): void {
   player.addEventListener('track', () => reportSession(true));
   player.addEventListener('time', () => reportSession(false));
   api<{ session: RemoteSession | null }>('/api/session').then(({ session }) => setRemote(session)).catch(() => {});
+}
+
+// ---- updates: the server has a newer build of the interface than this window
+// The build this window runs (Vite names the main script by content hash). None in `npm run dev`.
+const MY_BUILD = /\/assets\/([^/]+\.js)$/.exec(document.querySelector<HTMLScriptElement>('script[type="module"][src*="/assets/"]')?.src || '')?.[1] || null;
+const RELOAD_KEY = 'tunes.reloadedFor';
+let offered = false;
+
+function onVersion(id: string | undefined): void {
+  if (!id || !MY_BUILD || id === MY_BUILD) return;
+  // Never reload twice for the same build (a window that still gets the old files would loop).
+  let already = false;
+  try { already = sessionStorage.getItem(RELOAD_KEY) === id; } catch { /* */ }
+  if (!player.playing && !already) {
+    try { sessionStorage.setItem(RELOAD_KEY, id); } catch { /* */ }
+    location.reload();
+    return;
+  }
+  if (offered) return;
+  offered = true;
+  // Music keeps playing; the update waits for a click (or the next reload).
+  toast(tr('A new version of Tunes is ready.'), { action: tr('Reload'), onAction: () => location.reload(), timeout: 60000 });
 }

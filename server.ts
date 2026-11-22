@@ -30,9 +30,18 @@ const DATA = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.jo
 const PUBLIC = path.join(ROOT, 'public');
 // The React frontend, built by Vite into web/dist (npm start builds it first).
 // Icons, the manifest and the service worker are plain files in public/.
-const WEB_DIST = path.join(ROOT, 'web', 'dist');
+// TUNES_WEB_DIST points somewhere else (tests use a copy).
+const WEB_DIST = process.env.TUNES_WEB_DIST ? path.resolve(process.env.TUNES_WEB_DIST) : path.join(ROOT, 'web', 'dist');
 const UI_ROOT = WEB_DIST;
 if (!fs.existsSync(path.join(WEB_DIST, 'index.html'))) console.warn('The app is not built yet (web/dist is missing): run npm run build, or start with npm start.');
+
+// Which build of the interface is on disk: the content-hashed name of its main script.
+// Open windows (a tab, the app in the Dock, the phone) learn it over SSE and update
+// themselves when a new build appears, without restarting the server.
+function buildId(): string | null {
+  try { return /src="\/assets\/([^"]+\.js)"/.exec(fs.readFileSync(path.join(WEB_DIST, 'index.html'), 'utf8'))?.[1] || null; } catch { return null; }
+}
+let currentBuild = buildId();
 const FONTS = path.join(ROOT, 'node_modules', '@fontsource-variable', 'bricolage-grotesque');
 const PORT = Number(process.env.PORT) || 4545;
 // Only this computer by default. HOST=0.0.0.0 allows access from phones on the same network.
@@ -49,6 +58,13 @@ function broadcast(type: string, data: unknown): void {
   for (const c of clients) c.write(msg);
 }
 library.on('changed', (d) => broadcast('library', d));
+// Polling the file (not fs.watch): a build empties and rewrites the folder.
+fs.watchFile(path.join(WEB_DIST, 'index.html'), { interval: 1500 }, () => {
+  const id = buildId();
+  if (!id || id === currentBuild) return;
+  currentBuild = id;
+  broadcast('version', { id });
+});
 const icyTitles = new Map<string, string>();
 
 // ------------------------------------------------------------ helpers
@@ -199,6 +215,7 @@ route('GET', /^\/api\/soundcloud\/resolve$/, async (req, res, m, q) => {
 route('GET', /^\/api\/events$/, (req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive' });
   res.write('retry: 3000\n\n');
+  if (currentBuild) res.write(`event: version\ndata: ${JSON.stringify({ id: currentBuild })}\n\n`);
   clients.add(res);
   const ping = setInterval(() => res.write(': ping\n\n'), 25000);
   req.on('close', () => { clients.delete(res); clearInterval(ping); });
