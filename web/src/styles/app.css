@@ -183,7 +183,7 @@ code, kbd {
 .nav__link--pl span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nav__count { color: var(--faint); font-size: 12px; font-variant-numeric: tabular-nums; }
 .nav__hint { margin: 6px 10px; color: var(--faint); font-size: 13px; }
-.nav--foot { border-top: 1px solid var(--line); padding-top: 10px; }
+.nav--foot { padding-top: 0; }
 
 /* ------------------------------------------------------------ buttons and inputs */
 .btn {
@@ -1123,7 +1123,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 /* Player bar on computers: slightly smaller transport buttons, so the dial gets the room.
    Phones keep the bigger touch targets. */
 @media (min-width: 861px) {
-  .deck .deck__center { gap: 4px; }
+  .deck .deck__center { gap: 8px; }
   .deck .deck__ctrls { gap: 4px; }
   .deck .deck__ctrls .ibtn { width: 32px; height: 32px; }
   .deck .deck__ctrls .ibtn svg { width: 18px; height: 18px; }
@@ -1155,4 +1155,23 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 }
 @media (min-width: 861px) and (max-width: 960px) {
   .deck .volbox .vol { display: none; } /* the mute button stays; ↑ ↓ still change the volume */
+}
+
+/* ------------------------------------------------------------ menu handles */
+/* The line above the bottom items: drag it down to fold them into a row of icons. */
+.nav__grip { position: relative; flex: none; height: 12px; margin: 0 4px 2px; cursor: row-resize; border-radius: 4px; touch-action: none; }
+.nav__grip::before { content: ''; position: absolute; left: 0; right: 0; top: 5px; height: 1px; background: var(--line); transition: background 0.15s, height 0.15s, top 0.15s; }
+.nav__grip:hover::before, .nav__grip:focus-visible::before { top: 4px; height: 3px; background: var(--amber); border-radius: 2px; }
+.nav--foot.is-compact { flex-direction: row; flex-wrap: wrap; justify-content: space-around; }
+.nav--foot.is-compact .nav__grip { flex-basis: 100%; }
+.nav--foot.is-compact .nav__link { flex: none; width: auto; padding: 8px 10px; }
+.nav--foot.is-compact .nav__link > span:not(.ic):not(.nav__dot) { display: none; }
+.nav--foot.is-compact .nav__dot { margin-left: -4px; align-self: flex-start; }
+/* The right edge of the menu: drag it left to fold the menu to icons (computers only). */
+.side__edge { display: none; }
+@media (min-width: 861px) {
+  .side { position: relative; }
+  .side__edge { display: block; position: absolute; top: 0; right: 0; bottom: 0; width: 6px; cursor: col-resize; touch-action: none; }
+  .side__edge:hover, .side__edge:focus-visible { background: linear-gradient(90deg, transparent 2px, var(--amber) 2px, var(--amber) 4px, transparent 4px); }
+  body.side-mini .nav__grip { display: none; }
 }

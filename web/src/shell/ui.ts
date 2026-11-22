@@ -8,6 +8,7 @@ export interface ShellState {
   now: boolean;
   nav: boolean;
   sideMini: boolean;
+  footCompact: boolean;
   scMin: boolean;
   phone: boolean;
   install: boolean;
@@ -17,7 +18,7 @@ const saved = (key: string): boolean => { try { return JSON.parse(localStorage.g
 
 let state: ShellState = {
   panel: null, eq: false, now: false, nav: false,
-  sideMini: saved('tunes.sideMini'), scMin: saved('tunes.scdockMin'), phone: false, install: false,
+  sideMini: saved('tunes.sideMini'), footCompact: saved('tunes.footCompact'), scMin: saved('tunes.scdockMin'), phone: false, install: false,
 };
 const listeners = new Set<() => void>();
 
@@ -26,6 +27,7 @@ export const shell = {
   set(patch: Partial<ShellState>): void {
     state = { ...state, ...patch };
     if ('sideMini' in patch) try { localStorage.setItem('tunes.sideMini', JSON.stringify(state.sideMini)); } catch { /* */ }
+    if ('footCompact' in patch) try { localStorage.setItem('tunes.footCompact', JSON.stringify(state.footCompact)); } catch { /* */ }
     if ('scMin' in patch) try { localStorage.setItem('tunes.scdockMin', JSON.stringify(state.scMin)); } catch { /* */ }
     for (const l of listeners) l();
   },

@@ -16,6 +16,9 @@ test('handoff: the phone continues at the same second and the computer pauses', 
   await expect(banner).toBeVisible();
   await expect(banner.locator('.handoff__label')).toHaveText('Playing on: Computer');
   await expect(banner.locator('.handoff__name')).toHaveText('Morning Light');
+  // It floats above the player bar, not over its buttons.
+  const gap = await phone.evaluate(() => document.querySelector('.deck').getBoundingClientRect().top - document.querySelector('.handoff').getBoundingClientRect().bottom);
+  expect(gap).toBeGreaterThanOrEqual(4);
 
   const at = await position(laptop);
   await banner.locator('.btn--primary').click();

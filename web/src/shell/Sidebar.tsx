@@ -72,7 +72,11 @@ export function Sidebar() {
           </div>
         ) : <p className="nav__hint">{tr('Create your first playlist with the + button')}</p>}
       </div>
-      <div className="nav nav--foot">
+      <div className={cx('nav', 'nav--foot', ui.footCompact && 'is-compact')}>
+        <DragHandle className="nav__grip" orientation="horizontal"
+          label={ui.footCompact ? tr('Show the labels below') : tr('Fold the items below into icons')}
+          onDrag={(dx, dy) => { if (dy > 14) shell.set({ footCompact: true }); else if (dy < -14) shell.set({ footCompact: false }); }}
+          onToggle={() => shell.set({ footCompact: !shell.get().footCompact })} />
         {IS_LOCAL ? (
           <button type="button" className={cx('nav__link', 'nav__phone', store.settings.phoneOn && 'is-live')} title={tr('Listen on phone')} onClick={() => shell.set({ phone: true })}>
             <Icon name="phone" size={19} /><span>{tr('Listen on phone')}</span>
@@ -90,6 +94,45 @@ export function Sidebar() {
         ) : null}
         {link({ href: '/settings', name: 'settings', label: 'Settings', icon: 'settings' })}
       </div>
+      {/* The right edge: drag it left to fold the menu to icons, right to unfold (computers). */}
+      <DragHandle className="side__edge" orientation="vertical" label={ui.sideMini ? tr('Expand sidebar') : tr('Collapse sidebar')}
+        onDrag={(dx) => { if (dx < -40) shell.set({ sideMini: true }); else if (dx > 40) shell.set({ sideMini: false }); }}
+        onToggle={() => shell.set({ sideMini: !shell.get().sideMini })} />
     </nav>
+  );
+}
+
+// A line you can drag (or click, or use with the keyboard) to fold something.
+function DragHandle({ className, orientation, label, onDrag, onToggle }: {
+  className: string; orientation: 'horizontal' | 'vertical'; label: string;
+  onDrag: (dx: number, dy: number) => void; onToggle: () => void;
+}) {
+  return (
+    <div className={className} role="separator" aria-orientation={orientation} aria-label={label} tabIndex={0}
+      onPointerDown={(e) => {
+        const el = e.currentTarget;
+        el.setPointerCapture(e.pointerId);
+        const x0 = e.clientX, y0 = e.clientY;
+        let moved = false;
+        const move = (ev: PointerEvent) => {
+          const dx = ev.clientX - x0, dy = ev.clientY - y0;
+          if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
+          onDrag(dx, dy);
+        };
+        const up = () => {
+          el.removeEventListener('pointermove', move);
+          el.removeEventListener('pointerup', up);
+          el.removeEventListener('pointercancel', up);
+          if (!moved) onToggle();
+        };
+        el.addEventListener('pointermove', move);
+        el.addEventListener('pointerup', up);
+        el.addEventListener('pointercancel', up);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); }
+        if (orientation === 'horizontal' && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); onDrag(0, e.key === 'ArrowDown' ? 99 : -99); }
+        if (orientation === 'vertical' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); onDrag(e.key === 'ArrowLeft' ? -99 : 99, 0); }
+      }} />
   );
 }

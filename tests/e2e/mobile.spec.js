@@ -170,3 +170,44 @@ test('sidebar: the playlist section never runs over the items at the bottom', as
     expect(spill, `playlist section spills at ${height}px`).toEqual([]);
   }
 });
+
+test('menu handles: drag the line to fold the bottom items, drag the edge to fold the menu', async ({ device }) => {
+  const page = await device();
+  await open(page, '/');
+  const foot = page.locator('.nav--foot');
+  const grip = page.locator('.nav__grip');
+  let b = await grip.boundingBox();
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(b.x + b.width / 2, b.y + 40, { steps: 5 });
+  await page.mouse.up();
+  await expect(foot).toHaveClass(/is-compact/);
+  // One row of icons, each with a tooltip.
+  const tops = await foot.locator('.nav__link').evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
+  expect(new Set(tops).size).toBe(1);
+  await expect(foot.locator('.nav__link span:not(.ic):not(.nav__dot)').first()).toBeHidden();
+  await foot.locator('a[href="/settings"]').hover();
+  await expect(page.locator('.tip.is-on')).toHaveText('Settings');
+  // Remembered.
+  await page.reload();
+  await expect(page.locator('.nav--foot')).toHaveClass(/is-compact/);
+  // Back with the keyboard.
+  await page.locator('.nav__grip').focus();
+  await page.keyboard.press('ArrowUp');
+  await expect(page.locator('.nav--foot')).not.toHaveClass(/is-compact/);
+
+  // The right edge of the menu.
+  const edge = page.locator('.side__edge');
+  b = await edge.boundingBox();
+  await page.mouse.move(b.x + 3, 300);
+  await page.mouse.down();
+  await page.mouse.move(b.x - 80, 300, { steps: 5 });
+  await page.mouse.up();
+  await expect(page.locator('body')).toHaveClass(/side-mini/);
+  b = await page.locator('.side__edge').boundingBox();
+  await page.mouse.move(b.x + 3, 300);
+  await page.mouse.down();
+  await page.mouse.move(b.x + 90, 300, { steps: 5 });
+  await page.mouse.up();
+  await expect(page.locator('body')).not.toHaveClass(/side-mini/);
+});

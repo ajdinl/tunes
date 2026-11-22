@@ -1,5 +1,5 @@
 // The player bar at the bottom.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Icon, IconButton } from '../components/Icon.tsx';
 import { Cover, SourceTag } from '../components/common.tsx';
@@ -38,8 +38,18 @@ export function Deck() {
     document.title = t ? `${p.icyTitle || t.title} · Tunes` : 'Tunes';
   }, [t?.title, p.icyTitle]);
 
+  // Things that float above the bar (Continue here, the SoundCloud dock, the panel) sit on
+  // top of it at its real height: --deck-h.
+  const deckRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = deckRef.current!;
+    const ro = new ResizeObserver(() => document.documentElement.style.setProperty('--deck-h', el.offsetHeight + 'px'));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   return (
-    <footer className="deck" id="deck" aria-label={tr('Player')}>
+    <footer ref={deckRef} className="deck" id="deck" aria-label={tr('Player')}>
       <div className="deck__now">
         <button type="button" className="deck__cv" aria-label={tr('Open “Now playing”')} onClick={() => { if (player.track) shell.set({ now: true }); }}>
           <Cover src={t?.cover} label={t?.title || '♪'} />
