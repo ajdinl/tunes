@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Icon, IconButton } from '../components/Icon.tsx';
 import { Cover, SourceTag } from '../components/common.tsx';
 import { DialView } from './DialView.tsx';
+import { miniSupported, toggleMini, useMiniWindow } from './MiniPlayer.tsx';
 import { shell, useShell } from './ui.ts';
 import { player, usePlayer } from '../lib/player.ts';
 import type { Player } from '../lib/player.ts';
@@ -27,6 +28,7 @@ export function Deck() {
   const p = usePlayer('track', 'state', 'time', 'mode', 'volume', 'sleep', 'icy', 'sound', 'eq');
   useStore('favorites');
   const ui = useShell();
+  const mini = useMiniWindow();
   const t = shownTrack(p);
   const playing = p.playing;
   const fav = Boolean(p.track && store.isFav(p.track.id));
@@ -84,6 +86,10 @@ export function Deck() {
             onChange={(e) => player.setVolume(Number(e.target.value))}
             onWheel={(e) => player.setVolume(player.volume - Math.sign(e.deltaY) * 0.05)} />
         </div>
+        {miniSupported() ? (
+          <IconButton icon="pip" label={mini ? tr('Close mini player') : tr('Mini player')} className={cx(mini && 'is-on')} aria-pressed={Boolean(mini)}
+            onClick={() => { toggleMini(); }} />
+        ) : null}
         <IconButton icon="expand" label={tr('Full screen (F)')} onClick={() => { if (player.track) shell.set({ now: true }); }} />
       </div>
     </footer>

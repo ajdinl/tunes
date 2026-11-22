@@ -12,6 +12,7 @@ import { NowPlaying } from './shell/NowPlaying.tsx';
 import { Handoff } from './shell/Handoff.tsx';
 import { ScDock } from './shell/ScDock.tsx';
 import { PhoneDialog, InstallDialog } from './shell/PhoneDialogs.tsx';
+import { MiniPlayer } from './shell/MiniPlayer.tsx';
 import { shell, useShell } from './shell/ui.ts';
 import { player, usePlayer } from './lib/player.ts';
 import { useStore } from './lib/store.ts';
@@ -88,6 +89,7 @@ export function App() {
       <AskDialog />
       <PhoneDialog />
       <InstallDialog />
+      <MiniPlayer />
     </>
   );
 }

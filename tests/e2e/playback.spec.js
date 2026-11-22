@@ -177,3 +177,44 @@ test('player styles: picked in Settings, remembered on this device, seeking stil
   await expect.poll(() => position(page)).toBeGreaterThan(70);
   await page.locator('.dial-opt[data-style="dial"]').click();
 });
+
+test('mini player: a small window with the song and the controls', async ({ page, context }) => {
+  // A same-origin popup stands in for the picture-in-picture window (the test can drive it
+  // like a page); the app renders into it exactly as into the real one.
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'documentPictureInPicture', {
+      configurable: true,
+      value: { requestWindow: async ({ width, height }) => window.open('', 'tunes-mini', `width=${width},height=${height}`) },
+    });
+  });
+  await playSong(page, 'Paper Boats');
+  const button = page.locator('.deck [aria-label="Mini player"]');
+  await expect(button).toBeVisible();
+  const [mini] = await Promise.all([context.waitForEvent('page'), button.click()]);
+  await expect(mini.locator('.mini__title')).toHaveText('Paper Boats');
+  await expect(mini.locator('.mini__artist')).toHaveText('Nadia Vale');
+  // The app's styles came along.
+  await expect.poll(() => mini.evaluate(() => getComputedStyle(document.querySelector('.mini')).display)).toBe('flex');
+  await expect(page.locator('.deck [aria-label="Close mini player"]')).toHaveAttribute('aria-pressed', 'true');
+
+  await mini.locator('.mini .play').click();
+  await expectPlaying(page, false);
+  await mini.locator('.mini .play').click();
+  await expectPlaying(page, true);
+  await mini.locator('.mini [aria-label="Next"]').click();
+  await expect(page.locator('.deck__title')).toHaveText(await mini.locator('.mini__title').textContent());
+  await expect(mini.locator('.mini__title')).not.toHaveText('Paper Boats');
+  const box = await mini.locator('.mini__bar').boundingBox();
+  await mini.mouse.click(box.x + box.width * 0.5, box.y + box.height / 2);
+  await expect.poll(() => position(page)).toBeGreaterThan(60);
+
+  await mini.close();
+  await expect(page.locator('.deck [aria-label="Mini player"]')).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('mini player button is hidden where the browser has no picture-in-picture window', async ({ page }) => {
+  // Like Safari and Firefox.
+  await page.addInitScript(() => { Object.defineProperty(window, 'documentPictureInPicture', { configurable: true, value: undefined }); });
+  await playSong(page, 'Paper Boats');
+  await expect(page.locator('.deck [aria-label="Mini player"]')).toHaveCount(0);
+});

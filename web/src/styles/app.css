@@ -1114,3 +1114,31 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 /* Player style "Minimal" (Settings → Appearance): just the line, no receiver panel. */
 .dial[data-style='minimal'] { background: none; box-shadow: none; }
 .dial[data-style='minimal']::after { display: none; }
+
+/* Player bar on computers: slightly smaller transport buttons, so the dial gets the room.
+   Phones keep the bigger touch targets. */
+@media (min-width: 861px) {
+  .deck .deck__center { gap: 4px; }
+  .deck .deck__ctrls { gap: 4px; }
+  .deck .deck__ctrls .ibtn { width: 32px; height: 32px; }
+  .deck .deck__ctrls .ibtn svg { width: 18px; height: 18px; }
+  .deck .deck__ctrls .play { width: 34px; height: 34px; }
+  .deck .deck__ctrls .play svg { width: 18px; height: 18px; }
+}
+
+/* ------------------------------------------------------------ mini player (picture-in-picture window) */
+.mini-body { margin: 0; overflow: hidden; background: var(--bg-2); color: var(--text); font-family: var(--font); }
+.mini { position: relative; display: flex; align-items: center; gap: 12px; height: 100vh; padding: 10px 12px 14px; box-sizing: border-box; }
+.mini--empty { justify-content: center; color: var(--muted); font-size: 14px; }
+.mini__cv { width: 84px; flex: none; border-radius: var(--r-sm); }
+.mini__main { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1; }
+.mini__meta { display: flex; flex-direction: column; min-width: 0; }
+.mini__title { font-weight: 650; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini__artist { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini__ctrls { display: flex; align-items: center; gap: 2px; }
+.mini__ctrls .ibtn { width: 32px; height: 32px; }
+.mini__ctrls .play { width: 34px; height: 34px; }
+.mini__ctrls .ibtn.is-on { color: var(--amber); }
+.mini__time { margin-left: auto; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mini__bar { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: rgba(127, 127, 127, 0.22); cursor: pointer; }
+.mini__fill { display: block; height: 100%; background: var(--amber); }
