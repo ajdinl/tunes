@@ -8,7 +8,7 @@ import { useSyncExternalStore } from 'react';
 
 import type { Prefs } from '../../../lib/types.ts';
 import { setLang, lang } from './i18n.ts';
-import { DIAL_STYLES, setDialStyle } from './dial.ts';
+import { DEVICE_STYLES, DIAL_PREF, STYLE_KEY, getDialStyle, setDialStyle } from './dial.ts';
 import type { DialStyle } from './dial.ts';
 import { api, store } from './store.ts';
 import { shell, DECK_CTRLS } from '../shell/ui.ts';
@@ -32,10 +32,13 @@ export function useTheme(): string {
   return useSyncExternalStore((cb) => { themeListeners.add(cb); return () => themeListeners.delete(cb); }, () => document.documentElement.dataset.theme || 'black');
 }
 
-const current = (): Required<Prefs> => ({
+// The choices this device has, and where each is kept in localStorage. The player style is
+// `dialStyle` on computers and `dialStylePhone` on phones.
+const STORED: Partial<Record<Key, string>> = { theme: 'tunes.theme', lang: 'tunes.lang', [DIAL_PREF]: STYLE_KEY, deckCtrls: 'tunes.deckCtrls' };
+const current = (): Prefs => ({
   theme: document.documentElement.dataset.theme || 'black',
   lang,
-  dialStyle: (() => { try { return JSON.parse(localStorage.getItem('tunes.dialStyle') || '"dial"'); } catch { return 'dial'; } })(),
+  [DIAL_PREF]: getDialStyle(),
   deckCtrls: shell.get().deckCtrls,
 });
 
@@ -43,7 +46,8 @@ const current = (): Required<Prefs> => ({
 export async function applyPrefs(p: Prefs | null | undefined): Promise<void> {
   if (!p) return;
   if (p.theme && p.theme !== current().theme) setTheme(p.theme);
-  if (p.dialStyle && DIAL_STYLES.includes(p.dialStyle as DialStyle)) setDialStyle(p.dialStyle as DialStyle);
+  const style = p[DIAL_PREF];
+  if (style && DEVICE_STYLES.includes(style as DialStyle)) setDialStyle(style as DialStyle);
   if (p.deckCtrls && DECK_CTRLS.includes(p.deckCtrls as DeckCtrls) && p.deckCtrls !== shell.get().deckCtrls) shell.set({ deckCtrls: p.deckCtrls as DeckCtrls });
   if (p.lang && p.lang !== lang) await setLang(p.lang);
 }
@@ -58,13 +62,12 @@ export function savePref<K extends Key>(key: K, value: NonNullable<Prefs[K]>): v
 // syncing existed (still only in localStorage) are sent up once if the server has none.
 export async function syncPrefs(): Promise<void> {
   const server = store.settings.prefs || {};
-  const stored: Record<Key, string> = { theme: 'tunes.theme', lang: 'tunes.lang', dialStyle: 'tunes.dialStyle', deckCtrls: 'tunes.deckCtrls' };
   const now = current();
   const up: Prefs = {};
-  for (const key of Object.keys(stored) as Key[]) {
+  for (const [key, storageKey] of Object.entries(STORED) as [Key, string][]) {
     let mine: string | null = null;
-    try { mine = localStorage.getItem(stored[key]); } catch { /* blocked */ }
-    if (!server[key] && mine) up[key] = now[key];
+    try { mine = localStorage.getItem(storageKey); } catch { /* blocked */ }
+    if (!server[key] && mine && now[key]) up[key] = now[key];
   }
   await applyPrefs(server);
   if (Object.keys(up).length) {

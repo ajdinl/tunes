@@ -1070,7 +1070,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
   .deck__tools { grid-area: tools; }
   .deck__center { grid-area: center; }
   .deck__cv, .deck__cv .cv { width: 46px; height: 46px; }
-  .deck__tools .volbox, .deck__tools > .ibtn:nth-child(3), .deck__tools > .ibtn:nth-child(4) { display: none; }
+  .deck__tools .volbox, .deck__tools .deck__eq, .deck__tools .deck__sleep { display: none; }
   .deck__time { min-width: 34px; font-size: 11.5px; }
   .dial { height: 46px; }
   .panel { left: 0; width: auto; bottom: calc(150px + env(safe-area-inset-bottom)); }

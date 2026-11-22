@@ -8,7 +8,7 @@ import { Icon } from '../components/Icon.tsx';
 import { OfflineSettings } from './OfflineSettings.tsx';
 import { tr, setLang, LANGUAGES, useLang } from '../lib/i18n.ts';
 import type { LangCode } from '../lib/i18n.ts';
-import { setDialStyle, useDialStyle } from '../lib/dial.ts';
+import { DEVICE_STYLES, DIAL_PREF, setDialStyle, useDialStyle } from '../lib/dial.ts';
 import type { DialStyle } from '../lib/dial.ts';
 import { norm, songs } from '../lib/format.ts';
 import { store, useStore, api } from '../lib/store.ts';
@@ -368,8 +368,8 @@ function DialStylePicker() {
   return (
     <>
       <div className="theme-pick" role="group" aria-label={tr('Player style')}>
-        {DIAL_OPTS.map((o) => (
-          <button key={o.value} type="button" className="theme-opt dial-opt" data-style={o.value} aria-pressed={current === o.value} onClick={() => { setDialStyle(o.value); savePref('dialStyle', o.value); }}>
+        {DIAL_OPTS.filter((o) => DEVICE_STYLES.includes(o.value)).map((o) => (
+          <button key={o.value} type="button" className="theme-opt dial-opt" data-style={o.value} aria-pressed={current === o.value} onClick={() => { setDialStyle(o.value); savePref(DIAL_PREF, o.value); }}>
             <DialPreview style={o.value} />{tr(o.label)}
           </button>
         ))}

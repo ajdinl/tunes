@@ -48,6 +48,7 @@ export interface Prefs {
   theme?: string;
   lang?: string;
   dialStyle?: string;
+  dialStylePhone?: string;
   deckCtrls?: string;
 }
 

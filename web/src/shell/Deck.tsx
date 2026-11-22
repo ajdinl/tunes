@@ -89,7 +89,8 @@ export function Deck() {
       <div className="deck__tools">
         <IconButton icon="lyrics" label={tr('Lyrics (T)')} className={cx(ui.panel === 'lyrics' && 'is-on')} onClick={() => shell.togglePanel('lyrics')} />
         <IconButton icon="queue" label={tr('Play queue (Q)')} className={cx(ui.panel === 'queue' && 'is-on')} onClick={() => shell.togglePanel('queue')} />
-        <IconButton icon="eq" label={tr('Equalizer (E)')} className={cx((p.eq.enabled || ui.eq) && 'is-on')} onClick={() => shell.set({ eq: !ui.eq })} />
+        {/* Phones have no equalizer (no Web Audio graph, or iOS stops the music on lock). */}
+        {p.mobile ? null : <IconButton icon="eq" label={tr('Equalizer (E)')} className={cx('deck__eq', (p.eq.enabled || ui.eq) && 'is-on')} onClick={() => shell.set({ eq: !ui.eq })} />}
         <SleepButton />
         <div className="volbox">
           <IconButton icon={v === 0 ? 'mute' : v < 0.5 ? 'volumeLow' : 'volume'} label={tr('Mute (M)')} onClick={() => player.toggleMute()} />
@@ -136,7 +137,7 @@ function SleepButton() {
   };
   // aria-label stays "Sleep timer"; the tooltip shows the time left (like before).
   return (
-    <button type="button" className={cx('ibtn', s && 'is-on')} aria-label={tr('Sleep timer')} data-tip={title} data-badge={badge}
+    <button type="button" className={cx('ibtn', 'deck__sleep', s && 'is-on')} aria-label={tr('Sleep timer')} data-tip={title} data-badge={badge}
       onClick={(e) => open(e.currentTarget)}>
       <Icon name="moon" size={20} />
     </button>

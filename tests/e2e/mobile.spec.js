@@ -211,3 +211,30 @@ test('menu handles: drag the line to fold the bottom items, drag the edge to fol
   await page.mouse.up();
   await expect(page.locator('body')).not.toHaveClass(/side-mini/);
 });
+
+test('phone: Minimal player style by default, only styles without a spectrum, no equalizer', async ({ device, request }) => {
+  const computer = await device();
+  await open(computer, '/settings');
+  await computer.locator('.dial-opt[data-style="mirror"]').click();
+  await expect.poll(async () => (await (await request.get('/api/state')).json()).settings.prefs.dialStyle).toBe('mirror');
+
+  // The phone has no Web Audio graph, so no spectrum and no equalizer.
+  const phone = await device({ mobile: true });
+  await playSong(phone, 'Morning Light');
+  await expect(phone.locator('.deck .dial')).toHaveAttribute('data-style', 'minimal'); // not the computer's Mirror
+  await expect(phone.locator('.deck [aria-label="Equalizer (E)"]')).toHaveCount(0);
+  await expect(phone.locator('.deck [aria-label="Sleep timer"]')).toBeHidden(); // no room on a narrow phone
+  await expect(phone.locator('.deck [aria-label="Lyrics (T)"]')).toBeVisible();
+  await open(phone, '/settings');
+  await expect(phone.locator('.dial-opt')).toHaveCount(2);
+  await expect(phone.locator('.dial-opt[data-style="minimal"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(phone.locator('.ctrls-opt')).toHaveCount(0); // player button layout is for computers
+
+  // The phone's choice is its own: it reaches other phones, not the computer.
+  await phone.locator('.dial-opt[data-style="calm"]').click();
+  await expect.poll(async () => (await (await request.get('/api/state')).json()).settings.prefs).toMatchObject({ dialStyle: 'mirror', dialStylePhone: 'calm' });
+  await expect(computer.locator('.deck .dial')).toHaveAttribute('data-style', 'mirror');
+  const phone2 = await device({ mobile: true });
+  await open(phone2, '/');
+  await expect(phone2.locator('.deck .dial')).toHaveAttribute('data-style', 'calm');
+});

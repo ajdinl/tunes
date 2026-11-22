@@ -17,14 +17,23 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 //   mirror:  the spectrum mirrored around the middle, like a waveform
 export const DIAL_STYLES = ['dial', 'calm', 'minimal', 'color', 'mirror'] as const;
 export type DialStyle = (typeof DIAL_STYLES)[number];
-const STYLE_KEY = 'tunes.dialStyle';
+// Phones have no spectrum (no Web Audio graph there, see player.ts), so they offer only the
+// styles that don't need it, Minimal by default. Their choice is kept (and synced) apart from
+// the computers' one.
+const MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+export const PHONE_STYLES: readonly DialStyle[] = ['minimal', 'calm'];
+export const DEVICE_STYLES: readonly DialStyle[] = MOBILE ? PHONE_STYLES : DIAL_STYLES;
+export const DIAL_PREF = MOBILE ? 'dialStylePhone' : 'dialStyle';
+export const STYLE_KEY = MOBILE ? 'tunes.dialStylePhone' : 'tunes.dialStyle';
+const DEFAULT_STYLE: DialStyle = MOBILE ? 'minimal' : 'dial';
 let dialStyle: DialStyle = (() => {
-  try { const v = JSON.parse(localStorage.getItem(STYLE_KEY) || 'null'); return DIAL_STYLES.includes(v) ? v : 'dial'; } catch { return 'dial'; }
+  try { const v = JSON.parse(localStorage.getItem(STYLE_KEY) || 'null'); return DEVICE_STYLES.includes(v) ? v : DEFAULT_STYLE; } catch { return DEFAULT_STYLE; }
 })();
+export const getDialStyle = (): DialStyle => dialStyle;
 const styleListeners = new Set<() => void>();
 
 export function setDialStyle(s: DialStyle): void {
-  if (!DIAL_STYLES.includes(s) || s === dialStyle) return;
+  if (!DEVICE_STYLES.includes(s) || s === dialStyle) return;
   dialStyle = s;
   try { localStorage.setItem(STYLE_KEY, JSON.stringify(s)); } catch { /* storage full */ }
   for (const d of dials) d.bars.fill(0);
