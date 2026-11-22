@@ -1,15 +1,22 @@
 // Free and legal online sources. All results are converted to the same
 // track shape as local files, so the player treats them the same way.
-import crypto from 'node:crypto';
-
+// Runs on the server and, in the phone-only version, in the browser (every API here
+// allows cross-origin requests), so it uses only fetch and Web Crypto.
 import { httpError } from './types.ts';
 import type { HttpError, Track } from './types.ts';
 
 const UA = 'Tunes/1.0 (personal music player)';
 const APP = 'Tunes';
+// Browsers send their own User-Agent; setting one would only add a CORS preflight.
+const UA_HEADER: Record<string, string> = 'document' in globalThis ? {} : { 'User-Agent': UA };
+
+async function sha1(text: string): Promise<string> {
+  const digest = await globalThis.crypto.subtle.digest('SHA-1', new TextEncoder().encode(text));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
 
 async function getJSON<T = any>(url: string, { timeout = 12000, headers = {} }: { timeout?: number; headers?: Record<string, string> } = {}): Promise<T> {
-  const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json', ...headers }, signal: AbortSignal.timeout(timeout) });
+  const res = await fetch(url, { headers: { ...UA_HEADER, Accept: 'application/json', ...headers }, signal: AbortSignal.timeout(timeout) });
   if (!res.ok) throw httpError(`${new URL(url).host} returned ${res.status}`, res.status);
   return res.json() as Promise<T>;
 }
@@ -313,7 +320,7 @@ export const soundcloud = {
     // Short links from the app share button redirect to the real page.
     const short = SC_SHORT.test(u.hostname);
     for (let hops = 0; SC_SHORT.test(u.hostname) && hops < 4; hops++) {
-      const r = await fetch(u, { redirect: 'manual', headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(8000) });
+      const r = await fetch(u, { redirect: 'manual', headers: UA_HEADER, signal: AbortSignal.timeout(8000) });
       const loc = r.headers.get('location');
       if (!loc) break;
       u = new URL(loc, u);
@@ -347,7 +354,7 @@ export const soundcloud = {
     if (artist && title.endsWith(' by ' + artist)) title = title.slice(0, -(' by ' + artist).length);
     const cover = o.thumbnail_url || null;
     return {
-      id: 'soundcloud:' + crypto.createHash('sha1').update(url).digest('hex').slice(0, 16),
+      id: 'soundcloud:' + (await sha1(url)).slice(0, 16),
       source: 'soundcloud',
       title: title || url,
       artist,
@@ -449,7 +456,7 @@ export const listenbrainz = {
     if (type === 'single') listen.listened_at = Math.floor((listenedAt || Date.now()) / 1000);
     const res = await fetch('https://api.listenbrainz.org/1/submit-listens', {
       method: 'POST',
-      headers: { Authorization: 'Token ' + token, 'Content-Type': 'application/json', 'User-Agent': UA },
+      headers: { Authorization: 'Token ' + token, 'Content-Type': 'application/json', ...UA_HEADER },
       body: JSON.stringify({ listen_type: type, payload: [listen] }),
       signal: AbortSignal.timeout(10000),
     });
