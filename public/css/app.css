@@ -152,6 +152,8 @@ code, kbd {
   letter-spacing: -0.02em;
   text-decoration: none;
 }
+.side__head { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.side__toggle { color: var(--faint); }
 .brand__mark { width: 26px; height: 26px; background: var(--app-icon, url(/icons/app.svg)) center / contain no-repeat; }
 .nav { display: flex; flex-direction: column; gap: 1px; }
 .nav__label { margin: 0 0 4px; padding: 0 10px; color: var(--faint); font-size: 12.5px; font-weight: 600; }
@@ -245,6 +247,18 @@ label.btn { cursor: pointer; }
   color: var(--text);
 }
 .field::placeholder { color: var(--faint); }
+/* Dropdowns: own arrow with room on the right (the native one sits right against the text). */
+select.field {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 38px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a4a4ab' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  cursor: pointer;
+}
+select.field:disabled { opacity: 0.5; cursor: default; }
 .field:focus { outline: none; border-color: var(--amber); }
 .filter {
   display: flex;
@@ -582,6 +596,10 @@ a.rank__name:hover { text-decoration: underline; }
 .theme-opt[aria-pressed='true'] { border-color: var(--amber); }
 .theme-opt__sw { width: 34px; height: 34px; border-radius: var(--r-sm); border: 1px solid var(--line); background: linear-gradient(135deg, var(--sw) 60%, var(--amber) 60%); }
 .theme-opt__icon { width: 34px; height: 34px; border-radius: 8px; }
+.lang-opt { padding-left: 10px; }
+.lang-opt__flag { font-size: 24px; line-height: 1; font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; }
+.lang-opt__text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; }
+.lang-opt__native { color: var(--muted); font-size: 12.5px; font-weight: 500; }
 .theme-opt__flag { display: grid; place-items: center; width: 34px; height: 34px; border-radius: var(--r-sm); background: var(--bg-3); color: var(--amber); font-size: 12px; font-weight: 750; letter-spacing: 0.04em; }
 .hd__cv--round { border-radius: 50%; }
 .nav__phone { border: 0; background: none; width: 100%; text-align: left; font: inherit; cursor: pointer; }
@@ -955,6 +973,24 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .dlg__actions { display: flex; justify-content: flex-end; gap: 8px; }
 
 /* ------------------------------------------------------------ smaller screens */
+.hist__lead { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.15; }
+.hist__n { color: var(--amber); font-size: 11px; font-weight: 650; }
+
+/* ------------------------------------------------------------ folded sidebar (desktop) */
+@media (min-width: 861px) {
+  body.side-mini { --side: 68px; }
+  body.side-mini .side { padding-left: 10px; padding-right: 10px; }
+  body.side-mini .side__head { flex-direction: column; gap: 10px; }
+  body.side-mini .brand { padding: 2px 0 0; }
+  body.side-mini .brand__name,
+  body.side-mini .nav__link > span:not(.ic),
+  body.side-mini .nav__label,
+  body.side-mini .nav--lists > *,
+  body.side-mini .nav__dot { display: none; }
+  body.side-mini .nav__link { justify-content: center; padding: 0; }
+  body.side-mini .nav { gap: 2px; }
+}
+
 /* ------------------------------------------------------------ SoundCloud player dock */
 .scdock {
   position: fixed;
@@ -1045,6 +1081,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
   .eq { bottom: calc(150px + env(safe-area-inset-bottom)); right: 8px; }
   .toasts { bottom: calc(160px + env(safe-area-inset-bottom)); }
   .scdock { right: 8px; left: 8px; width: auto; bottom: calc(var(--deck-h, 140px) + 8px); }
+  .side__toggle { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

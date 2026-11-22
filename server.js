@@ -234,9 +234,17 @@ route('GET', /^\/api\/radio\/nowplaying$/, (req, res, m, q) => json(res, 200, { 
 route('GET', /^\/api\/jamendo\/popular$/, async (req, res, m, q) =>
   json(res, 200, await jamendo.popular(store.data.settings.jamendoClientId, q.get('tag') || '')));
 
-route('GET', /^\/api\/lyrics$/, async (req, res, m, q) => json(res, 200, await lyrics({
-  artist: q.get('artist'), title: q.get('title'), album: q.get('album'), duration: Number(q.get('duration')) || 0,
-})));
+// Lyrics: the file's own (embedded or a .lrc next to it) first, then LRCLIB with strict matching.
+route('GET', /^\/api\/lyrics$/, async (req, res, m, q) => {
+  const id = q.get('id') || '';
+  if (id.startsWith('local:')) {
+    const own = await library.lyrics(id.slice(6)).catch(() => null);
+    if (own) return json(res, 200, { found: true, ...own, instrumental: false, source: 'file' });
+  }
+  json(res, 200, await lyrics({
+    artist: q.get('artist'), title: q.get('title'), album: q.get('album'), duration: Number(q.get('duration')) || 0,
+  }));
+});
 
 route('POST', /^\/api\/favorites\/toggle$/, async (req, res) => {
   const { track } = await body(req);
@@ -254,9 +262,9 @@ route('POST', /^\/api\/history$/, async (req, res) => {
   const { track, at } = await body(req);
   if (!track?.id) return json(res, 400, { error: 'Song is missing' });
   const when = Number(at) || Date.now();
-  store.addHistory(track, when);
-  json(res, 200, { ok: true, playCount: store.data.playCounts[track.id] });
-  if (!track.live) {
+  const counted = store.addHistory(track, when);
+  json(res, 200, { ok: true, counted, playCount: store.data.playCounts[track.id] });
+  if (counted && !track.live) {
     listenbrainz.submit(store.data.settings.listenbrainzToken, 'single', track, when)
       .catch((e) => console.warn(e.message));
   }

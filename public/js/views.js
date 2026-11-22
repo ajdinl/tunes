@@ -1,6 +1,6 @@
 // All app screens. Each view returns a DOM element.
 import { h, icon, cover, fmtTime, fmtDuration, songs, plural, relDay, sourceTag, toast, ask, norm, SOURCES, isSet, tr } from './ui.js';
-import { lang, setLang, locale } from './i18n.js';
+import { lang, setLang, locale, LANGUAGES } from './i18n.js';
 import { renderOfflineSettings } from './offline.js';
 import { findSoundCloudUrl } from './soundcloud.js';
 import { store, api, SMART } from './store.js';
@@ -20,7 +20,7 @@ export function home() {
   root.append(header({
     title: hello,
     meta: lib.length
-      ? tr('On this computer: {a}, {b}, {c}', { a: songs(lib.length), b: plural(idx.artists.length, ['izvođač', 'izvođača', 'izvođača'], ['artist', 'artists']), c: plural(idx.albums.length, ['album', 'albuma', 'albuma'], ['album', 'albums']) })
+      ? tr('On this computer: {a}, {b}, {c}', { a: songs(lib.length), b: plural(idx.artists.length, 'artist', 'artists'), c: plural(idx.albums.length, 'album', 'albums') })
       : tr('Your local library is empty, but internet radio, Audius and Internet Archive work right away.'),
     big: true,
   }));
@@ -196,7 +196,7 @@ export function search(params) {
 function audiusArtistTile(a) {
   return {
     title: a.name,
-    sub: plural(a.followers, ['pratilac', 'pratioca', 'pratilaca'], ['follower', 'followers']),
+    sub: plural(a.followers, 'follower', 'followers'),
     href: '#/audius/' + encodeURIComponent(a.id),
     cover: a.cover,
   };
@@ -226,8 +226,8 @@ export function audiusArtist(params, id) {
       root.replaceChildren(header({
         title: a.name, big: true,
         kicker: 'Audius',
-        meta: [plural(a.followers, ['pratilac', 'pratioca', 'pratilaca'], ['follower', 'followers']), songs(data.tracks.length),
-          sets ? plural(sets, ['set', 'seta', 'setova'], ['set', 'sets']) : null].filter(Boolean).join(', '),
+        meta: [plural(a.followers, 'follower', 'followers'), songs(data.tracks.length),
+          sets ? plural(sets, 'set', 'sets') : null].filter(Boolean).join(', '),
         art: cover(a.cover, a.name, 'hd__cv hd__cv--round'),
         actions: [...playButtons(data.tracks, { label: a.name, href: '#/audius/' + id }),
           h('a.btn.btn--ghost', { href: a.link, target: '_blank', rel: 'noopener' }, icon('external', 16), 'audius.co')],
@@ -267,7 +267,7 @@ export function artists() {
     const list = f ? all.filter((a) => norm(a.name).includes(norm(f))) : all;
     body.replaceChildren(list.length ? grid(list.map(artistTile), { round: true }) : emptyCollection(tr('No artists yet.')));
   };
-  root.append(header({ title: tr('Artists'), meta: tr('{n} in your collection', { n: plural(all.length, ['izvođač', 'izvođača', 'izvođača'], ['artist', 'artists']) }) }),
+  root.append(header({ title: tr('Artists'), meta: tr('{n} in your collection', { n: plural(all.length, 'artist', 'artists') }) }),
     ...(all.length > 8 ? [h('div.toolbar', {}, filterInput(tr('Filter artists'), render))] : []), body);
   render('');
   return root;
@@ -282,7 +282,7 @@ export function artist(params, key) {
   const ctx = { label: a.name, href: artistHref(a.name) };
   root.append(header({
     title: a.name, big: true,
-    meta: [plural(albums.length, ['album', 'albuma', 'albuma'], ['album', 'albums']), totalMeta(tracks)].join(', '),
+    meta: [plural(albums.length, 'album', 'albums'), totalMeta(tracks)].join(', '),
     actions: [...playButtons(tracks, ctx),
       h('a.btn.btn--ghost', { href: '#/search?q=' + encodeURIComponent(a.name) }, icon('search', 16), tr('Find more online'))],
   }));
@@ -303,7 +303,7 @@ export function albums() {
     if (sort === 'title') list.sort((x, y) => x.title.localeCompare(y.title, 'sr'));
     body.replaceChildren(list.length ? grid(list.map(albumTile)) : emptyCollection(tr('No albums yet.')));
   };
-  root.append(header({ title: tr('Albums'), meta: tr('{n} in your collection', { n: plural(all.length, ['album', 'albuma', 'albuma'], ['album', 'albums']) }) }));
+  root.append(header({ title: tr('Albums'), meta: tr('{n} in your collection', { n: plural(all.length, 'album', 'albums') }) }));
   if (all.length > 1) {
     root.append(h('div.toolbar', {},
       filterInput(tr('Filter albums'), (v) => { filter = v; render(); }),
@@ -413,7 +413,7 @@ export function historyView() {
       h('li.rank__item', {},
         store.index.artistMap.has(norm(name)) ? h('a.rank__name', { href: artistHref(name) }, name) : h('span.rank__name', {}, name),
         h('span.rank__bar', { style: { '--w': (n / max * 100).toFixed(1) + '%' }, 'aria-hidden': 'true' }),
-        h('span.rank__n', {}, plural(n, ['put', 'puta', 'puta'], ['play', 'plays'])))))));
+        h('span.rank__n', {}, plural(n, 'play', 'plays')))))));
   }
 
   // By day (first 400 plays)
@@ -423,11 +423,24 @@ export function historyView() {
     if (!groups.has(k)) groups.set(k, []);
     groups.get(k).push(x);
   }
-  for (const [day, items] of groups) {
-    const tracks = items.map((x) => x.track);
-    root.append(section(day, trackList(tracks, {
+  // Like YouTube: a song appears once per day (at its latest play), with the number of plays.
+  for (const [day, all] of groups) {
+    const items = [];
+    const byId = new Map();
+    for (const x of all) {
+      const seen = byId.get(x.track.id);
+      if (seen) { seen.n++; continue; }
+      const item = { ...x, n: 1 };
+      byId.set(x.track.id, item);
+      items.push(item);
+    }
+    root.append(section(day, trackList(items.map((x) => x.track), {
       context: { label: tr('History'), href: '#/history' },
-      leading: (t, i) => new Date(items[i].at).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }),
+      leading: (t, i) => {
+        const time = new Date(items[i].at).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
+        const n = items[i].n;
+        return n > 1 ? h('span.hist__lead', { title: tr('Played {n} times this day', { n }) }, time, h('small.hist__n', {}, n + '×')) : time;
+      },
     })));
   }
   return root;
@@ -701,9 +714,12 @@ export function settingsView() {
     onclick: () => { setTheme(t.value); renderThemes(); },
   }, h('span.theme-opt__sw', { style: { '--sw': t.sw }, 'aria-hidden': 'true' }), t.label)));
   renderThemes();
-  const langPick = h('div.theme-pick', { role: 'group', 'aria-label': tr('Language') }, [{ value: 'bs', label: 'Bosanski' }, { value: 'en', label: 'English' }].map((l) =>
-    h('button.theme-opt', { type: 'button', 'aria-pressed': String(lang === l.value), onclick: () => { if (lang !== l.value) setLang(l.value); } },
-      h('span.theme-opt__flag', { 'aria-hidden': 'true' }, l.value.toUpperCase()), l.label)));
+  const langPick = h('div.theme-pick', { role: 'group', 'aria-label': tr('Language') }, LANGUAGES.map((l) => {
+    const name = tr(l.name);
+    return h('button.theme-opt.lang-opt', { type: 'button', lang: l.code, 'aria-pressed': String(lang === l.code), onclick: () => { if (lang !== l.code) setLang(l.code); } },
+      h('span.lang-opt__flag', { 'aria-hidden': 'true' }, l.flag),
+      h('span.lang-opt__text', {}, h('span', {}, name), name !== l.native ? h('span.lang-opt__native', {}, l.native) : null));
+  }));
   root.append(section(tr('Language'), langPick));
   // App icon: stored on the server, so the computer and the phone show the same one.
   const ICON_OPTS = [{ value: 'dial', label: tr('Dial') }, { value: 'night', label: tr('Dial on black') }, { value: 'vinyl', label: tr('Vinyl') }, { value: 'bars', label: tr('Spectrum') }];

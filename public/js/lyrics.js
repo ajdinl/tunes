@@ -19,7 +19,7 @@ function parseLrc(text) {
 export async function getLyrics(t) {
   if (!t || t.live) return null;
   if (cache.has(t.id)) return cache.get(t.id);
-  const p = new URLSearchParams({ artist: t.artist || '', title: t.title, album: t.album || '', duration: String(t.duration || '') });
+  const p = new URLSearchParams({ id: t.id, artist: t.artist || '', title: t.title, album: t.album || '', duration: String(t.duration || '') });
   const r = await api('/api/lyrics?' + p);
   const out = r.found ? { synced: r.synced ? parseLrc(r.synced) : null, plain: r.plain, instrumental: r.instrumental } : null;
   cache.set(t.id, out);

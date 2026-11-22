@@ -38,22 +38,23 @@ Da izgleda kao prava aplikacija: u Safari-ju odaberi **File → Add to Dock**, a
 
 ## Mogućnosti
 
-- Jezik: engleski ili bosanski (Postavke), mijenja se bez prekidanja muzike
+- Jezik: engleski, bosanski, srpski, hrvatski, njemački ili turski (Postavke), mijenja se bez prekidanja muzike
 - Na telefonu: **Dodaj na početni ekran** (iPhone i Android), uz uputstvo i za Tailscale verziju
 - Offline buffer: trenutna i sljedeće pjesme se skidaju na telefon, pa muzika svira i kad nestane interneta. Pjesme koje nisu puštane 3 dana brišu se same
 - Ikonica aplikacije: četiri varijante u Postavke → Izgled; izbor važi na svim uređajima
-- Nastavak slušanja na drugom uređaju od iste sekunde (laptop → mobitel i obrnuto)
+- Nastavak slušanja na drugom uređaju od iste sekunde (laptop → mobitel i obrnuto); muzika svira samo na jednom uređaju ili tabu
+- SoundCloud linkovi: zalijepi link pjesme, seta ili izvođača u pretragu i svira preko zvaničnog SoundCloud playera
 - Slušanje na mobitelu kod kuće (Wi-Fi) i van kuće (Tailscale), preko QR koda
-- Tema: crna ili noćni indigo (Postavke)
+- Tema: crna, noćni indigo ili svijetla (Postavke)
 - Pretraga kroz sve izvore odjednom, sa kategorijama: pjesme, setovi i miksevi, albumi i koncerti, izvođači, radio
 - Stranice izvođača sa Audius-a (sve njihove pjesme i setovi)
-- Izvođači, albumi, pjesme, omiljene, historija sa statistikom
+- Izvođači, albumi, pjesme, omiljene, historija sa statistikom (svaka pjesma jednom po danu, s brojem slušanja)
 - Plejliste sa miješanim izvorima, promjena redoslijeda prevlačenjem, izvoz u M3U
 - Pametne plejliste: Moj miks, Najslušanije, Zaboravljene omiljene, Nedavno dodano…
 - Nasumično, ponavljanje, red za puštanje, tajmer za spavanje
 - Ekvalizer sa 10 opsega i gotovim postavkama
 - Skala sa spektrom zvuka uživo; klik ili prevlačenje premotava
-- „Sada svira” preko cijelog ekrana sa tekstom pjesme
+- „Sada svira” preko cijelog ekrana sa tekstom pjesme: iz samog fajla (ugrađen ili `.lrc` pored pjesme) ili sa LRCLIB-a, ali samo kad se izvođač, naslov i trajanje poklapaju
 - Tasteri za muziku na Mac-u i kontrolni centar (Media Session)
 - Čuvanje legalno preuzimljivih pjesama (Internet Archive, Jamendo, Audius gdje je dozvoljeno) u biblioteku
 - Uvoz Spotify plejlisti preko Exportify CSV-a: pronalazi pjesme koje već imaš i pokazuje šta nedostaje

@@ -139,7 +139,7 @@ export function trackList(tracks, { context = null, numbered = false, album = tr
       oncontextmenu: (e) => { e.preventDefault(); openMenu(e.clientX, e.clientY, trackMenu(t, { playlist, index: i, list: tracks })); },
     },
     h('div.tr__lead', {},
-      h('span.tr__num', {}, String(lead)),
+      h('span.tr__num', {}, lead instanceof Node ? lead : String(lead)),
       h('button.tr__play', { type: 'button', 'aria-label': tr('Play ') + t.title, onclick: (e) => { e.stopPropagation(); play(i); } }, icon('play', 16))),
     coverArt ? cover(t.cover, t.title, 'tr__cv') : null,
     h('div.tr__main', {},

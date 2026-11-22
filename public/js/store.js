@@ -144,6 +144,7 @@ class Store extends EventTarget {
   async logPlay(track) {
     const at = Date.now();
     const r = await api('/api/history', { method: 'POST', body: { track, at } });
+    if (r.counted === false) return; // already counted moments ago (reload, other device)
     this.history.push({ track, at });
     this.playCounts[track.id] = r.playCount;
     this.lastPlayed[track.id] = at;

@@ -2,7 +2,7 @@
 
 **A self-hosted music player with no subscription.** It combines the music on your computer with free, legal sources in one interface: independent artists, live concert archives, internet radio and synced lyrics.
 
-The interface is in English and Bosnian (it picks Bosnian automatically for bs/hr/sr browsers, and you can switch any time without stopping the music).
+The interface is in English, Bosnian, Serbian, Croatian, German and Turkish (it follows your browser language, and you can switch any time without stopping the music).
 
 [Bosanski README](README.bs.md)
 
@@ -36,17 +36,18 @@ Self-hosted players like Navidrome or Jellyfin are great for your own files, but
 - **Playlists** that mix local and online songs, drag-and-drop reordering, M3U export
 - **Smart playlists:** My mix, Most played, Forgotten favorites, Recently added, Never played
 - **Favorites, shuffle, repeat, play queue, sleep timer**
-- **Listening history** with top artists, plus optional ListenBrainz scrobbling
+- **Listening history** with top artists (each song once per day, with its play count), plus optional ListenBrainz scrobbling
 - **10-band equalizer** with presets
 - **Receiver-style dial** with a live spectrum analyzer; click or drag it to seek. Radio stations get an FM scale.
-- **Synced lyrics** and a full-screen "Now playing" view
+- **Synced lyrics** and a full-screen "Now playing" view. Lyrics come from the file itself (embedded, or a `.lrc` file next to it) or from LRCLIB, but only when artist, title and length all match
 - **Save to library:** download songs whose license allows it (Internet Archive, Jamendo, Audius where enabled)
 - **Spotify playlist import** through an [Exportify](https://exportify.app) CSV: finds the songs you already own and lists what's missing
 - **Listen on your phone:** one click shows a QR code; the link carries a secret key, so nobody else on the network can get in
 - **Away from home through [Tailscale](https://tailscale.com):** a second QR code that works anywhere your phone has internet
-- **Continue on another device:** start a set on your laptop, tap *Continue here* on your phone and it picks up at the same second while the laptop pauses
+- **Continue on another device:** start a set on your laptop, tap *Continue here* on your phone and it picks up at the same second while the laptop pauses. Music plays on one device (or tab) at a time
+- **SoundCloud links:** paste a song, set or artist link into Search and it plays through SoundCloud's official player (SoundCloud's own search needs a paid API key)
 - Media keys and Control Center on macOS, installable as an app (PWA), keyboard shortcuts
-- English and Bosnian UI, black and "night indigo" themes
+- Six languages, black, "night indigo" and light themes
 - **Add to Home Screen** on iPhone and Android, with a guide that also sets up the Tailscale version
 - **Offline buffer:** the current and next songs are downloaded to the phone, so music keeps playing if the connection drops. Songs not played for 3 days are deleted automatically
 - **App icon:** pick one of four icons in Settings → Appearance; the choice applies to all your devices

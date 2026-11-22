@@ -58,6 +58,7 @@ export const BS = {
  "Black": "Crna",
  "Blues": "Bluz",
  "Bosnia and Herzegovina": "BiH",
+ "Bosnian": "Bosanski",
  "By artist": "Po izvođaču",
  "By title": "Po nazivu",
  "By year": "Po godini",
@@ -78,6 +79,7 @@ export const BS = {
  "Close (Esc)": "Zatvori (Esc)",
  "Close equalizer": "Zatvori ekvalizer",
  "Close panel": "Zatvori panel",
+ "Collapse sidebar": "Skupi bočni meni",
  "Collection": "Kolekcija",
  "Computer": "Računar",
  "Concert recordings shared with the artists' permission, netlabel releases and old public-domain recordings. You can save all of it to your computer.": "Koncertni snimci uz dozvolu izvođača, netlabel izdanja i stari snimci u javnom domenu. Sve možeš da sačuvaš na računar.",
@@ -96,6 +98,7 @@ export const BS = {
  "Created playlist “{name}”": "Napravljena plejlista „{name}”",
  "Creative Commons music. Get a free Client ID at ": "Creative Commons muzika. Besplatan Client ID dobiješ na ",
  "Croatia": "Hrvatska",
+ "Croatian": "Hrvatski",
  "Custom": "Prilagođeno",
  "Delete": "Obriši",
  "Delete history": "Obriši historiju",
@@ -117,11 +120,13 @@ export const BS = {
  "Drag a song to change the order.": "Prevuci pjesmu mišem da promijeniš redoslijed.",
  "Electronic": "Elektronika",
  "Empty": "Prazna",
+ "English": "Engleski",
  "Equalizer": "Ekvalizer",
  "Equalizer (E)": "Ekvalizer (E)",
  "Equalizer on": "Ekvalizer uključen",
  "Error {n}": "Greška {n}",
  "Existing ({list}) or new": "Postojeća ({list}) ili nova",
+ "Expand sidebar": "Proširi bočni meni",
  "Export M3U": "Izvezi M3U",
  "Favorite": "Omiljena",
  "Favorite (heart)": "Omiljena (srce)",
@@ -152,6 +157,7 @@ export const BS = {
  "Full screen (F)": "Cijeli ekran (F)",
  "Full screen: now playing": "Cijeli ekran: sada svira",
  "Genre": "Žanr",
+ "German": "Njemački",
  "Go to album": "Idi na album",
  "Go to artist": "Idi na izvođača",
  "Good afternoon": "Dobar dan",
@@ -287,6 +293,7 @@ export const BS = {
  "Play queue": "Red za puštanje",
  "Play queue (Q)": "Red za puštanje (Q)",
  "Playback was blocked: press Play.": "Puštanje je blokirano: klikni Play.",
+ "Played {n} times this day": "Puštano {n} puta tog dana",
  "Playing from: ": "Pušteno iz: ",
  "Playing on: {d}": "Svira na uređaju: {d}",
  "Playlist": "Plejlista",
@@ -343,6 +350,7 @@ export const BS = {
  "Searching online…": "Tražim na internetu…",
  "Searching stations…": "Tražim stanice…",
  "Serbia": "Srbija",
+ "Serbian": "Srpski",
  "Set or playlist": "Set ili plejlista",
  "Set up folders": "Podesi foldere",
  "Sets & mixes": "Setovi i miksevi",
@@ -428,6 +436,7 @@ export const BS = {
  "Try again": "Pokušaj ponovo",
  "Try one of these:": "Probaj nešto od ovoga:",
  "Tunes will open like a real app, full screen and with its own icon.": "Tunes će se otvarati kao prava aplikacija, preko cijelog ekrana i sa svojom ikonicom.",
+ "Turkish": "Turski",
  "Turn off access": "Isključi pristup",
  "Turn off timer": "Isključi tajmer",
  "Turn on": "Uključi",
@@ -449,6 +458,36 @@ export const BS = {
  "Your local library is empty, but internet radio, Audius and Internet Archive work right away.": "Biblioteka na računaru je prazna, ali internet radio, Audius i Internet Archive rade odmah.",
  "live": "uživo",
  "nothing yet": "još ništa",
+ "plural:album": {
+  "one": "album",
+  "few": "albuma",
+  "other": "albuma"
+ },
+ "plural:artist": {
+  "one": "izvođač",
+  "few": "izvođača",
+  "other": "izvođača"
+ },
+ "plural:follower": {
+  "one": "pratilac",
+  "few": "pratioca",
+  "other": "pratilaca"
+ },
+ "plural:play": {
+  "one": "put",
+  "few": "puta",
+  "other": "puta"
+ },
+ "plural:set": {
+  "one": "set",
+  "few": "seta",
+  "other": "setova"
+ },
+ "plural:song": {
+  "one": "pjesma",
+  "few": "pjesme",
+  "other": "pjesama"
+ },
  "{a} of {b}": "{a} od {b}",
  "{d} of music": "{d} muzike",
  "{name}: sets & mixes": "{name}: setovi i miksevi",

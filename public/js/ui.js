@@ -66,6 +66,7 @@ const P = {
   moon: '<path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z"/>',
   expand: '<path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/>',
   collapse: '<path d="M20 10h-6V4M4 14h6v6M14 10l6-6M10 14l-6 6"/>',
+  sidebar: '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M9.5 4.5v15"/>',
   chevronUp: '<path d="M6 15l6-6 6 6"/>',
   chevronDown: '<path d="M6 9l6 6 6-6"/>',
   cloud: '<path d="M7 18.5h10.5a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7.4 9.1 4.7 4.7 0 0 0 7 18.5z"/>',
@@ -85,6 +86,22 @@ export function icon(name, size = 20) {
   span.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${P[name] || ''}</svg>`;
   return span;
 }
+
+// Icon-only buttons describe themselves with aria-label; show the same text as a tooltip on
+// hover. Labels change at runtime (Play/Pause, language switch), so keep them in sync.
+const TIP = 'button[aria-label], a.ibtn[aria-label], [role="slider"][aria-label]';
+function syncTip(el) {
+  if (el.matches?.(TIP) && !el.hasAttribute('data-no-tip')) {
+    const label = el.getAttribute('aria-label');
+    if (el.getAttribute('title') !== label) el.setAttribute('title', label);
+  }
+}
+new MutationObserver((records) => {
+  for (const r of records) {
+    if (r.type === 'attributes') syncTip(r.target);
+    else for (const n of r.addedNodes) if (n.nodeType === 1) { syncTip(n); n.querySelectorAll?.(TIP).forEach(syncTip); }
+  }
+}).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-label'] });
 
 export function iconBtn(name, label, onClick, { size = 20, ...extra } = {}) {
   return h('button.ibtn', { type: 'button', title: label, 'aria-label': label, onclick: onClick, ...extra }, icon(name, size));
@@ -107,7 +124,7 @@ export function fmtDuration(total) {
   return `${hh} h ${m % 60} min`;
 }
 
-export const songs = (n) => plural(n, ['pjesma', 'pjesme', 'pjesama'], ['song', 'songs']);
+export const songs = (n) => plural(n, 'song', 'songs');
 
 export function relDay(ts) {
   const d = new Date(ts);

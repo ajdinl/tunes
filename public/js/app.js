@@ -98,13 +98,25 @@ const NAV_LIB = [
 ];
 
 function navLink(n) {
-  return h('a.nav__link', { href: n.href, dataset: { route: n.name, alt: (n.alt || []).join(',') } }, icon(n.icon, 19), h('span', {}, tr(n.label)));
+  return h('a.nav__link', { href: n.href, title: tr(n.label), dataset: { route: n.name, alt: (n.alt || []).join(',') } }, icon(n.icon, 19), h('span', {}, tr(n.label)));
+}
+
+// Desktop sidebar can fold down to icons only; remembered per browser.
+let sideMini = (() => { try { return JSON.parse(localStorage.getItem('tunes.sideMini')) === true; } catch { return false; } })();
+document.body.classList.toggle('side-mini', sideMini);
+function setSideMini(on) {
+  sideMini = on;
+  document.body.classList.toggle('side-mini', on);
+  try { localStorage.setItem('tunes.sideMini', JSON.stringify(on)); } catch { /* */ }
+  renderNav();
 }
 
 function renderNav() {
   const side = $('side');
   side.replaceChildren(
-    h('a.brand', { href: '#/' }, h('span.brand__mark', { 'aria-hidden': 'true' }), 'Tunes'),
+    h('div.side__head', {},
+      h('a.brand', { href: '#/' }, h('span.brand__mark', { 'aria-hidden': 'true' }), h('span.brand__name', {}, 'Tunes')),
+      iconBtn('sidebar', sideMini ? tr('Expand sidebar') : tr('Collapse sidebar'), () => setSideMini(!sideMini), { class: 'ibtn side__toggle', 'aria-pressed': String(sideMini), size: 19 })),
     h('div.nav', {}, NAV.map(navLink)),
     h('div.nav', {}, h('p.nav__label', {}, tr('Collection')), NAV_LIB.map(navLink)),
     h('div.nav.nav--lists', {},
@@ -677,12 +689,14 @@ function loading() {
 }
 
 // ============================================================ continue on another device
+// One id per tab (sessionStorage is per tab and survives a reload), so two Tunes tabs on the
+// same computer count as two players: starting music in one pauses the other.
 const DEVICE_ID = (() => {
   let id = null;
-  try { id = localStorage.getItem('tunes.device'); } catch { /* */ }
+  try { id = sessionStorage.getItem('tunes.player'); } catch { /* */ }
   if (!id) {
     id = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    try { localStorage.setItem('tunes.device', id); } catch { /* */ }
+    try { sessionStorage.setItem('tunes.player', id); } catch { /* */ }
   }
   return id;
 })();
