@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { installFakeNet, LRCLIB_SONG, RADIO_STATION, ARCHIVE_DOC } from '../support/fake-net.js';
 import {
   audius, archive, radio, jamendo, soundcloud, lyrics, listenbrainz, sameSong, lyricKey, mainArtist, parseLength,
-} from '../../lib/sources.js';
+} from '../../lib/sources.ts';
 
 let uninstall;
 beforeAll(() => { uninstall = installFakeNet(); });

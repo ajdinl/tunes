@@ -6,9 +6,11 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 
+import type { Data, Playlist, Settings, Track } from './types.ts';
+
 const HISTORY_LIMIT = 5000;
 
-const defaults = () => ({
+const defaults = (): Data => ({
   version: 1,
   settings: {
     folders: [path.join(os.homedir(), 'Music', 'Tunes')],
@@ -29,7 +31,7 @@ const defaults = () => ({
 
 // Shows folders inside the home folder as ~/…, so the user name isn't on screen (or in
 // screenshots). updateSettings() expands ~ again when folders are saved.
-export function tildify(f) {
+export function tildify(f: string): string {
   const home = os.homedir();
   return f === home ? '~' : f.startsWith(home + path.sep) ? '~' + f.slice(home.length) : f;
 }
@@ -37,26 +39,53 @@ export function tildify(f) {
 // App icon variants (folders in public/icons). The choice is stored here, so every device shows the same icon.
 export const ICONS = ['dial', 'night', 'vinyl', 'bars'];
 
+export interface PublicSettings extends Omit<Settings, 'phone'> {
+  hasListenbrainz: boolean;
+  hasJamendo: boolean;
+  phone: undefined;
+  phoneOn: boolean;
+}
+export type PublicState = Omit<Data, 'settings'> & { settings: PublicSettings };
+
+export interface SettingsPatch {
+  folders?: unknown;
+  listenbrainzToken?: unknown;
+  jamendoClientId?: unknown;
+  eq?: { enabled?: unknown; preset?: unknown; gains?: unknown[] } | null;
+  volume?: unknown;
+  icon?: unknown;
+}
+
+export interface PlaylistPatch {
+  name?: unknown;
+  tracks?: unknown;
+  add?: unknown;
+}
+
 export class Store {
-  constructor(file) {
+  file: string;
+  timer: NodeJS.Timeout | undefined;
+  data: Data;
+
+  constructor(file: string) {
     this.file = file;
-    this.timer = null;
+    this.timer = undefined;
     this.data = defaults();
     try {
-      const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
+      const raw = JSON.parse(fs.readFileSync(file, 'utf8')) as Partial<Data>;
       const d = defaults();
       this.data = { ...d, ...raw, settings: { ...d.settings, ...(raw.settings || {}) } };
     } catch (e) {
-      if (e.code !== 'ENOENT') console.warn('Cannot read', file, '-', e.message);
+      if ((e as NodeJS.ErrnoException).code !== 'ENOENT') console.warn('Cannot read', file, '-', (e as Error).message);
     }
   }
 
-  save() {
+  save(): void {
     clearTimeout(this.timer);
     this.timer = setTimeout(() => this.flush(), 400);
   }
 
-  flush() {
+  flush(): void {
     clearTimeout(this.timer);
     const tmp = this.file + '.tmp';
     fs.mkdirSync(path.dirname(this.file), { recursive: true });
@@ -65,7 +94,7 @@ export class Store {
   }
 
   // State for the client: no secret tokens, only whether they exist.
-  publicState() {
+  publicState(): PublicState {
     const { settings, ...rest } = this.data;
     return {
       ...rest,
@@ -83,17 +112,18 @@ export class Store {
     };
   }
 
-  toggleFavorite(track) {
+  toggleFavorite(track: Partial<Track>): boolean {
     const fav = this.data.favorites;
-    if (fav[track.id]) delete fav[track.id];
-    else fav[track.id] = { track: cleanTrack(track), at: Date.now() };
+    const id = String(track.id);
+    if (fav[id]) delete fav[id];
+    else fav[id] = { track: cleanTrack(track), at: Date.now() };
     this.save();
-    return Boolean(fav[track.id]);
+    return Boolean(fav[id]);
   }
 
   // Returns false when the play is not counted: the same song was already counted less than
   // its own length ago (a page reload or continuing on another device, not a second listen).
-  addHistory(track, at = Date.now()) {
+  addHistory(track: Partial<Track>, at: number = Date.now()): boolean {
     const t = cleanTrack(track);
     const last = this.data.lastPlayed[t.id];
     const gap = (t.live ? 30 * 60 : Math.max(Number(t.duration) || 0, 60)) * 1000;
@@ -108,15 +138,15 @@ export class Store {
     return true;
   }
 
-  clearHistory() {
+  clearHistory(): void {
     this.data.history = [];
     this.data.playCounts = {};
     this.data.lastPlayed = {};
     this.save();
   }
 
-  createPlaylist(name, tracks = []) {
-    const p = {
+  createPlaylist(name: unknown, tracks: Partial<Track>[] = []): Playlist {
+    const p: Playlist = {
       id: crypto.randomUUID(),
       name: String(name || 'New playlist').slice(0, 120),
       created: Date.now(),
@@ -128,7 +158,7 @@ export class Store {
     return p;
   }
 
-  updatePlaylist(id, patch) {
+  updatePlaylist(id: string, patch: PlaylistPatch): Playlist | null {
     const p = this.data.playlists.find((x) => x.id === id);
     if (!p) return null;
     if (typeof patch.name === 'string') p.name = patch.name.slice(0, 120);
@@ -139,30 +169,32 @@ export class Store {
     return p;
   }
 
-  deletePlaylist(id) {
+  deletePlaylist(id: string): boolean {
     const before = this.data.playlists.length;
     this.data.playlists = this.data.playlists.filter((x) => x.id !== id);
     this.save();
     return this.data.playlists.length !== before;
   }
 
-  toggleStation(track) {
+  toggleStation(track: Partial<Track>): boolean {
     const s = this.data.radioStations;
-    if (s[track.id]) delete s[track.id];
-    else s[track.id] = cleanTrack(track);
+    const id = String(track.id);
+    if (s[id]) delete s[id];
+    else s[id] = cleanTrack(track);
     this.save();
-    return Boolean(s[track.id]);
+    return Boolean(s[id]);
   }
 
-  updateSettings(patch) {
+  updateSettings(patch: SettingsPatch): void {
     const s = this.data.settings;
     if (Array.isArray(patch.folders)) {
       s.folders = patch.folders.map((f) => String(f).trim()).filter(Boolean)
         .map((f) => (f.startsWith('~') ? path.join(os.homedir(), f.slice(1)) : f));
     }
     // An empty string clears the token; the masked value means "leave unchanged".
-    for (const key of ['listenbrainzToken', 'jamendoClientId']) {
-      if (typeof patch[key] === 'string' && patch[key] !== '••••') s[key] = patch[key].trim();
+    for (const key of ['listenbrainzToken', 'jamendoClientId'] as const) {
+      const v = patch[key];
+      if (typeof v === 'string' && v !== '••••') s[key] = v.trim();
     }
     if (patch.eq && typeof patch.eq === 'object') {
       s.eq = {
@@ -172,19 +204,20 @@ export class Store {
       };
     }
     if (typeof patch.volume === 'number') s.volume = Math.max(0, Math.min(1, patch.volume));
-    if (ICONS.includes(patch.icon)) s.icon = patch.icon;
+    if (typeof patch.icon === 'string' && ICONS.includes(patch.icon)) s.icon = patch.icon;
     this.save();
   }
 }
 
 // Keep only the fields needed for display and playback.
 const TRACK_FIELDS = ['id', 'source', 'title', 'artist', 'album', 'albumArtist', 'duration', 'cover',
-  'stream', 'year', 'genre', 'trackNo', 'discNo', 'link', 'live', 'download', 'ext', 'addedAt', 'artistRef', 'kind'];
+  'stream', 'year', 'genre', 'trackNo', 'discNo', 'link', 'live', 'download', 'ext', 'addedAt', 'artistRef', 'kind'] as const;
 
-export function cleanTrack(t = {}) {
-  const out = {};
-  for (const k of TRACK_FIELDS) if (t[k] !== undefined && t[k] !== null && t[k] !== '') out[k] = t[k];
+export function cleanTrack(t: unknown = {}): Track {
+  const src = (t && typeof t === 'object' ? t : {}) as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const k of TRACK_FIELDS) if (src[k] !== undefined && src[k] !== null && src[k] !== '') out[k] = src[k];
   out.id = String(out.id || '');
   out.title = String(out.title || 'Untitled');
-  return out;
+  return out as unknown as Track;
 }

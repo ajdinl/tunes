@@ -3,16 +3,17 @@
   "version": "1.0.0",
   "description": "Self-hosted music player with no subscription: your local library plus free, legal sources (Audius, Internet Archive, internet radio, synced lyrics)",
   "type": "module",
-  "main": "server.js",
+  "main": "server.ts",
   "scripts": {
-    "start": "node server.js",
-    "test": "npm run test:unit && npm run test:e2e",
+    "start": "node server.ts",
+    "test": "npm run typecheck && npm run test:unit && npm run test:e2e",
+    "typecheck": "tsc -p tsconfig.json",
     "test:unit": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.18"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",
@@ -36,6 +37,9 @@
   ],
   "devDependencies": {
     "@playwright/test": "^1.65.1",
+    "@types/node": "^22.20.5",
+    "@types/qrcode": "^1.5.6",
+    "typescript": "^5.9.3",
     "vitest": "^4.1.12"
   }
 }

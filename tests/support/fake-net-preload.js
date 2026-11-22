@@ -1,4 +1,4 @@
-// Loaded with `node --import` before server.js in tests: the server sees the fake internet.
+// Loaded with `node --import` before server.ts in tests: the server sees the fake internet.
 import { installFakeNet } from './fake-net.js';
 
 installFakeNet();

@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { Store, cleanTrack, tildify, ICONS } from '../../lib/store.js';
+import { Store, cleanTrack, tildify, ICONS } from '../../lib/store.ts';
 
 let dir;
 let stores = [];

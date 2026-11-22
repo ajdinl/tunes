@@ -4,7 +4,7 @@
 // else fails like a machine without a network, so no test depends on the real internet.
 //
 // In-process (unit tests):  import { installFakeNet } from './fake-net.js'; installFakeNet();
-// In a server process:      node --import ./tests/support/fake-net-preload.js server.js
+// In a server process:      node --import ./tests/support/fake-net-preload.js server.ts
 
 const realFetch = globalThis.fetch;
 

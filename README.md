@@ -99,10 +99,10 @@ Your data lives in `data/db.json`. You can download a backup under **Settings â†
 
 ## How it works
 
-- `server.js`: a small Node.js HTTP server with no framework
-- `lib/library.js`: scans folders, reads tags with [music-metadata](https://github.com/Borewit/music-metadata) and watches for changes
-- `lib/sources.js`: Audius, Internet Archive, Radio Browser, Jamendo, LRCLIB and ListenBrainz clients
-- `lib/proxy.js`: streams audio through the local server, so the equalizer and spectrum analyzer work for every source, and reads live song titles (ICY metadata) from radio streams
+- `server.ts`: a small Node.js HTTP server in TypeScript with no framework. Node 22.18+ runs it directly (no build step); `npm run typecheck` checks the types
+- `lib/library.ts`: scans folders, reads tags with [music-metadata](https://github.com/Borewit/music-metadata) and watches for changes
+- `lib/sources.ts`: Audius, Internet Archive, Radio Browser, Jamendo, LRCLIB and ListenBrainz clients
+- `lib/proxy.ts`: streams audio through the local server, so the equalizer and spectrum analyzer work for every source, and reads live song titles (ICY metadata) from radio streams
 - `public/`: the interface, plain JavaScript modules with no build step
 
 ## Tests

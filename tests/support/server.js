@@ -10,7 +10,7 @@ import { LIBRARY, makeDataDir, makeLibrary } from './fixtures.js';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PRELOAD = path.join(ROOT, 'tests', 'support', 'fake-net-preload.js');
-const ENTRY = process.env.TUNES_SERVER_ENTRY || 'server.js';
+const ENTRY = process.env.TUNES_SERVER_ENTRY || 'server.ts';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

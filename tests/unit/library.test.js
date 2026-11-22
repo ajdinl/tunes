@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { Library } from '../../lib/library.js';
+import { Library } from '../../lib/library.ts';
 import { LIBRARY, SIDECAR, makeLibrary, makeWav } from '../support/fixtures.js';
 
 let base;
