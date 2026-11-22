@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import QRCode from 'qrcode';
 
-import { Store, cleanTrack, ICONS } from './lib/store.js';
+import { Store, cleanTrack, ICONS, tildify } from './lib/store.js';
 import { Library, MIME } from './lib/library.js';
 import { audius, archive, radio, jamendo, lyrics, listenbrainz } from './lib/sources.js';
 import { proxyAudio } from './lib/proxy.js';
@@ -120,7 +120,7 @@ const route = (method, pattern, handler) => routes.push({ method, pattern, handl
 route('GET', /^\/api\/state$/, (req, res) => json(res, 200, store.publicState()));
 
 route('GET', /^\/api\/library$/, (req, res) => json(res, 200, {
-  tracks: library.tracks(), folders: store.data.settings.folders, scanning: Boolean(library.scanning), lastScan: library.lastScan,
+  tracks: library.tracks(), folders: store.data.settings.folders.map(tildify), scanning: Boolean(library.scanning), lastScan: library.lastScan,
 }));
 
 route('POST', /^\/api\/library\/rescan$/, async (req, res) => json(res, 200, await library.scan()));

@@ -710,7 +710,7 @@ export function settingsView() {
       folders.splice(i, 1); await store.saveSettings({ folders }); renderFolders(); toast(tr('Folder removed from library'));
     } }, icon('close', 16)) : null)));
   renderFolders();
-  const newFolder = h('input.field', { type: 'text', placeholder: '/Users/you/Music/Another folder', 'aria-label': tr('Folder path') });
+  const newFolder = h('input.field', { type: 'text', placeholder: '~/Music/Another folder', 'aria-label': tr('Folder path') });
   root.append(section(tr('Music on this computer'), h('div.form', {},
     h('p.muted', {}, tr('{n} in your libraries. New songs appear on their own as soon as you drop them in the folder.', { n: songs(store.library.length) })),
     folderList,
