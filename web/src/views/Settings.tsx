@@ -7,6 +7,8 @@ import { Header, Section } from '../components/common.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { OfflineSettings } from './OfflineSettings.tsx';
 import { tr, setLang, LANGUAGES, useLang } from '../lib/i18n.ts';
+import { setDialStyle, useDialStyle } from '../lib/dial.ts';
+import type { DialStyle } from '../lib/dial.ts';
 import { norm, songs } from '../lib/format.ts';
 import { store, useStore, api } from '../lib/store.ts';
 import type { Track } from '../lib/store.ts';
@@ -131,6 +133,8 @@ export function Settings(_: { route: Route }) {
               </button>
             ))}
           </div>
+          <h3 className="form__label">{tr('Player style')}</h3>
+          <DialStylePicker />
           <h3 className="form__label">{tr('App icon')}</h3>
           {/* App icon: stored on the server, so the computer and the phone show the same one. */}
           <div className="theme-pick" role="group" aria-label={tr('App icon')}>
@@ -311,4 +315,50 @@ export function parseCsv(text: string): string[][] {
   }
   if (cell || row.length) { row.push(cell); rows.push(row); }
   return rows;
+}
+
+// ---- player style (per device): small drawings of each look
+const DIAL_OPTS: { value: DialStyle; label: string }[] = [
+  { value: 'dial', label: 'Radio dial' }, { value: 'calm', label: 'Calm' }, { value: 'minimal', label: 'Minimal' },
+  { value: 'color', label: 'Colors' }, { value: 'mirror', label: 'Mirror' },
+];
+const BARS = [5, 9, 13, 8, 11, 6, 10, 7, 4, 6];
+
+function DialPreview({ style }: { style: DialStyle }) {
+  const amber = '#ffb547';
+  const colors = ['#3fa7ff', '#5b8cff', '#7a6bff', '#8b5cff', '#b257e8', '#d953c8', '#ff4fa3', '#ff6f84', '#ff9260', '#ffb547'];
+  let body;
+  if (style === 'minimal') {
+    body = <><line x1="4" y1="11" x2="44" y2="11" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" strokeLinecap="round" />
+      <line x1="4" y1="11" x2="24" y2="11" stroke={amber} strokeWidth="3" strokeLinecap="round" /><circle cx="24" cy="11" r="4" fill="currentColor" /></>;
+  } else if (style === 'calm') {
+    body = <><line x1="4" y1="13" x2="44" y2="13" stroke={amber} strokeOpacity="0.3" strokeWidth="2" />
+      <line x1="4" y1="13" x2="24" y2="13" stroke={amber} strokeWidth="2" />
+      {Array.from({ length: 11 }, (_, i) => <line key={i} x1={4 + i * 4} y1="16" x2={4 + i * 4} y2={i % 2 ? 18 : 20} stroke={amber} strokeOpacity="0.6" />)}
+      <line x1="24" y1="2" x2="24" y2="20" stroke="#ff5e3a" strokeWidth="1.5" /></>;
+  } else {
+    body = <>{BARS.map((b, i) => {
+      const x = 4 + i * 4;
+      const y = style === 'mirror' ? 10 - b / 2 : 16 - b;
+      const fill = style === 'color' ? colors[i] : amber;
+      return <rect key={i} x={x} y={y} width="2.6" height={b} fill={fill} fillOpacity={x < 24 ? 1 : 0.35} />;
+    })}<line x1="24" y1="1" x2="24" y2="20" stroke="#ff5e3a" strokeWidth="1.5" /></>;
+  }
+  return <svg className="theme-opt__icon" width="48" height="22" viewBox="0 0 48 22" aria-hidden="true">{body}</svg>;
+}
+
+function DialStylePicker() {
+  const current = useDialStyle();
+  return (
+    <>
+      <div className="theme-pick" role="group" aria-label={tr('Player style')}>
+        {DIAL_OPTS.map((o) => (
+          <button key={o.value} type="button" className="theme-opt dial-opt" data-style={o.value} aria-pressed={current === o.value} onClick={() => setDialStyle(o.value)}>
+            <DialPreview style={o.value} />{tr(o.label)}
+          </button>
+        ))}
+      </div>
+      <p className="muted">{tr('How the progress bar looks on this device. Calm and Minimal don\'t move with the music.')}</p>
+    </>
+  );
 }

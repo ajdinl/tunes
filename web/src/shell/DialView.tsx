@@ -3,13 +3,14 @@
 // vertical swipe (closing the app from the iPhone home bar, scrolling) is ignored.
 import { useEffect, useRef, useState } from 'react';
 
-import { Dial } from '../lib/dial.ts';
+import { Dial, useDialStyle } from '../lib/dial.ts';
 import { player, usePlayer } from '../lib/player.ts';
 import { tr } from '../lib/i18n.ts';
 import { fmtTime, cx } from '../lib/format.ts';
 
 export function DialView({ big = false }: { big?: boolean }) {
   const p = usePlayer('time', 'track');
+  const style = useDialStyle();
   const canvas = useRef<HTMLCanvasElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const dial = useRef<Dial | null>(null);
@@ -89,7 +90,7 @@ export function DialView({ big = false }: { big?: boolean }) {
     ? { 'aria-valuetext': tr('Live') }
     : { 'aria-valuemax': Math.round(d || 0), 'aria-valuenow': Math.round(p.time), 'aria-valuetext': tr('{a} of {b}', { a: fmtTime(p.time), b: fmtTime(d) }) };
   return (
-    <div ref={box} className={cx('dial', big && 'dial--big', t?.live && 'is-live')} role="slider" tabIndex={0}
+    <div ref={box} className={cx('dial', big && 'dial--big', t?.live && 'is-live')} data-style={style} role="slider" tabIndex={0}
       aria-label={tr('Position in song')} aria-valuemin={0} {...aria}>
       <canvas ref={canvas} className="dial__cv" aria-hidden="true" />
       <span className="dial__tip" hidden={!tip} style={tip ? { left: tip.x + 'px' } : undefined}>{tip?.text}</span>

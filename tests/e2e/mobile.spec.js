@@ -107,6 +107,12 @@ test('tooltips show right away on mouse hover, not on touch', async ({ page, dev
   await page.locator('.side__toggle').click();
   await page.locator('.nav a[href="/songs"]').hover();
   await expect(tip).toHaveText('Songs', { timeout: 500 });
+  // Every item of the folded menu has one, the buttons at the bottom too.
+  const missing = await page.evaluate(() => [...document.querySelectorAll('#side .nav__link')]
+    .filter((el) => !(el.dataset.tip || el.getAttribute('title') || el.getAttribute('aria-label'))).map((el) => el.outerHTML.slice(0, 80)));
+  expect(missing).toEqual([]);
+  await page.locator('.nav__phone').hover();
+  await expect(tip).toHaveText('Listen on phone', { timeout: 500 });
   await page.locator('.side__toggle').click();
   await page.mouse.move(700, 300);
   await expect(tip).toHaveCount(0);

@@ -1,6 +1,6 @@
 // Playing music on one device: language switch, seeking, history, lyrics, shortcuts.
 import {
-  test, expect, open, go, playSong, expectPlaying, position, deckTitle, appModule, sleep, LANGS,
+  test, expect, open, go, settle, playSong, expectPlaying, position, deckTitle, appModule, sleep, LANGS,
 } from './helpers.js';
 
 test('switching language while music plays keeps playing and re-renders the UI', async ({ page }) => {
@@ -154,4 +154,26 @@ test('deleting the history and a playlist from the UI works', async ({ page, req
   await page.locator('dialog.dlg .btn--danger').click();
   await expect.poll(async () => (await (await request.get('/api/state')).json()).playlists.some((x) => x.id === p.id)).toBe(false);
   await expect(page.locator('.nav a', { hasText: 'To delete' })).toHaveCount(0);
+});
+
+test('player styles: picked in Settings, remembered on this device, seeking still works', async ({ page }) => {
+  await playSong(page, 'Slow River');
+  await open(page, '/settings');
+  const dial = page.locator('.deck .dial');
+  await expect(dial).toHaveAttribute('data-style', 'dial');
+  for (const style of ['calm', 'minimal', 'color', 'mirror']) {
+    await page.locator(`.dial-opt[data-style="${style}"]`).click();
+    await expect(page.locator(`.dial-opt[data-style="${style}"]`)).toHaveAttribute('aria-pressed', 'true');
+    await expect(dial).toHaveAttribute('data-style', style);
+  }
+  await page.locator('.dial-opt[data-style="minimal"]').click();
+  await page.reload();
+  await settle(page);
+  await expect(page.locator('.deck .dial')).toHaveAttribute('data-style', 'minimal');
+  await page.locator('.deck .play').click();
+  await expectPlaying(page);
+  const box = await page.locator('.deck .dial').boundingBox();
+  await page.mouse.click(box.x + box.width * 0.5, box.y + box.height / 2);
+  await expect.poll(() => position(page)).toBeGreaterThan(70);
+  await page.locator('.dial-opt[data-style="dial"]').click();
 });

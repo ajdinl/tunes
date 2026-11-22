@@ -1,11 +1,51 @@
 // Receiver dial: live audio spectrum, time ticks and the needle.
 // The same renderer is used in the bottom bar and on the "Now Playing" screen.
+import { useSyncExternalStore } from 'react';
+
 import { player } from './player.ts';
 import type { Track } from './store.ts';
 
 const AMBER = [255, 181, 71];
 const NEEDLE = '#ff5e3a';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+// How the dial looks, chosen per device in Settings → Appearance.
+//   dial:    receiver scale with the live spectrum (default)
+//   calm:    the same scale and needle, no moving spectrum
+//   minimal: a thin progress line with a knob, no scale
+//   color:   the spectrum in a color gradient
+//   mirror:  the spectrum mirrored around the middle, like a waveform
+export const DIAL_STYLES = ['dial', 'calm', 'minimal', 'color', 'mirror'] as const;
+export type DialStyle = (typeof DIAL_STYLES)[number];
+const STYLE_KEY = 'tunes.dialStyle';
+let dialStyle: DialStyle = (() => {
+  try { const v = JSON.parse(localStorage.getItem(STYLE_KEY) || 'null'); return DIAL_STYLES.includes(v) ? v : 'dial'; } catch { return 'dial'; }
+})();
+const styleListeners = new Set<() => void>();
+
+export function setDialStyle(s: DialStyle): void {
+  if (!DIAL_STYLES.includes(s) || s === dialStyle) return;
+  dialStyle = s;
+  try { localStorage.setItem(STYLE_KEY, JSON.stringify(s)); } catch { /* storage full */ }
+  for (const d of dials) d.bars.fill(0);
+  for (const l of styleListeners) l();
+}
+
+export function useDialStyle(): DialStyle {
+  return useSyncExternalStore((cb) => { styleListeners.add(cb); return () => styleListeners.delete(cb); }, () => dialStyle);
+}
+
+// The theme's text color, for the minimal style (read again when the theme changes).
+let ink = '';
+let inkTheme = '';
+function themeInk(): string {
+  const theme = document.documentElement.dataset.theme || '';
+  if (!ink || theme !== inkTheme) {
+    inkTheme = theme;
+    ink = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#ece6d6';
+  }
+  return ink;
+}
 
 const dials = new Set<Dial>();
 let raf = 0;
@@ -71,6 +111,8 @@ export class Dial {
     const dur = player.duration;
     const progress = !live && Number.isFinite(dur) && dur > 0 ? Math.min(1, player.time / dur) : 0;
 
+    if (dialStyle === 'minimal') { this.drawMinimal(t, live, progress, dur); return; }
+
     const labelH = this.big ? 16 : 12;
     const tickH = this.big ? 10 : 7;
     const baseY = h - labelH - tickH - 2;
@@ -81,7 +123,8 @@ export class Dial {
     const gap = this.big ? 3 : 2;
     const bw = this.big ? 5 : 3;
     const n = Math.max(8, Math.min(256, Math.floor(span / (bw + gap))));
-    const playing = player.playing && !reduced.matches;
+    const style = dialStyle;
+    const playing = player.playing && !reduced.matches && style !== 'calm';
     if (freq && playing) {
       const nyq = sampleRate / 2;
       const bins = freq.length;
@@ -102,21 +145,49 @@ export class Dial {
     }
     const maxH = baseY - (this.big ? 10 : 6);
     const needleX = live ? x0 + span * stationPos(t) : x0 + span * progress;
-    const lit = new Path2D(), dim = new Path2D();
-    for (let i = 0; i < n; i++) {
-      const x = x0 + i * (bw + gap);
-      const bh = Math.max(1.5, this.bars[i] * maxH);
-      (live || x < needleX ? lit : dim).rect(x, baseY - bh, bw, bh);
+    if (style === 'calm') {
+      // No spectrum: a glowing line along the scale shows how far the song is.
+      const y = baseY - 1;
+      g.save();
+      g.lineCap = 'round';
+      g.lineWidth = this.big ? 3 : 2;
+      g.strokeStyle = `rgba(${AMBER},0.25)`;
+      g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke();
+      g.shadowColor = `rgba(${AMBER},0.7)`;
+      g.shadowBlur = this.big ? 10 : 6;
+      g.strokeStyle = `rgba(${AMBER},0.95)`;
+      g.beginPath(); g.moveTo(x0, y); g.lineTo(live ? x1 : Math.max(x0, needleX), y); g.stroke();
+      g.restore();
+    } else {
+      const mirror = style === 'mirror';
+      const mid = baseY - maxH / 2;
+      const lit = new Path2D(), dim = new Path2D();
+      for (let i = 0; i < n; i++) {
+        const x = x0 + i * (bw + gap);
+        const bh = Math.max(1.5, this.bars[i] * maxH);
+        if (mirror) (live || x < needleX ? lit : dim).rect(x, mid - bh / 2, bw, bh);
+        else (live || x < needleX ? lit : dim).rect(x, baseY - bh, bw, bh);
+      }
+      let paint: string | CanvasGradient = `rgba(${AMBER},0.95)`;
+      if (style === 'color') {
+        // Low notes cool, high notes warm.
+        const grad = g.createLinearGradient(x0, 0, x1, 0);
+        grad.addColorStop(0, '#3fa7ff');
+        grad.addColorStop(0.35, '#8b5cff');
+        grad.addColorStop(0.65, '#ff4fa3');
+        grad.addColorStop(1, '#ffb547');
+        paint = grad;
+      }
+      g.save();
+      g.shadowColor = style === 'color' ? 'rgba(255,255,255,0.35)' : `rgba(${AMBER},0.75)`;
+      g.shadowBlur = this.big ? 14 : 8;
+      g.fillStyle = paint;
+      g.fill(lit);
+      g.shadowBlur = 0;
+      if (style === 'color') { g.globalAlpha = 0.3; g.fill(dim); }
+      else { g.fillStyle = `rgba(${AMBER},0.32)`; g.fill(dim); }
+      g.restore();
     }
-    g.save();
-    g.shadowColor = `rgba(${AMBER},0.75)`;
-    g.shadowBlur = this.big ? 14 : 8;
-    g.fillStyle = `rgba(${AMBER},0.95)`;
-    g.fill(lit);
-    g.shadowBlur = 0;
-    g.fillStyle = `rgba(${AMBER},0.32)`;
-    g.fill(dim);
-    g.restore();
 
     // ---- ticks and labels
     g.strokeStyle = `rgba(${AMBER},0.55)`;
@@ -184,6 +255,38 @@ export class Dial {
       g.stroke();
       g.restore();
     }
+  }
+
+  // A thin progress line with a knob: nothing moves except the knob itself.
+  drawMinimal(t: Track | null, live: boolean, progress: number, dur: number): void {
+    const { g, w, h } = this;
+    const pad = this.big ? 18 : 12;
+    const x0 = pad, x1 = w - pad;
+    const y = Math.round(h / 2) + 0.5;
+    const text = themeInk();
+    const knobX = x0 + (x1 - x0) * progress;
+    g.save();
+    g.lineCap = 'round';
+    g.lineWidth = this.big ? 5 : 4;
+    g.globalAlpha = 0.2;
+    g.strokeStyle = text;
+    g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke();
+    g.globalAlpha = 1;
+    g.strokeStyle = `rgb(${AMBER})`;
+    g.beginPath(); g.moveTo(x0, y); g.lineTo(live ? x1 : Math.max(x0, knobX), y); g.stroke();
+    if (this.hoverX !== null && !live && dur > 0) {
+      g.globalAlpha = 0.35;
+      g.fillStyle = text;
+      g.beginPath(); g.arc(Math.max(x0, Math.min(x1, this.hoverX)), y, this.big ? 4 : 3, 0, Math.PI * 2); g.fill();
+      g.globalAlpha = 1;
+    }
+    if (t && !live) {
+      g.fillStyle = text;
+      g.shadowColor = 'rgba(0,0,0,0.35)';
+      g.shadowBlur = 4;
+      g.beginPath(); g.arc(knobX, y, this.big ? 8 : 6, 0, Math.PI * 2); g.fill();
+    }
+    g.restore();
   }
 
   // Converts the mouse position to a time in the track.

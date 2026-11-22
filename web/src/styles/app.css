@@ -1110,3 +1110,6 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 }
 .tip.is-on { opacity: 1; }
 @media (hover: none) { .tip { display: none; } }
+
+/* Player style "Minimal" (Settings → Appearance): just the line, no receiver panel. */
+.dial[data-style='minimal'] { background: none; box-shadow: none; }

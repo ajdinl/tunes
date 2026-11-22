@@ -59,7 +59,7 @@ export function Sidebar() {
             {store.playlists.map((p) => {
               const on = route.name === 'playlist' && route.arg === p.id;
               return (
-                <a key={p.id} className={cx('nav__link', 'nav__link--pl', on && 'is-on')} href={playlistHref(p.id)} aria-current={on ? 'page' : undefined}
+                <a key={p.id} className={cx('nav__link', 'nav__link--pl', on && 'is-on')} href={playlistHref(p.id)} title={p.name} aria-current={on ? 'page' : undefined}
                   data-route="playlist" data-arg={p.id} onDragOver={(e) => e.preventDefault()}>
                   <span>{p.name}</span><span className="nav__count">{p.tracks.length}</span>
                 </a>
@@ -70,13 +70,13 @@ export function Sidebar() {
       </div>
       <div className="nav nav--foot">
         {IS_LOCAL ? (
-          <button type="button" className={cx('nav__link', 'nav__phone', store.settings.phoneOn && 'is-live')} onClick={() => shell.set({ phone: true })}>
+          <button type="button" className={cx('nav__link', 'nav__phone', store.settings.phoneOn && 'is-live')} title={tr('Listen on phone')} onClick={() => shell.set({ phone: true })}>
             <Icon name="phone" size={19} /><span>{tr('Listen on phone')}</span>
             {store.settings.phoneOn ? <span className="nav__dot" title={tr('On')} /> : null}
           </button>
         ) : null}
         {!IS_LOCAL && !IS_STANDALONE ? (
-          <button type="button" className="nav__link nav__phone" onClick={() => shell.set({ install: true })}>
+          <button type="button" className="nav__link nav__phone" title={tr('Add to Home Screen')} onClick={() => shell.set({ install: true })}>
             <Icon name="plus" size={19} /><span>{tr('Add to Home Screen')}</span>
           </button>
         ) : null}
