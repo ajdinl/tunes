@@ -30,17 +30,12 @@ const LOADERS: Record<string, () => Promise<Record<string, unknown>>> = {
   tr: () => import('../i18n/tr.ts'),
 };
 
+// English until the user picks a language in Settings (the browser language is not used).
 function detect(): LangCode {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (CODES.includes(saved)) return saved;
   } catch { /* no saved choice */ }
-  // First visit: follow the browser language; Serbo-Croatian browsers get Bosnian.
-  for (const pref of navigator.languages || [navigator.language || '']) {
-    const code = String(pref).toLowerCase().split('-')[0];
-    if (CODES.includes(code)) return code as LangCode;
-    if (code === 'sh') return 'bs';
-  }
   return 'en';
 }
 

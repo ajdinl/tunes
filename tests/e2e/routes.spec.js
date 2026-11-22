@@ -121,3 +121,19 @@ test('a new build on the server updates an open window once, then offers a reloa
   expect(loads).toBe(2);
   await expect(page.locator('.toast .toast__act')).toHaveText('Reload');
 });
+
+test('English and the black theme until the user picks others, whatever the browser language', async ({ browser, baseURL }) => {
+  const ctx = await browser.newContext({ baseURL, locale: 'bs-BA', serviceWorkers: 'block' });
+  const page = await ctx.newPage();
+  await open(page, '/settings');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.locator('#main h1')).toHaveText('Settings');
+  // The black theme is the default too.
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'black');
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe('rgb(0, 0, 0)');
+  await page.locator('.lang-opt[lang="bs"]').click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'bs');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'bs');
+  await ctx.close();
+});
