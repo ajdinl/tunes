@@ -9,6 +9,8 @@ import tls from 'node:tls';
 import { Transform } from 'node:stream';
 import type { Readable, TransformCallback } from 'node:stream';
 
+import { BlockedAddress, isPrivateIp, publicLookup } from './netguard.ts';
+
 const UA = 'Tunes/1.0';
 const PASS_HEADERS = ['content-type', 'content-length', 'content-range', 'accept-ranges', 'last-modified', 'etag'];
 
@@ -21,7 +23,16 @@ interface Upstream extends Readable {
   headers: Record<string, string | string[] | undefined>;
 }
 
+// Only audio leaves the proxy. Anything else (an HTML page, an SVG with a script) would run
+// on Tunes' own origin, so it goes out as a plain download that no browser renders.
+const AUDIO_TYPE = /^(audio\/[\w.+-]+|application\/ogg|video\/(mp4|webm|ogg))$/;
+
 function fixType(type: string | undefined, url: string): string {
+  const t = fixKnown(type, url);
+  return AUDIO_TYPE.test(t) ? t : 'application/octet-stream';
+}
+
+function fixKnown(type: string | undefined, url: string): string {
   const t = (type || '').split(';')[0].trim().toLowerCase();
   if (t === 'audio/aacp' || t === 'audio/x-aac') return 'audio/aac';
   if (t === 'audio/x-mpeg' || t === 'audio/mp3') return 'audio/mpeg';
@@ -38,8 +49,10 @@ function fixType(type: string | undefined, url: string): string {
 function request(url: string, headers: Headers): Promise<Upstream> {
   return new Promise((resolve, reject) => {
     const u = new URL(url);
+    // Addresses written as numbers skip the lookup, so they are checked here.
+    if (net.isIP(u.hostname.replace(/^\[|\]$/g, '')) && isPrivateIp(u.hostname) && process.env.TUNES_ALLOW_PRIVATE_UPSTREAM !== '1') { reject(new BlockedAddress()); return; }
     const mod = u.protocol === 'https:' ? https : http;
-    const req = mod.request(u, { headers: { 'User-Agent': UA, ...headers }, timeout: 15000 }, resolve);
+    const req = mod.request(u, { headers: { 'User-Agent': UA, ...headers }, timeout: 15000, lookup: publicLookup }, resolve);
     req.on('timeout', () => req.destroy(new Error('Server not responding')));
     req.on('error', reject);
     req.end();
@@ -52,9 +65,10 @@ function rawIcyRequest(url: string, headers: Headers): Promise<Upstream> {
   return new Promise((resolve, reject) => {
     const u = new URL(url);
     const port = Number(u.port) || (u.protocol === 'https:' ? 443 : 80);
+    if (net.isIP(u.hostname.replace(/^\[|\]$/g, '')) && isPrivateIp(u.hostname) && process.env.TUNES_ALLOW_PRIVATE_UPSTREAM !== '1') { reject(new BlockedAddress()); return; }
     const sock = u.protocol === 'https:'
-      ? tls.connect({ host: u.hostname, port, servername: u.hostname })
-      : net.connect({ host: u.hostname, port });
+      ? tls.connect({ host: u.hostname, port, servername: u.hostname, lookup: publicLookup })
+      : net.connect({ host: u.hostname, port, lookup: publicLookup });
     sock.setTimeout(15000, () => sock.destroy(new Error('Server not responding')));
     sock.on('error', reject);
     sock.once(u.protocol === 'https:' ? 'secureConnect' : 'connect', () => {
@@ -157,6 +171,9 @@ class IcyStripper extends Transform {
   }
 }
 
+// Whatever comes back is never treated as a page: no type guessing, no scripts, no frames.
+export const SAFE_HEADERS = { 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; sandbox" };
+
 export async function proxyAudio(
   req: http.IncomingMessage,
   res: http.ServerResponse,
@@ -175,14 +192,15 @@ export async function proxyAudio(
   try {
     ({ up } = await open(u.href, headers));
   } catch (e) {
-    if (!res.headersSent) res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Source unavailable: ' + (e as Error).message);
+    const blocked = e instanceof BlockedAddress;
+    if (!res.headersSent) res.writeHead(blocked ? 403 : 502, { 'Content-Type': 'text/plain; charset=utf-8', ...SAFE_HEADERS }).end(blocked ? 'Address not allowed' : 'Source unavailable: ' + (e as Error).message);
     return;
   }
 
   const status = up.statusCode || 200;
   if (status >= 400) {
     up.destroy();
-    res.writeHead(status === 404 ? 404 : 502, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Source returned error ' + status);
+    res.writeHead(status === 404 ? 404 : 502, { 'Content-Type': 'text/plain; charset=utf-8', ...SAFE_HEADERS }).end('Source returned error ' + status);
     return;
   }
 
@@ -190,7 +208,7 @@ export async function proxyAudio(
     const v = up.headers[name];
     return Array.isArray(v) ? v[0] : v;
   };
-  const out: Record<string, string> = { 'Cache-Control': 'no-store' };
+  const out: Record<string, string> = { 'Cache-Control': 'no-store', ...SAFE_HEADERS };
   const metaint = icy ? Number(header('icy-metaint')) : 0;
   for (const h of PASS_HEADERS) {
     const v = header(h);

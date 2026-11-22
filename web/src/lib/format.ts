@@ -73,3 +73,6 @@ export function shuffleArray<T>(a: T[]): T[] {
 }
 
 export const cx = (...names: (string | false | null | undefined)[]): string => names.filter(Boolean).join(' ');
+
+// A link from a music source's data, if it is a plain web address (never javascript: etc.).
+export const safeHttp = (u: string | null | undefined): string | null => (u && /^https?:\/\//i.test(u.trim()) ? u.trim() : null);

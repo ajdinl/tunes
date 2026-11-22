@@ -14,9 +14,10 @@ import QRCode from 'qrcode';
 
 import { Store, cleanTrack, ICONS, tildify } from './lib/store.ts';
 import type { PlaylistPatch, SettingsPatch } from './lib/store.ts';
-import { Library, MIME } from './lib/library.ts';
+import { Library, MIME, AUDIO_EXT } from './lib/library.ts';
 import { audius, archive, radio, jamendo, lyrics, listenbrainz, soundcloud } from './lib/sources.ts';
-import { proxyAudio } from './lib/proxy.ts';
+import { proxyAudio, SAFE_HEADERS } from './lib/proxy.ts';
+import { assertPublicUrl } from './lib/netguard.ts';
 import { httpError } from './lib/types.ts';
 import type { HttpError, Track } from './lib/types.ts';
 
@@ -101,10 +102,10 @@ function serveManifest(res: Res, startUrl?: string): void {
   res.writeHead(200, { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'no-store' }).end(JSON.stringify(m));
 }
 
-async function serveFile(req: Req, res: Res, file: string, type: string, { cache = 'no-cache' } = {}): Promise<void> {
+async function serveFile(req: Req, res: Res, file: string, type: string, { cache = 'no-cache', extra = {} as Record<string, string> } = {}): Promise<void> {
   let stat: fs.Stats;
   try { stat = await fsp.stat(file); } catch { res.writeHead(404).end(); return; }
-  const headers = { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Cache-Control': cache, 'Last-Modified': stat.mtime.toUTCString() };
+  const headers = { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Cache-Control': cache, 'Last-Modified': stat.mtime.toUTCString(), 'X-Content-Type-Options': 'nosniff', ...extra };
   const range = req.headers.range && /bytes=(\d*)-(\d*)/.exec(req.headers.range);
   if (range) {
     let start = range[1] === '' ? stat.size - Number(range[2]) : Number(range[1]);
@@ -141,6 +142,31 @@ function hostAllowed(req: Req): boolean {
 
 const sanitize = (s: unknown, max = 80): string => String(s || '').replace(/[\/\\:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().replace(/^\.+/, '').slice(0, max) || 'Unknown';
 const DOWNLOAD_HOSTS = /(^|\.)(archive\.org|audius\.co|jamendo\.com)$/;
+
+// Content Security Policy for the app's pages: scripts only from Tunes itself (plus the
+// inline theme script, by hash, and the SoundCloud widget), no plugins, no framing. Even if
+// some text from a music source slipped into the page as markup, it could not run.
+let cspCache: { mtime: number; value: string } | null = null;
+function pageCsp(file: string): string {
+  const mtime = fs.statSync(file).mtimeMs;
+  if (cspCache?.mtime === mtime) return cspCache.value;
+  const html = fs.readFileSync(file, 'utf8');
+  const hashes = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)]
+    .map((m) => `'sha256-${crypto.createHash('sha256').update(m[1]).digest('base64')}'`);
+  const value = [
+    "default-src 'self'",
+    `script-src 'self' ${hashes.join(' ')} https://w.soundcloud.com`,
+    "style-src 'self' 'unsafe-inline'", // the mini player window gets the app's CSS as a <style>
+    "img-src 'self' data: blob: https: http:",
+    "media-src 'self' blob: https: http:", // the direct radio fallback plays stations as they are
+    "connect-src 'self'",
+    'frame-src https://w.soundcloud.com',
+    "font-src 'self'", "worker-src 'self'", "manifest-src 'self'",
+    "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
+  ].join('; ');
+  cspCache = { mtime, value };
+  return value;
+}
 
 // ------------------------------------------------------------ routes
 const routes: { method: string; pattern: RegExp; handler: Handler }[] = [];
@@ -192,18 +218,20 @@ route('GET', /^\/api\/img$/, async (req, res, m, q) => {
     try { const h = new URL(host); candidates.push(h.origin + first.pathname + first.search); } catch { /* */ }
   }
   for (const u of candidates) {
-    if (!/^https?:$/.test(new URL(u).protocol)) continue;
     try {
+      await assertPublicUrl(u);
       const r = await fetch(u, { headers: { 'User-Agent': 'Tunes/1.0' }, signal: AbortSignal.timeout(6000) });
-      const type = r.headers.get('content-type') || '';
-      if (!r.ok || !type.startsWith('image/')) continue;
+      if (r.redirected) await assertPublicUrl(r.url); // where a redirect led
+      const type = (r.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+      // Bitmaps only: an SVG can carry a script.
+      if (!r.ok || !/^image\/(jpeg|png|gif|webp|avif|bmp|x-icon|vnd\.microsoft\.icon)$/.test(type)) continue;
       const buf = Buffer.from(await r.arrayBuffer());
-      res.writeHead(200, { 'Content-Type': type, 'Content-Length': buf.length, 'Cache-Control': 'max-age=604800' });
+      res.writeHead(200, { 'Content-Type': type, 'Content-Length': buf.length, 'Cache-Control': 'max-age=604800', ...SAFE_HEADERS });
       res.end(buf);
       return;
     } catch { /* try the next one */ }
   }
-  res.writeHead(404, { 'Cache-Control': 'max-age=600' }).end();
+  res.writeHead(404, { 'Cache-Control': 'max-age=600', ...SAFE_HEADERS }).end();
 });
 
 // A pasted SoundCloud link -> a track for the queue (played by the SoundCloud widget).
@@ -344,6 +372,8 @@ route('GET', /^\/api\/playlists\/([\w-]+)\/m3u$/, (req, res, [, id]) => {
 
 route('PUT', /^\/api\/settings$/, async (req, res) => {
   const patch = await body<SettingsPatch>(req);
+  // Which folders Tunes reads and writes is decided on the computer, not over the network.
+  if (fromNetwork(req) && patch.folders !== undefined) return json(res, 403, { error: 'Music folders are changed on the computer' });
   const oldFolders = JSON.stringify(store.data.settings.folders);
   const oldIcon = store.data.settings.icon;
   const oldPrefs = JSON.stringify(store.data.settings.prefs);
@@ -376,7 +406,8 @@ route('POST', /^\/api\/download$/, async (req, res) => {
   const folder = store.data.settings.folders[0];
   const artist = sanitize(track.albumArtist || track.artist);
   const album = sanitize(track.album || 'Singles');
-  const ext = (track.ext && /^\.\w{2,5}$/.test(track.ext)) ? track.ext : '.mp3';
+  // Only audio files are written (never e.g. a .plist into a folder that runs things).
+  const ext = track.ext && AUDIO_EXT.has(track.ext.toLowerCase()) ? track.ext.toLowerCase() : '.mp3';
   const num = track.trackNo ? String(track.trackNo).padStart(2, '0') + ' ' : '';
   const dir = path.join(folder, artist, album);
   const file = path.join(dir, sanitize(num + track.title, 120) + ext);
@@ -463,31 +494,35 @@ async function phoneState() {
   };
 }
 
+// Requests from other devices (the phone listener, or the main one if HOST opens it to the
+// network) need the phone key: ?k= once, then the cookie.
+function networkGate(req: Req, res: Res): void {
+  const token = store.data.settings.phone?.token;
+  const url = new URL(req.url || '/', 'http://x');
+  const cookie = /(?:^|;\s*)sl_k=([\w-]+)/.exec(req.headers.cookie || '')?.[1];
+  if (token && url.searchParams.get('k') === token) {
+    url.searchParams.delete('k');
+    res.writeHead(302, {
+      'Set-Cookie': `sl_k=${token}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Strict`,
+      Location: url.pathname + (url.search || ''),
+    }).end();
+    return;
+  }
+  if (!token || cookie !== token) {
+    res.writeHead(401, { 'Content-Type': 'text/html; charset=utf-8' })
+      .end('<meta name="viewport" content="width=device-width"><body style="font:17px system-ui;background:#000;color:#eee;padding:24px">Scan the QR code in Tunes on your computer (the “Listen on phone” button).</body>');
+    return;
+  }
+  // Manifest for "Add to Home Screen": the icon opens the link with the key, because
+  // a home screen app (iPhone) does not share cookies with Safari.
+  if (url.pathname === '/manifest.webmanifest') { serveManifest(res, `/?k=${token}`); return; }
+  void handle(req, res, { lan: true });
+}
+
 function startPhone(): Promise<void> {
   return new Promise((resolve, reject) => {
     if (lanServer) { resolve(); return; }
-    const srv = http.createServer((req, res) => {
-      const token = store.data.settings.phone?.token;
-      const url = new URL(req.url || '/', 'http://x');
-      const cookie = /(?:^|;\s*)sl_k=([\w-]+)/.exec(req.headers.cookie || '')?.[1];
-      if (token && url.searchParams.get('k') === token) {
-        url.searchParams.delete('k');
-        res.writeHead(302, {
-          'Set-Cookie': `sl_k=${token}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Strict`,
-          Location: url.pathname + (url.search || ''),
-        }).end();
-        return;
-      }
-      if (!token || cookie !== token) {
-        res.writeHead(401, { 'Content-Type': 'text/html; charset=utf-8' })
-          .end('<meta name="viewport" content="width=device-width"><body style="font:17px system-ui;background:#000;color:#eee;padding:24px">Scan the QR code in Tunes on your computer (the “Listen on phone” button).</body>');
-        return;
-      }
-      // Manifest for "Add to Home Screen": the icon opens the link with the key, because
-      // a home screen app (iPhone) does not share cookies with Safari.
-      if (url.pathname === '/manifest.webmanifest') { serveManifest(res, `/?k=${token}`); return; }
-      void handle(req, res, { lan: true });
-    });
+    const srv = http.createServer(networkGate);
     srv.once('error', reject);
     srv.listen(PHONE_PORT, '0.0.0.0', () => { lanServer = srv; resolve(); });
   });
@@ -590,14 +625,23 @@ route('POST', /^\/api\/session\/takeover$/, async (req, res) => {
 });
 
 // ------------------------------------------------------------ server
+const viaNetwork = new WeakSet<Req>();
+const fromNetwork = (req: Req): boolean => viaNetwork.has(req);
+
 async function handle(req: Req, res: Res, { lan = false } = {}): Promise<void> {
   if (!hostAllowed(req)) { res.writeHead(403).end('Host not allowed'); return; }
+  if (lan) viaNetwork.add(req);
   const url = new URL(req.url || '/', 'http://x');
-  const p = decodeURIComponent(url.pathname);
+  let p = url.pathname;
 
   try {
+    try { p = decodeURIComponent(url.pathname); } catch { return json(res, 400, { error: 'Invalid address' }); }
     if (lan && p === '/api/phone') return json(res, 403, { error: 'Phone access is turned on from the computer' });
     if (p.startsWith('/api/')) {
+      // The API answers only Tunes' own pages. A link or a hidden image on another website
+      // (Sec-Fetch-Site: cross-site) gets nothing, so it can't use Tunes' proxies or data.
+      const site = req.headers['sec-fetch-site'];
+      if (site === 'cross-site' || site === 'same-site') return json(res, 403, { error: 'Not allowed from another website' });
       // Changes are only accepted as JSON, which other sites cannot send without permission (CORS).
       if (!['GET', 'HEAD'].includes(req.method || '') && !(req.headers['content-type'] || '').startsWith('application/json')) {
         return json(res, 415, { error: 'Expected JSON' });
@@ -630,7 +674,8 @@ async function handle(req: Req, res: Res, { lan = false } = {}): Promise<void> {
     if (!f) f = path.join(UI_ROOT, 'index.html');
     // Vite names built files by content hash, so they can be cached for good.
     const cache = f.startsWith(path.join(WEB_DIST, 'assets') + path.sep) ? 'max-age=31536000, immutable' : 'no-cache';
-    return await serveFile(req, res, f, STATIC_TYPES[path.extname(f)] || 'application/octet-stream', { cache });
+    const extra: Record<string, string> = f.endsWith('.html') ? { 'Content-Security-Policy': pageCsp(f) } : {};
+    return await serveFile(req, res, f, STATIC_TYPES[path.extname(f)] || 'application/octet-stream', { cache, extra });
   } catch (e) {
     const err = e as HttpError;
     console.error(req.method, p, '-', err.message);
@@ -639,7 +684,16 @@ async function handle(req: Req, res: Res, { lan = false } = {}): Promise<void> {
   }
 }
 
-const server = http.createServer((req, res) => { void handle(req, res); });
+// With HOST set to a network address, other devices reach this listener too: they go
+// through the same key check as the phone listener.
+const LOOPBACK = /^(127\.|::1$|::ffff:127\.)/;
+const server = http.createServer((req, res) => {
+  if (LOOPBACK.test(req.socket.remoteAddress || '')) void handle(req, res);
+  else networkGate(req, res);
+});
+
+// One bad request must never stop the music.
+process.on('unhandledRejection', (e) => console.error('Unhandled:', (e as Error)?.message || e));
 
 server.listen(PORT, HOST, () => {
   const local = `http://localhost:${PORT}`;

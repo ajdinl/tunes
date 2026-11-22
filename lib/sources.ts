@@ -22,6 +22,9 @@ async function getJSON<T = any>(url: string, { timeout = 12000, headers = {} }: 
 }
 
 const enc = encodeURIComponent;
+// Links from the sources' own data (station homepages, licenses) are written by uploaders:
+// only plain web addresses are kept, never javascript: or data:.
+export const webUrl = (u: unknown): string | null => (typeof u === 'string' && /^https?:\/\/[^\s]+$/i.test(u.trim()) ? u.trim() : null);
 const proxied = (u: string): string => '/api/stream/url?u=' + enc(u);
 const first = <T>(v: T | T[] | undefined): T | undefined => (Array.isArray(v) ? v[0] : v);
 
@@ -186,7 +189,7 @@ export const archive = {
         };
       })
       .sort((a, b) => a.trackNo - b.trackNo);
-    return { album: { ...album, license: m.licenseurl || null }, tracks };
+    return { album: { ...album, license: webUrl(m.licenseurl) }, tracks };
   },
 };
 
@@ -234,7 +237,7 @@ function radioTrack(s: Station): Track | null {
     genre: tags[0] || null,
     cover: s.favicon || null,
     stream: `/api/stream/radio?sid=${enc(s.stationuuid)}&u=${enc(url)}`,
-    link: s.homepage || null,
+    link: webUrl(s.homepage),
     live: true,
   };
 }

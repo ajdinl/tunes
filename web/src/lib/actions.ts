@@ -6,7 +6,7 @@ import { player } from './player.ts';
 import { tr } from './i18n.ts';
 import { toast, ask } from './feedback.ts';
 import type { MenuEntry } from './feedback.ts';
-import { norm, songs } from './format.ts';
+import { norm, songs, safeHttp } from './format.ts';
 import { go } from './router.ts';
 import { STANDALONE } from './env.ts';
 import { offline } from './offline.ts';
@@ -122,7 +122,8 @@ export function trackMenu(track: Track, { playlist, index, list }: { playlist?: 
       : { label: tr('Download'), icon: 'download', action: () => { downloadTracks([track]); } });
   }
   if (track.download && !STANDALONE) items.push({ label: tr('Save to computer'), icon: 'download', action: () => { saveToLibrary([track]); } });
-  if (track.link) items.push({ label: tr('Open on source website'), icon: 'external', action: () => { window.open(track.link!, '_blank', 'noopener'); } });
+  const link = safeHttp(track.link);
+  if (link) items.push({ label: tr('Open on source website'), icon: 'external', action: () => { window.open(link, '_blank', 'noopener'); } });
   if (playlist && index !== undefined) {
     items.push('-');
     items.push({ label: tr('Remove from this playlist'), icon: 'trash', action: async () => {

@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createLogger, defineConfig } from 'vite';
@@ -52,6 +53,24 @@ function standaloneFiles(base: string): Plugin {
         ],
       });
       fs.writeFileSync(out('manifest.webmanifest'), JSON.stringify(manifest, null, 2));
+      // GitHub Pages can't send headers, so the Content Security Policy is a <meta> tag:
+      // scripts only from this site (the inline theme script by hash) and the SoundCloud
+      // widget; music, covers and the sources' APIs from any https address.
+      const html = fs.readFileSync(out('index.html'), 'utf8');
+      const hashes = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)]
+        .map((m) => `'sha256-${crypto.createHash('sha256').update(m[1]).digest('base64')}'`);
+      const csp = [
+        "default-src 'self'",
+        `script-src 'self' ${hashes.join(' ')} https://w.soundcloud.com`,
+        "style-src 'self' 'unsafe-inline'", // the mini player window gets the app's CSS as a <style>
+        "img-src 'self' data: blob: https:",
+        "media-src 'self' blob: https:",
+        "connect-src 'self' https:", // sources, and songs downloaded for offline
+        'frame-src https://w.soundcloud.com',
+        "font-src 'self'", "worker-src 'self'", "manifest-src 'self'",
+        "object-src 'none'", "base-uri 'none'", "form-action 'none'",
+      ].join('; ');
+      fs.writeFileSync(out('index.html'), html.replace('<head>', `<head>\n  <meta http-equiv="Content-Security-Policy" content="${csp}">`));
       // GitHub Pages answers unknown paths with 404.html: the app itself, which routes by path.
       fs.copyFileSync(out('index.html'), out('404.html'));
       // The service worker lists the built files, so the app opens without a connection.

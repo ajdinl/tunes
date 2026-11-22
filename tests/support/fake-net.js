@@ -61,6 +61,8 @@ export const OEMBED = {
 export const SC_SHORT = { '/aBcD1': 'https://soundcloud.com/nadia-vale/slow-river?si=123&utm_source=clipboard' };
 
 export const requests = []; // every external URL asked for, for assertions
+// The smallest valid PNG (1×1).
+const PNG = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='), (c) => c.charCodeAt(0));
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 const offline = (url) => Promise.reject(Object.assign(new TypeError('fetch failed'), { cause: new Error('getaddrinfo ENOTFOUND ' + url.hostname) }));
@@ -82,7 +84,14 @@ export function answer(url, init) {
     if ((m = /^\/v1\/users\/(\w+)$/.exec(p))) return m[1] === AUDIUS_USER.id ? json({ data: AUDIUS_USER }) : json({}, 404);
   }
 
+  // Covers: a real bitmap, and an SVG (which may carry a script, so Tunes must not serve it).
+  if (host === 'img.example') {
+    if (p === '/cover.png') return new Response(PNG, { status: 200, headers: { 'Content-Type': 'image/png' } });
+    if (p === '/evil.svg') return new Response('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>', { status: 200, headers: { 'Content-Type': 'image/svg+xml' } });
+  }
+
   if (host === 'archive.org') {
+    if (p.startsWith('/download/')) return new Response(new Uint8Array([0xff, 0xfb, 0x90, 0x64, 0, 0, 0, 0]), { status: 200, headers: { 'Content-Type': 'audio/mpeg' } });
     if (p === '/advancedsearch.php') return json({ response: { docs: [ARCHIVE_DOC] } });
     if (p === '/metadata/' + ARCHIVE_DOC.identifier) return json(ARCHIVE_META);
     if (p.startsWith('/metadata/')) return json({});

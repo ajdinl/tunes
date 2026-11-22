@@ -6,7 +6,7 @@ import { Header, Cover, Loading, ErrorBox, playButtons } from '../components/com
 import { TrackList } from '../components/TrackList.tsx';
 import type { ArchiveAlbum } from './tiles.tsx';
 import { tr } from '../lib/i18n.ts';
-import { totalMeta } from '../lib/format.ts';
+import { totalMeta, safeHttp } from '../lib/format.ts';
 import { api } from '../lib/store.ts';
 import type { Track } from '../lib/store.ts';
 import type { Route } from '../lib/router.ts';
@@ -50,7 +50,7 @@ function ArchivePage({ id }: { id: string }) {
           <DownloadButton key="dl" tracks={tracks} />,
           <a key="link" className="btn btn--ghost" href={a.link} target="_blank" rel="noopener"><Icon name="external" size={16} />archive.org</a>]} />
       {a.description ? <p className="desc">{a.description}</p> : null}
-      {a.license ? <p className="muted pad">{tr('License: ')}<a href={a.license} target="_blank" rel="noopener">{a.license}</a></p> : null}
+      {safeHttp(a.license) ? <p className="muted pad">{tr('License: ')}<a href={safeHttp(a.license)!} target="_blank" rel="noopener">{a.license}</a></p> : null}
       <TrackList tracks={tracks} context={ctx} numbered album={false} coverArt={false}
         emptyText={tr('This release has no recordings your browser can play.')} />
     </div>

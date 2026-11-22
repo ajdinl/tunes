@@ -1,6 +1,6 @@
 #!/bin/zsh
 # Double-click this file to start Tunes and open it in your browser.
-# With --phone the server is also reachable from other devices on your home network.
+# Phones connect through "Listen on phone" in the app (its own port, protected by a key).
 cd "$(dirname "$0")"
 
 if ! command -v node >/dev/null 2>&1 || ! node -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>22||(a===22&&b>=18)?0:1)'; then
@@ -10,7 +10,6 @@ fi
 [ -d node_modules ] || npm install --omit=dev
 
 PORT=${PORT:-4545}
-if [[ "$1" == "--phone" || "$1" == "--telefon" ]]; then export HOST=0.0.0.0; fi
 
 if curl -s -o /dev/null "http://localhost:$PORT/api/state"; then
   echo "Tunes is already running."
@@ -19,5 +18,5 @@ if curl -s -o /dev/null "http://localhost:$PORT/api/state"; then
 fi
 
 (sleep 1.2 && open "http://localhost:$PORT") &
-npm run build --silent -- --logLevel warn || { read -k1 "?Build failed. Press any key…"; exit 1; }
+npx vite build --logLevel warn || { read -k1 "?Build failed. Press any key…"; exit 1; }
 exec node server.ts

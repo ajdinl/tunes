@@ -41,6 +41,7 @@ beforeAll(async () => {
       return res.end(AUDIO);
     }
     if (req.url === '/aacp') { res.writeHead(200, { 'Content-Type': 'audio/aacp' }); return res.end(AUDIO); }
+    if (req.url === '/page.html') { res.writeHead(200, { 'Content-Type': 'text/html' }); return res.end('<script>fetch("/api/export")</script>'); }
     if (req.url === '/moved') { res.writeHead(302, { Location: '/song.mp3' }); return res.end(); }
     if (req.url === '/loop') { res.writeHead(302, { Location: '/loop' }); return res.end(); }
     if (req.url === '/missing') { res.writeHead(404); return res.end(); }
@@ -64,7 +65,7 @@ beforeAll(async () => {
   });
   sc = `http://127.0.0.1:${await listenOn(shoutcast)}`;
 
-  srv = await startServer({ port: 4740, name: 'tunes-proxy' });
+  srv = await startServer({ port: 4740, name: 'tunes-proxy', env: { TUNES_ALLOW_PRIVATE_UPSTREAM: '1' } }); // the fake stations run on 127.0.0.1
 });
 afterAll(async () => {
   await srv?.stop();
@@ -95,6 +96,13 @@ describe('audio proxy', () => {
 
   it('maps odd audio types to ones browsers know', async () => {
     expect((await viaUrl(up + '/aacp')).headers.get('content-type')).toBe('audio/aac');
+  });
+
+  it('never passes a page on: anything but audio goes out as a sandboxed download', async () => {
+    const r = await viaUrl(up + '/page.html');
+    expect(r.headers.get('content-type')).toBe('application/octet-stream');
+    expect(r.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(r.headers.get('content-security-policy')).toBe("default-src 'none'; sandbox");
   });
 
   it('follows redirects, but not forever', async () => {

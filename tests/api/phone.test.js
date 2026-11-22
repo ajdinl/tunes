@@ -69,6 +69,11 @@ describe('phone access', () => {
     // Only the computer can change phone access.
     const fromPhone = await fetch(lan + '/api/phone', { headers });
     expect(fromPhone.status).toBe(403);
+    // Only the computer chooses which folders Tunes reads and writes.
+    const folders = await fetch(lan + '/api/settings', { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ folders: ['~'] }) });
+    expect(folders.status).toBe(403);
+    expect((await folders.json()).error).toBe('Music folders are changed on the computer');
+    expect((await fetch(lan + '/api/settings', { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ icon: 'vinyl' }) })).status).toBe(200);
     // The computer's own manifest has no key in it.
     expect(JSON.stringify((await api.get('/manifest.webmanifest')).body)).not.toContain(token);
     // Links for a device that already has the key.

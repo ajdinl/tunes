@@ -15,7 +15,7 @@ import { store, useStore, api } from '../lib/store.ts';
 import type { Track } from '../lib/store.ts';
 import { toast } from '../lib/feedback.ts';
 import { savePref, setTheme, useTheme } from '../lib/prefs.ts';
-import { shell, useShell, CAN_HOVER } from '../shell/ui.ts';
+import { shell, useShell, CAN_HOVER, IS_LOCAL } from '../shell/ui.ts';
 import type { DeckCtrls } from '../shell/ui.ts';
 import { IS_PHONE } from '../lib/install.ts';
 import { STANDALONE, asset } from '../lib/env.ts';
@@ -145,14 +145,15 @@ export function Settings(_: { route: Route }) {
             {folders.map((f, i) => (
               <li className="folders__item" key={f + ':' + i}>
                 <Icon name="folder" size={16} /><code>{f}</code>
-                {folders.length > 1 ? <button type="button" className="ibtn" aria-label={tr('Remove folder')} onClick={() => removeFolder(i)}><Icon name="close" size={16} /></button> : null}
+                {folders.length > 1 && IS_LOCAL ? <button type="button" className="ibtn" aria-label={tr('Remove folder')} onClick={() => removeFolder(i)}><Icon name="close" size={16} /></button> : null}
               </li>
             ))}
           </ul>
-          <form className="row" onSubmit={addFolder}>
+          {/* Folders are chosen on the computer itself (the server refuses changes from the network). */}
+          {IS_LOCAL ? <form className="row" onSubmit={addFolder}>
             <input className="field" type="text" placeholder="~/Music/Another folder" aria-label={tr('Folder path')} value={newFolder} onChange={(e) => setNewFolder(e.target.value)} />
             <button className="btn">{tr('Add folder')}</button>
-          </form>
+          </form> : <p className="muted">{tr('Music folders are changed on the computer')}</p>}
           <button type="button" className="btn btn--ghost" disabled={scanning} onClick={rescan}><Icon name="refresh" size={16} />{tr('Rescan')}</button>
           <p className="muted">
             {tr('Tip: the ')}<a href="https://beets.io" {...ext}>beets</a>
