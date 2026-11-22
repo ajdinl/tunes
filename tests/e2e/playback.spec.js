@@ -342,7 +342,7 @@ test('player buttons: above the dial, beside it in one row, or only on hover', a
   expect(Math.abs(mid(await page.locator('.deck__now').boundingBox()) - mid(await dial.boundingBox()))).toBeLessThan(6);
   const deckBox = await deck.boundingBox();
   const cover = await page.locator('.deck__cv').boundingBox();
-  expect(cover.y + cover.height).toBeLessThanOrEqual(deckBox.y + deckBox.height); // the cover still fits
+  expect(cover.y + cover.height).toBeLessThanOrEqual(deckBox.y + deckBox.height - 6); // the cover stays clear of the bottom edge
   await page.locator('.dial-opt[data-style="dial"]').click();
 
   // Beside: one row, like SoundCloud, and a lower bar.

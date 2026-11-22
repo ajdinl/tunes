@@ -1144,6 +1144,9 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
   /* Minimal is just a line: a lower dial brings it closer to the buttons and makes the bar lower.
      36px still lets the cover (60px, lined up with the dial) fit in the bar. */
   .deck .dial[data-style='minimal'] { height: 36px; }
+  /* …and a smaller cover, so it lines up with the line without touching the bottom edge. */
+  .deck:has(.dial[data-style='minimal']) .deck__cv,
+  .deck:has(.dial[data-style='minimal']) .deck__cv .cv { width: 48px; height: 48px; }
   /* The song on the left and the tools on the right line up with the dial, not with the
      middle of the whole bar: half of the buttons row (34px) plus the gap (8px) lower. */
   .deck .deck__now, .deck .deck__tools { position: relative; top: 21px; }
