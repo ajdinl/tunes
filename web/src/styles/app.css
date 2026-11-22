@@ -1116,6 +1116,8 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 /* Player style "Minimal" (Settings → Appearance): just the line, no receiver panel. */
 .dial[data-style='minimal'] { background: none; box-shadow: none; }
 .dial[data-style='minimal']::after { display: none; }
+/* The time under the mouse sits right above the line (there is room inside the dial). */
+.dial[data-style='minimal'] .dial__tip { top: calc(50% - 26px); }
 
 /* Player bar on computers: slightly smaller transport buttons, so the dial gets the room.
    Phones keep the bigger touch targets. */
@@ -1181,6 +1183,9 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
     transition: opacity 0.15s, transform 0.15s;
     z-index: 2;
   }
+  /* The floating buttons cover the space above the dial: the time under the mouse goes inside. */
+  body.deck-hover .deck .dial__tip { top: 3px; }
+  body.deck-hover .deck .dial[data-style='minimal'] .dial__tip { top: calc(50% - 26px); }
   body.deck-hover .deck:hover .deck__ctrls,
   body.deck-hover .deck:has(.deck__ctrls :focus-visible) .deck__ctrls {
     opacity: 1;

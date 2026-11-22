@@ -334,6 +334,19 @@ test('player buttons: above the dial, beside it in one row, or only on hover', a
   await expect.poll(opacity).toBe('0');
   await page.locator('.deck__dial').hover();
   await expect.poll(opacity).toBe('1');
+  // The time under the mouse stays visible: inside the dial, not behind the floating buttons.
+  for (const style of ['dial', 'minimal']) {
+    await page.locator(`.dial-opt[data-style="${style}"]`).click();
+    const db = await dial.boundingBox();
+    await page.mouse.move(db.x + db.width * 0.42, db.y + db.height / 2);
+    const tip = page.locator('.deck .dial__tip');
+    await expect(tip).toBeVisible();
+    const tb = await tip.boundingBox();
+    const cb = await ctrls.boundingBox();
+    expect(tb.y, style).toBeGreaterThanOrEqual(db.y);
+    expect(tb.y > cb.y + cb.height || tb.x + tb.width < cb.x || tb.x > cb.x + cb.width, `${style}: tip under the buttons`).toBe(true);
+  }
+  await page.locator('.deck__dial').hover();
   await play.click();
   await expectPlaying(page, false);
   // The keyboard still works while they are hidden.
