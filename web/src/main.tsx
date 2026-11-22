@@ -15,6 +15,7 @@ import { startTooltips } from './lib/tooltips.ts';
 import { IS_LOCAL, shell } from './shell/ui.ts';
 import { installMethod, IS_PHONE } from './lib/install.ts';
 import * as i18n from './lib/i18n.ts';
+import { syncPrefs } from './lib/prefs.ts';
 
 // For the end-to-end tests (tests/e2e/helpers.js appModule()) and for poking around in the console.
 Object.assign(window, { __tunes: { player, offline, store, i18n } });
@@ -31,7 +32,7 @@ async function boot(): Promise<void> {
   await initLang();
   startTooltips();
   const root = createRoot(document.getElementById('root')!);
-  try { await store.load(); }
+  try { await store.load(); await syncPrefs(); }
   catch { toast(tr('The server isn\'t responding. Is Tunes running?'), { error: true, timeout: 10000 }); }
   root.render(<App />);
   connectEvents((count, changed) => { if (changed) toast(tr('Library updated: {n}', { n: songs(count) })); });

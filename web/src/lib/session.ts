@@ -8,6 +8,7 @@ import type { Context, Track } from './store.ts';
 import { tr } from './i18n.ts';
 import { toast } from './feedback.ts';
 import { fmtTime } from './format.ts';
+import { applyPrefs } from './prefs.ts';
 
 export interface RemoteSession {
   deviceId: string;
@@ -110,6 +111,12 @@ export function connectEvents(onLibrary: (count: number, changed: number) => voi
   });
   es.addEventListener('icy', (e) => { const d = JSON.parse((e as MessageEvent).data); player.setIcy(d.sid, d.title); });
   es.addEventListener('icon', (e) => store.setIcon(JSON.parse((e as MessageEvent).data).icon));
+  // Theme, language, player style or button layout picked on another device.
+  es.addEventListener('prefs', (e) => {
+    const prefs = JSON.parse((e as MessageEvent).data);
+    store.settings = { ...store.settings, prefs };
+    applyPrefs(prefs);
+  });
   es.addEventListener('session', (e) => setRemote(JSON.parse((e as MessageEvent).data)));
   es.addEventListener('version', (e) => onVersion(JSON.parse((e as MessageEvent).data).id));
   es.addEventListener('takeover', (e) => {

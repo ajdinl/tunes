@@ -1,4 +1,4 @@
-// Every UI string must be in all five dictionaries, with the same {placeholders}.
+// Every UI string must be in every dictionary, with the same {placeholders}.
 // Strings are found in the code as tr('…') and plural(n, 'one', 'many'); the server's error
 // messages (translated on the client) as `error: '…'` and httpError('…').
 import fs from 'node:fs';
@@ -10,9 +10,15 @@ import { SR } from '../../web/src/i18n/sr.ts';
 import { HR } from '../../web/src/i18n/hr.ts';
 import { DE } from '../../web/src/i18n/de.ts';
 import { TR } from '../../web/src/i18n/tr.ts';
+import { SL } from '../../web/src/i18n/sl.ts';
+import { MK } from '../../web/src/i18n/mk.ts';
+import { SQ } from '../../web/src/i18n/sq.ts';
+import { ES } from '../../web/src/i18n/es.ts';
+import { FR } from '../../web/src/i18n/fr.ts';
+import { PT } from '../../web/src/i18n/pt.ts';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
-const DICTS = { bs: BS, sr: SR, hr: HR, de: DE, tr: TR };
+const DICTS = { bs: BS, sr: SR, hr: HR, sl: SL, mk: MK, sq: SQ, de: DE, es: ES, fr: FR, pt: PT, tr: TR };
 
 const files = (dir) => fs.readdirSync(dir, { recursive: true }).map((f) => path.join(dir, f)).filter((f) => /\.(ts|tsx)$/.test(f) && !f.includes(`${path.sep}i18n${path.sep}`));
 const literal = String.raw`'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)"`;

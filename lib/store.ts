@@ -6,7 +6,7 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 
-import type { Data, Playlist, PublicState, Track } from './types.ts';
+import type { Data, Playlist, Prefs, PublicState, Track } from './types.ts';
 
 const HISTORY_LIMIT = 5000;
 
@@ -20,6 +20,7 @@ const defaults = (): Data => ({
     volume: 0.8,
     phone: { enabled: false, token: '' },
     icon: 'dial',
+    prefs: {},
   },
   favorites: {},      // id -> { track, at }
   playlists: [],      // { id, name, created, updated, tracks: [track] }
@@ -39,6 +40,13 @@ export function tildify(f: string): string {
 // App icon variants (folders in public/icons). The choice is stored here, so every device shows the same icon.
 export const ICONS = ['dial', 'night', 'vinyl', 'bars'];
 
+// Allowed values of the synced appearance choices (Settings → Language and Appearance).
+export const PREF_VALUES: Record<keyof Prefs, readonly string[]> = {
+  theme: ['black', 'indigo', 'light'],
+  lang: ['en', 'bs', 'sr', 'hr', 'de', 'tr', 'es', 'fr', 'pt', 'sl', 'mk', 'sq'],
+  dialStyle: ['dial', 'calm', 'minimal', 'color', 'mirror'],
+  deckCtrls: ['above', 'beside', 'hover'],
+};
 
 export interface SettingsPatch {
   folders?: unknown;
@@ -47,6 +55,7 @@ export interface SettingsPatch {
   eq?: { enabled?: unknown; preset?: unknown; gains?: unknown[] } | null;
   volume?: unknown;
   icon?: unknown;
+  prefs?: Record<string, unknown> | null;
 }
 
 export interface PlaylistPatch {
@@ -198,6 +207,16 @@ export class Store {
     }
     if (typeof patch.volume === 'number') s.volume = Math.max(0, Math.min(1, patch.volume));
     if (typeof patch.icon === 'string' && ICONS.includes(patch.icon)) s.icon = patch.icon;
+    // Merged key by key; null clears them all (the tests start each case from none).
+    if (patch.prefs === null) s.prefs = {};
+    else if (patch.prefs && typeof patch.prefs === 'object') {
+      const next: Prefs = { ...(s.prefs || {}) };
+      for (const key of Object.keys(PREF_VALUES) as (keyof Prefs)[]) {
+        const v = patch.prefs[key];
+        if (typeof v === 'string' && PREF_VALUES[key].includes(v)) next[key] = v;
+      }
+      s.prefs = next;
+    }
     this.save();
   }
 }

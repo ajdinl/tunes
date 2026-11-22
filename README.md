@@ -2,7 +2,7 @@
 
 **A self-hosted music player with no subscription.** It combines the music on your computer with free, legal sources in one interface: independent artists, live concert archives, internet radio and synced lyrics.
 
-The interface is in English, Bosnian, Serbian, Croatian, German and Turkish (it follows your browser language, and you can switch any time without stopping the music).
+The interface is in English, Bosnian, Serbian, Croatian, Slovenian, Macedonian, Albanian, German, Spanish, French, Portuguese and Turkish. It starts in English; pick another language in Settings any time without stopping the music. Your theme, language and player look follow you to every browser and device.
 
 [Bosanski README](README.bs.md)
 

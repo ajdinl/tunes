@@ -6,12 +6,15 @@ import {
 test('switching language while music plays keeps playing and re-renders the UI', async ({ page }) => {
   await playSong(page, 'Morning Light');
   await go(page, '/settings');
-  const expected = { bs: 'Postavke', sr: 'Podešavanja', hr: 'Postavke', de: 'Einstellungen', tr: 'Ayarlar', en: 'Settings' };
+  const expected = {
+    bs: 'Postavke', sr: 'Podešavanja', hr: 'Postavke', sl: 'Nastavitve', mk: 'Поставки', sq: 'Cilësimet',
+    de: 'Einstellungen', es: 'Ajustes', fr: 'Paramètres', pt: 'Configurações', tr: 'Ayarlar', en: 'Settings',
+  };
   for (const code of [...LANGS.slice(1), 'en']) {
     const before = await position(page);
-    await page.locator(`.lang-opt[lang="${code}"]`).click();
+    await page.locator('.lang-select').selectOption(code);
     await expect(page.locator('html')).toHaveAttribute('lang', code);
-    await expect(page.locator(`.lang-opt[lang="${code}"]`)).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.lang-select')).toHaveValue(code);
     await expect(page.locator('.nav a[href$="/settings"]')).toContainText(expected[code]);
     await expectPlaying(page);
     expect(await deckTitle(page)).toBe('Morning Light');

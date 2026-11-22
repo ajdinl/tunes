@@ -346,8 +346,10 @@ route('PUT', /^\/api\/settings$/, async (req, res) => {
   const patch = await body<SettingsPatch>(req);
   const oldFolders = JSON.stringify(store.data.settings.folders);
   const oldIcon = store.data.settings.icon;
+  const oldPrefs = JSON.stringify(store.data.settings.prefs);
   store.updateSettings(patch);
   if (store.data.settings.icon !== oldIcon) broadcast('icon', { icon: iconName() });
+  if (JSON.stringify(store.data.settings.prefs) !== oldPrefs) broadcast('prefs', store.data.settings.prefs);
   const out: { ok: true; listenbrainz?: { valid: boolean; user?: string | null; error?: string } } = { ok: true };
   if (typeof patch.listenbrainzToken === 'string' && patch.listenbrainzToken && patch.listenbrainzToken !== '••••') {
     try {

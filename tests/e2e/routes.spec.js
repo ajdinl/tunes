@@ -131,7 +131,7 @@ test('English and the black theme until the user picks others, whatever the brow
   // The black theme is the default too.
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'black');
   expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe('rgb(0, 0, 0)');
-  await page.locator('.lang-opt[lang="bs"]').click();
+  await page.locator('.lang-select').selectOption('bs');
   await expect(page.locator('html')).toHaveAttribute('lang', 'bs');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('lang', 'bs');

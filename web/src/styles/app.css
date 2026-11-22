@@ -600,10 +600,7 @@ a.rank__name:hover { text-decoration: underline; }
 .theme-opt[aria-pressed='true'] { border-color: var(--amber); }
 .theme-opt__sw { width: 34px; height: 34px; border-radius: var(--r-sm); border: 1px solid var(--line); background: linear-gradient(135deg, var(--sw) 60%, var(--amber) 60%); }
 .theme-opt__icon { width: 34px; height: 34px; border-radius: 8px; }
-.lang-opt { padding-left: 10px; }
-.lang-opt__flag { font-size: 24px; line-height: 1; font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; }
-.lang-opt__text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; }
-.lang-opt__native { color: var(--muted); font-size: 12.5px; font-weight: 500; }
+.lang-select { width: 100%; max-width: 340px; }
 .theme-opt__flag { display: grid; place-items: center; width: 34px; height: 34px; border-radius: var(--r-sm); background: var(--bg-3); color: var(--amber); font-size: 12px; font-weight: 750; letter-spacing: 0.04em; }
 .hd__cv--round { border-radius: 50%; }
 .nav__phone { border: 0; background: none; width: 100%; text-align: left; font: inherit; cursor: pointer; }

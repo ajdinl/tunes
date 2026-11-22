@@ -8,7 +8,7 @@ import { test as base, expect } from '@playwright/test';
 export { expect };
 
 export const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
-export const LANGS = ['en', 'bs', 'sr', 'hr', 'de', 'tr'];
+export const LANGS = ['en', 'bs', 'sr', 'hr', 'sl', 'mk', 'sq', 'de', 'es', 'fr', 'pt', 'tr'];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // Host names that reach the test server. phone.local is mapped to 127.0.0.1 (playwright.config.js).
@@ -38,6 +38,12 @@ async function prepareContext(context, errors) {
 }
 
 export const test = base.extend({
+  // Appearance choices sync through the shared demo server: every test starts with none.
+  resetPrefs: [async ({ request }, use) => {
+    await request.put('/api/settings', { data: { prefs: null } });
+    await use();
+  }, { auto: true }],
+
   pageErrors: [async ({}, use) => {
     const errors = [];
     await use(errors);

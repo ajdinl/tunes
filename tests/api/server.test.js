@@ -265,6 +265,23 @@ describe('app icon', () => {
   });
 });
 
+describe('appearance choices (theme, language, player style, buttons)', () => {
+  it('are kept for every browser, merged key by key, checked, and sent to every device', async () => {
+    const sse = listen(srv.url);
+    await sse.ready;
+    expect((await api.get('/api/state')).body.settings.prefs).toEqual({});
+    await api.put('/api/settings', { prefs: { theme: 'light', lang: 'bs' } });
+    expect((await sse.next('prefs')).data).toEqual({ theme: 'light', lang: 'bs' });
+    // Unknown keys and values are dropped; the rest is merged.
+    const r = await api.put('/api/settings', { prefs: { dialStyle: 'minimal', theme: 'pink', deckCtrls: 'beside', evil: 'x' } });
+    expect(r.body.state.settings.prefs).toEqual({ theme: 'light', lang: 'bs', dialStyle: 'minimal', deckCtrls: 'beside' });
+    expect((await sse.next('prefs', (d) => d.dialStyle === 'minimal')).data).toEqual({ theme: 'light', lang: 'bs', dialStyle: 'minimal', deckCtrls: 'beside' });
+    await api.put('/api/settings', { prefs: null });
+    expect((await api.get('/api/state')).body.settings.prefs).toEqual({});
+    sse.close();
+  });
+});
+
 describe('one player at a time (session and takeover)', () => {
   const track = { id: 'local:aaaaaaaaaaaaaaaa', title: 'Morning Light', duration: 200 };
 

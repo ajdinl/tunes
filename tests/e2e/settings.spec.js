@@ -108,3 +108,50 @@ test('install: on an iPhone, Share → Add to Home Screen plus Tailscale', async
   await expect(dlg).not.toContainText('address bar');
   await expect(dlg.locator('.install__h')).toHaveText('Listening away from home (Tailscale)');
 });
+
+test('theme, language, player style and button layout follow you to other browsers', async ({ device }) => {
+  const a = await device();
+  const b = await device();
+  await open(a, '/settings');
+  await open(b, '/');
+  await a.locator('.theme-opt', { hasText: 'Light' }).click();
+  await a.locator('.dial-opt[data-style="minimal"]').click();
+  await a.locator('.ctrls-opt[data-ctrls="beside"]').click();
+  await a.locator('.lang-select').selectOption('de');
+  await expect(a.locator('html')).toHaveAttribute('lang', 'de');
+
+  // A device that is already open changes along, without a reload.
+  await expect(b.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(b.locator('html')).toHaveAttribute('lang', 'de');
+  await expect(b.locator('.deck .dial')).toHaveAttribute('data-style', 'minimal');
+  await expect(b.locator('body')).toHaveClass(/deck-row/);
+
+  // A browser that has never seen Tunes starts with them.
+  const c = await device();
+  await open(c, '/settings');
+  await expect(c.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(c.locator('html')).toHaveAttribute('lang', 'de');
+  await expect(c.locator('#main h1')).toHaveText('Einstellungen');
+  await expect(c.locator('.dial-opt[data-style="minimal"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(c.locator('.ctrls-opt[data-ctrls="beside"]')).toHaveAttribute('aria-pressed', 'true');
+
+  // The menu folded on one computer stays a choice of that screen.
+  await a.locator('.side__toggle').click();
+  await expect(a.locator('body')).toHaveClass(/side-mini/);
+  await c.reload();
+  await settle(c);
+  await expect(c.locator('body')).not.toHaveClass(/side-mini/);
+});
+
+test('choices made before syncing existed are sent up once', async ({ device, request }) => {
+  const a = await device();
+  await a.addInitScript(() => {
+    if (sessionStorage.getItem('seeded')) return;
+    sessionStorage.setItem('seeded', '1');
+    localStorage.setItem('tunes.theme', JSON.stringify('indigo'));
+    localStorage.setItem('tunes.dialStyle', JSON.stringify('calm'));
+  });
+  await open(a, '/');
+  await expect.poll(async () => (await (await request.get('/api/state')).json()).settings.prefs).toEqual({ theme: 'indigo', dialStyle: 'calm' });
+  await expect(a.locator('html')).toHaveAttribute('data-theme', 'indigo');
+});

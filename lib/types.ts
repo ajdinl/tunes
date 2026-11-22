@@ -40,6 +40,15 @@ export interface Settings {
   volume: number;
   phone: { enabled: boolean; token: string };
   icon: string;
+  prefs: Prefs;
+}
+
+// Appearance choices that follow the user to every browser and device.
+export interface Prefs {
+  theme?: string;
+  lang?: string;
+  dialStyle?: string;
+  deckCtrls?: string;
 }
 
 export interface Playlist {

@@ -14,7 +14,13 @@ export const LANGUAGES = [
   { code: 'bs', name: 'Bosnian', native: 'Bosanski', flag: '🇧🇦', locale: ['bs-BA', 'hr-HR'] },
   { code: 'sr', name: 'Serbian', native: 'Srpski', flag: '🇷🇸', locale: ['sr-Latn-RS', 'hr-HR'] },
   { code: 'hr', name: 'Croatian', native: 'Hrvatski', flag: '🇭🇷', locale: 'hr-HR' },
+  { code: 'sl', name: 'Slovenian', native: 'Slovenščina', flag: '🇸🇮', locale: 'sl-SI' },
+  { code: 'mk', name: 'Macedonian', native: 'Македонски', flag: '🇲🇰', locale: 'mk-MK' },
+  { code: 'sq', name: 'Albanian', native: 'Shqip', flag: '🇦🇱', locale: 'sq-AL' },
   { code: 'de', name: 'German', native: 'Deutsch', flag: '🇩🇪', locale: 'de-DE' },
+  { code: 'es', name: 'Spanish', native: 'Español', flag: '🇪🇸', locale: 'es-ES' },
+  { code: 'fr', name: 'French', native: 'Français', flag: '🇫🇷', locale: 'fr-FR' },
+  { code: 'pt', name: 'Portuguese', native: 'Português', flag: '🇧🇷', locale: 'pt-BR' },
   { code: 'tr', name: 'Turkish', native: 'Türkçe', flag: '🇹🇷', locale: 'tr-TR' },
 ] as const;
 
@@ -26,7 +32,13 @@ const LOADERS: Record<string, () => Promise<Record<string, unknown>>> = {
   bs: () => import('../i18n/bs.ts'),
   sr: () => import('../i18n/sr.ts'),
   hr: () => import('../i18n/hr.ts'),
+  sl: () => import('../i18n/sl.ts'),
+  mk: () => import('../i18n/mk.ts'),
+  sq: () => import('../i18n/sq.ts'),
   de: () => import('../i18n/de.ts'),
+  es: () => import('../i18n/es.ts'),
+  fr: () => import('../i18n/fr.ts'),
+  pt: () => import('../i18n/pt.ts'),
   tr: () => import('../i18n/tr.ts'),
 };
 

@@ -42,7 +42,7 @@ Da izgleda kao prava aplikacija: klikni **Instaliraj aplikaciju** u lijevom meni
 
 ## Mogućnosti
 
-- Jezik: engleski, bosanski, srpski, hrvatski, njemački ili turski (Postavke), mijenja se bez prekidanja muzike
+- Jezik: engleski, bosanski, srpski, hrvatski, slovenski, makedonski, albanski, njemački, španski, francuski, portugalski ili turski (Postavke), mijenja se bez prekidanja muzike. Tema, jezik i izgled playera se prenose na svaki browser i uređaj.
 - Na telefonu: **Dodaj na početni ekran** (iPhone i Android), uz uputstvo i za Tailscale verziju
 - Offline buffer: trenutna i sljedeće pjesme se skidaju na telefon, pa muzika svira i kad nestane interneta. Pjesme koje nisu puštane 3 dana brišu se same
 - Ikonica aplikacije: četiri varijante u Postavke → Izgled; izbor važi na svim uređajima

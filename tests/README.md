@@ -12,7 +12,7 @@ Nothing here touches your real data or the server on port 4545, and nothing need
 
 | Folder | Runner | What |
 | --- | --- | --- |
-| `unit/` | Vitest | Translations: every `tr()` string, server error message and `plural()` noun is in all five dictionaries with the same placeholders. `lib/*` in-process: store (history rule, playlists, settings, `tildify`, `cleanTrack`), sources parsing (Audius, Archive, Radio Browser, Jamendo, SoundCloud canonical links, LRCLIB `sameSong`), library scanning (tags, folder fallback, `.lrc`). |
+| `unit/` | Vitest | Translations: every `tr()` string, server error message and `plural()` noun is in every dictionary (11 languages besides English) with the same placeholders. `lib/*` in-process: store (history rule, playlists, settings, `tildify`, `cleanTrack`), sources parsing (Audius, Archive, Radio Browser, Jamendo, SoundCloud canonical links, LRCLIB `sameSong`), library scanning (tags, folder fallback, `.lrc`). |
 | `api/` | Vitest | Starts a real server (`server.ts`) on its own port and checks the HTTP API: routes, JSON shapes, host check, JSON-only mutations, Range requests, SSE events, sessions and takeover, phone access on PORT+1. |
 | `e2e/` | Playwright | The scenario list from `CLAUDE.md` in Chromium against the built app (`web/dist`): every screen in every language, language switch while playing, handoff, one player per device and tab, phone touch seeking and menu, offline buffer, SoundCloud widget, icon sync, phone login, history, lyrics, Media Session. |
 | `support/` | | Shared pieces (below). |

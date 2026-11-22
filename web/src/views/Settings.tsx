@@ -7,12 +7,14 @@ import { Header, Section } from '../components/common.tsx';
 import { Icon } from '../components/Icon.tsx';
 import { OfflineSettings } from './OfflineSettings.tsx';
 import { tr, setLang, LANGUAGES, useLang } from '../lib/i18n.ts';
+import type { LangCode } from '../lib/i18n.ts';
 import { setDialStyle, useDialStyle } from '../lib/dial.ts';
 import type { DialStyle } from '../lib/dial.ts';
 import { norm, songs } from '../lib/format.ts';
 import { store, useStore, api } from '../lib/store.ts';
 import type { Track } from '../lib/store.ts';
 import { toast } from '../lib/feedback.ts';
+import { savePref, setTheme, useTheme } from '../lib/prefs.ts';
 import { shell, useShell, CAN_HOVER } from '../shell/ui.ts';
 import type { DeckCtrls } from '../shell/ui.ts';
 import { IS_PHONE } from '../lib/install.ts';
@@ -29,16 +31,10 @@ const KEYS: [string, string, boolean][] = [ // [key, description, translate the 
 ];
 const ext = { target: '_blank', rel: 'noopener' } as const;
 
-export function setTheme(t: string): void {
-  document.documentElement.dataset.theme = t;
-  document.querySelector<HTMLMetaElement>('meta[name=theme-color]')?.setAttribute('content', t === 'black' ? '#000000' : t === 'light' ? '#f4f4f6' : '#1c1f3a');
-  try { localStorage.setItem('tunes.theme', JSON.stringify(t)); } catch { /* storage full or blocked */ }
-}
-
 export function Settings(_: { route: Route }) {
   useStore('library', 'settings');
   const lang = useLang();
-  const [theme, setThemeState] = useState(() => document.documentElement.dataset.theme || 'black');
+  const theme = useTheme();
   const icon = store.settings.icon || 'dial';
 
   // ---- folders (a local copy, refreshed when the library reloads)
@@ -112,18 +108,15 @@ export function Settings(_: { route: Route }) {
       <Header title={tr('Settings')} />
 
       <Section title={tr('Language')}>
-        <div className="theme-pick" role="group" aria-label={tr('Language')}>
+        {/* One dropdown: twelve languages as buttons would fill the screen. Each shows its own
+            name first, so people find their language even when the app speaks another one. */}
+        <select className="field lang-select" aria-label={tr('Language')} value={lang}
+          onChange={(e) => { const code = e.target.value as LangCode; setLang(code); savePref('lang', code); }}>
           {LANGUAGES.map((l) => {
             const name = tr(l.name);
-            return (
-              <button key={l.code} type="button" className="theme-opt lang-opt" lang={l.code} aria-pressed={lang === l.code}
-                onClick={() => { if (lang !== l.code) setLang(l.code); }}>
-                <span className="lang-opt__flag" aria-hidden="true">{l.flag}</span>
-                <span className="lang-opt__text"><span>{name}</span>{name !== l.native ? <span className="lang-opt__native">{l.native}</span> : null}</span>
-              </button>
-            );
+            return <option key={l.code} value={l.code} lang={l.code}>{`${l.flag}  ${l.native}${name !== l.native ? ` · ${name}` : ''}`}</option>;
           })}
-        </div>
+        </select>
       </Section>
 
       <Section title={tr('Appearance')}>
@@ -131,7 +124,7 @@ export function Settings(_: { route: Route }) {
           <div className="theme-pick" role="group" aria-label={tr('Theme')}>
             {THEMES.map((t) => (
               <button key={t.value} type="button" className="theme-opt" aria-pressed={theme === t.value}
-                onClick={() => { setTheme(t.value); setThemeState(t.value); }}>
+                onClick={() => { setTheme(t.value); savePref('theme', t.value); }}>
                 <span className="theme-opt__sw" style={{ '--sw': t.sw } as CSSProperties} aria-hidden="true" />{tr(t.label)}
               </button>
             ))}
@@ -362,7 +355,7 @@ function DeckControlsPicker() {
       <div className="theme-pick" role="group" aria-label={tr('Player buttons')}>
         {opts.map(([value, label]) => (
           <button key={value} type="button" className="theme-opt ctrls-opt" data-ctrls={value} aria-pressed={ui.deckCtrls === value}
-            onClick={() => shell.set({ deckCtrls: value })}>{tr(label)}</button>
+            onClick={() => { shell.set({ deckCtrls: value }); savePref('deckCtrls', value); }}>{tr(label)}</button>
         ))}
       </div>
       <p className="muted">{tr('Beside the progress bar, or only when the mouse is over it, the player bar takes less room.')}</p>
@@ -376,7 +369,7 @@ function DialStylePicker() {
     <>
       <div className="theme-pick" role="group" aria-label={tr('Player style')}>
         {DIAL_OPTS.map((o) => (
-          <button key={o.value} type="button" className="theme-opt dial-opt" data-style={o.value} aria-pressed={current === o.value} onClick={() => setDialStyle(o.value)}>
+          <button key={o.value} type="button" className="theme-opt dial-opt" data-style={o.value} aria-pressed={current === o.value} onClick={() => { setDialStyle(o.value); savePref('dialStyle', o.value); }}>
             <DialPreview style={o.value} />{tr(o.label)}
           </button>
         ))}
