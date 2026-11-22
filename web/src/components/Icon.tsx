@@ -57,11 +57,11 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   );
 }
 
-// Icon-only button: aria-label describes it, and the same text shows as a tooltip.
+// Icon-only button: aria-label describes it, and lib/tooltips.ts shows the same text on hover.
 export function IconButton({ icon, label, size = 20, className = '', children, ...rest }:
   { icon: IconName; label: string; size?: number; className?: string; children?: ReactNode } & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button type="button" className={('ibtn ' + className).trim()} aria-label={label} title={label} {...rest}>
+    <button type="button" className={('ibtn ' + className).trim()} aria-label={label} {...rest}>
       <Icon name={icon} size={size} />
       {children}
     </button>

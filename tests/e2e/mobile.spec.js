@@ -89,3 +89,30 @@ test('desktop uses the Web Audio graph (equalizer and spectrum)', async ({ page 
   await playSong(page, 'Slow River');
   expect(await appModule(page, 'player', (m) => ({ mobile: m.player.mobile, graph: Boolean(m.player.ctx), filters: m.player.filters?.length }))).toEqual({ mobile: false, graph: true, filters: 10 });
 });
+
+test('tooltips show right away on mouse hover, not on touch', async ({ page, device }) => {
+  await playSong(page, 'Northbound');
+  const tip = page.locator('.tip.is-on');
+  const shuffle = page.locator('.deck__ctrls .ibtn').first();
+  await shuffle.hover();
+  await expect(tip).toHaveText('Shuffle (S)', { timeout: 500 });
+  // No native title on top of it (the browser's own tooltip would show after ~2 s).
+  expect(await shuffle.getAttribute('title')).toBeNull();
+  // Elements with a title get the same quick tooltip.
+  await page.locator('.deck__title').hover();
+  await expect(tip).toHaveText('Playing from: All songs', { timeout: 500 });
+  // A link whose text is already visible gets none; in the folded sidebar it does.
+  await page.locator('.nav a[href="/songs"]').hover();
+  await expect(tip).toHaveCount(0);
+  await page.locator('.side__toggle').click();
+  await page.locator('.nav a[href="/songs"]').hover();
+  await expect(tip).toHaveText('Songs', { timeout: 500 });
+  await page.locator('.side__toggle').click();
+  await page.mouse.move(700, 300);
+  await expect(tip).toHaveCount(0);
+
+  const phone = await device({ mobile: true });
+  await playSong(phone, 'Low Tide');
+  await phone.locator('.deck .play').tap();
+  await expect(phone.locator('.tip.is-on')).toHaveCount(0);
+});

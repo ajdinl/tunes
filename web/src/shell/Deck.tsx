@@ -118,7 +118,7 @@ function SleepButton() {
   };
   // aria-label stays "Sleep timer"; the tooltip shows the time left (like before).
   return (
-    <button type="button" className={cx('ibtn', s && 'is-on')} aria-label={tr('Sleep timer')} title={title} data-no-tip="" data-badge={badge}
+    <button type="button" className={cx('ibtn', s && 'is-on')} aria-label={tr('Sleep timer')} data-tip={title} data-badge={badge}
       onClick={(e) => open(e.currentTarget)}>
       <Icon name="moon" size={20} />
     </button>
