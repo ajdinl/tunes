@@ -11,6 +11,9 @@ const DB_NAME = 'tunes-offline';
 const DEFAULTS = { enabled: true, ahead: 3, limitMB: 500 };
 const RETRY_MS = 60000;   // wait before retrying a failed download
 const TOUCH_MS = 60000;   // write "last used" at most once a minute per song
+const EXPIRE_MS = 72 * 3600000; // songs not played for 3 days are deleted, so the buffer never clogs the device
+const SWEEP_MS = 3600000;       // check for expired songs every hour
+const FIRST_SWEEP_MS = 15000;   // first check after start, once the player has restored its queue
 const HOME = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(location.hostname);
 const AUDIO_TYPE = /^(audio|video)\/|^application\/(ogg|octet-stream)$/;
 
@@ -74,6 +77,8 @@ class Offline extends EventTarget {
     this.retryTimer = 0;
     this.ready = this.init();
     window.addEventListener('online', () => this.kick());
+    // Phones freeze timers in the background, so also check when the app comes back.
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') this.expire(); });
   }
 
   get supported() { return typeof indexedDB !== 'undefined'; }
@@ -88,6 +93,8 @@ class Offline extends EventTarget {
       for (const m of all) this.index.set(m.id, m);
       this.db.onversionchange = () => { this.db.close(); this.db = null; };
       if (this.index.size) this.emit({ type: 'loaded' });
+      setTimeout(() => this.expire(), FIRST_SWEEP_MS);
+      setInterval(() => this.expire(), SWEEP_MS);
     } catch {
       this.db = null; // private mode or storage disabled: buffering just stays off
     }
@@ -230,6 +237,16 @@ class Offline extends EventTarget {
     if (victims.length) await this.remove(...victims);
   }
 
+  // Deletes songs not played for EXPIRE_MS. The current window is never touched, and nothing
+  // is deleted while offline: that is exactly when the downloaded copies are needed.
+  async expire(now = Date.now()) {
+    if (!this.db || navigator.onLine === false) return;
+    const old = [...this.index.values()]
+      .filter((m) => !this.keep.has(m.id) && now - (m.used || m.added || 0) > EXPIRE_MS)
+      .map((m) => m.id);
+    if (old.length) await this.remove(...old);
+  }
+
   async remove(...ids) {
     ids = ids.filter((id) => this.index.has(id));
     if (!ids.length || !this.db) return;
@@ -345,6 +362,7 @@ export function renderOfflineSettings() {
     h('div.row', {}, h('label', { for: id + '-ahead' }, tr('Songs to keep ahead')), ahead),
     h('div.row', {}, h('label', { for: id + '-limit' }, tr('Storage limit')), limit),
     usage,
+    h('p.muted', {}, tr('Songs you haven\'t played for 3 days are deleted automatically.')),
     clearBtn,
     HOME ? h('p.muted', {}, tr('On this computer, songs from your own folders are not downloaded: they are already here.')) : null,
   );

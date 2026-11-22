@@ -2,6 +2,16 @@
 // The server is the source of truth; this keeps a copy and announces changes via events.
 import { norm, shuffleArray, tr } from './ui.js';
 
+// Points the favicon, the home screen icon and the logo at the chosen app icon variant.
+// ?v= forces browsers to drop the cached image after a change.
+export function applyIcon(name) {
+  if (!name) return;
+  const v = '?v=' + encodeURIComponent(name);
+  document.querySelector('link[rel=icon]')?.setAttribute('href', '/icons/app.svg' + v);
+  document.querySelector('link[rel=apple-touch-icon]')?.setAttribute('href', '/icons/app-512.png' + v);
+  document.documentElement.style.setProperty('--app-icon', `url("/icons/app.svg${v}")`);
+}
+
 export async function api(path, { method = 'GET', body } = {}) {
   const res = await fetch(path, {
     method,
@@ -46,6 +56,7 @@ class Store extends EventTarget {
     this.stations = s.radioStations || {};
     this.settings = s.settings || {};
     this._collection = null;
+    applyIcon(this.settings.icon);
   }
 
   applyLibrary(lib) {
@@ -166,6 +177,14 @@ class Store extends EventTarget {
     await api('/api/playlists/' + id, { method: 'DELETE' });
     this.playlists = this.playlists.filter((x) => x.id !== id);
     this.emit('playlists');
+  }
+
+  // Called when another device picks a different app icon.
+  setIcon(name) {
+    if (!name || name === this.settings.icon) return;
+    this.settings = { ...this.settings, icon: name };
+    applyIcon(name);
+    this.emit('settings');
   }
 
   async saveSettings(patch) {

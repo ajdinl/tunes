@@ -587,6 +587,18 @@ document.addEventListener('open-phone', openPhone);
 // ============================================================ add to Home Screen (phone)
 const IS_STANDALONE = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+// Home screen app on iPhone: the page runs under the status bar. If the browser reports no
+// safe area (older iOS, or before the first layout), reserve the usual status bar height.
+if (IS_STANDALONE && IS_IOS) {
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;top:0;visibility:hidden;padding-top:env(safe-area-inset-top)';
+  document.body.append(probe);
+  requestAnimationFrame(() => {
+    if (!parseFloat(getComputedStyle(probe).paddingTop)) document.documentElement.style.setProperty('--safe-top', '47px');
+    probe.remove();
+  });
+}
 const ON_TAILSCALE = location.hostname.endsWith('.ts.net') || /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(location.hostname);
 let installPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; });
@@ -735,7 +747,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (!eqBox.hidden) { toggleEq(false); return; }
     if (!now.hidden) { closeNow(); return; }
-    if (document.body.classList.contains('nav-open')) { document.body.classList.remove('nav-open'); return; }
+    if (document.body.classList.contains('nav-open')) { setNav(false); return; }
     if (typing) e.target.blur();
     return;
   }
@@ -785,6 +797,7 @@ function connectEvents() {
     if (d.changed) toast(tr('Library updated: {n}', { n: songs(d.count) }));
   });
   es.addEventListener('icy', (e) => { const d = JSON.parse(e.data); player.setIcy(d.sid, d.title); });
+  es.addEventListener('icon', (e) => store.setIcon(JSON.parse(e.data).icon));
   es.addEventListener('session', (e) => { remote = JSON.parse(e.data); renderHandoff(); });
   es.addEventListener('takeover', (e) => {
     const d = JSON.parse(e.data);
@@ -799,11 +812,20 @@ function connectEvents() {
 // Mobile menu
 $('navToggle').append(icon('menu', 22));
 $('topSearch').append(icon('search', 20));
-$('navToggle').addEventListener('click', () => {
-  const open = !document.body.classList.contains('nav-open');
+function setNav(open) {
   document.body.classList.toggle('nav-open', open);
   $('navToggle').setAttribute('aria-expanded', String(open));
-});
+}
+$('navToggle').addEventListener('click', () => setNav(!document.body.classList.contains('nav-open')));
+// Tapping anywhere outside the open menu closes it.
+$('navScrim').addEventListener('click', () => setNav(false));
+
+// iOS scrolls the whole page when the keyboard opens and sometimes leaves it there,
+// which pushes the top bar under the status bar. The page itself never scrolls (only .main does).
+const unshift = () => { if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0); };
+window.addEventListener('scroll', unshift, { passive: true });
+document.addEventListener('focusout', () => setTimeout(unshift, 100));
+window.visualViewport?.addEventListener('resize', () => setTimeout(unshift, 100));
 
 // ============================================================ language
 function applyStaticTexts() {

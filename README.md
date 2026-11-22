@@ -48,7 +48,8 @@ Self-hosted players like Navidrome or Jellyfin are great for your own files, but
 - Media keys and Control Center on macOS, installable as an app (PWA), keyboard shortcuts
 - English and Bosnian UI, black and "night indigo" themes
 - **Add to Home Screen** on iPhone and Android, with a guide that also sets up the Tailscale version
-- **Offline buffer:** the current and next songs are downloaded to the phone, so music keeps playing if the connection drops
+- **Offline buffer:** the current and next songs are downloaded to the phone, so music keeps playing if the connection drops. Songs not played for 3 days are deleted automatically
+- **App icon:** pick one of four icons in Settings → Appearance; the choice applies to all your devices
 
 | Now playing with synced lyrics | Equalizer |
 |---|---|

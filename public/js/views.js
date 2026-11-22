@@ -27,7 +27,7 @@ export function home() {
   if (!lib.length) {
     root.append(h('div.note', {},
       h('h2', {}, tr('Add your music')),
-      h('p', {}, tr('Put MP3, FLAC or M4A files in the folder '), h('code', {}, store.folders[0] || '~/Music/Biblioteka'),
+      h('p', {}, tr('Put MP3, FLAC or M4A files in the folder '), h('code', {}, store.folders[0] || '~/Music/Tunes'),
         tr('. Tunes picks them up in seconds and sorts them by artist and album.')),
       h('a.btn', { href: '#/settings' }, icon('folder', 16), tr('Set up folders'))));
   }
@@ -678,7 +678,28 @@ export function settingsView() {
     h('button.theme-opt', { type: 'button', 'aria-pressed': String(lang === l.value), onclick: () => { if (lang !== l.value) setLang(l.value); } },
       h('span.theme-opt__flag', { 'aria-hidden': 'true' }, l.value.toUpperCase()), l.label)));
   root.append(section(tr('Language'), langPick));
-  root.append(section(tr('Appearance'), pick));
+  // App icon: stored on the server, so the computer and the phone show the same one.
+  const ICON_OPTS = [{ value: 'dial', label: tr('Dial') }, { value: 'night', label: tr('Dial on black') }, { value: 'vinyl', label: tr('Vinyl') }, { value: 'bars', label: tr('Spectrum') }];
+  const iconPick = h('div.theme-pick', { role: 'group', 'aria-label': tr('App icon') });
+  const renderIcons = () => {
+    if (!iconPick.isConnected && iconPick.childElementCount) { store.removeEventListener('settings', renderIcons); return; }
+    const cur = store.settings.icon || 'dial';
+    iconPick.replaceChildren(...ICON_OPTS.map((o) => h('button.theme-opt', {
+      type: 'button', 'aria-pressed': String(cur === o.value),
+      onclick: async () => {
+        if (cur === o.value) return;
+        try { await store.saveSettings({ icon: o.value }); toast(tr('App icon changed')); } catch (e) { toast(e.message, { error: true }); }
+      },
+    }, h('img.theme-opt__icon', { src: `/icons/${o.value}/icon.svg`, alt: '', width: 34, height: 34 }), o.label)));
+  };
+  store.addEventListener('settings', renderIcons);
+  renderIcons();
+  root.append(section(tr('Appearance'), h('div.form', {},
+    pick,
+    h('h3.form__label', {}, tr('App icon')),
+    iconPick,
+    h('p.muted', {}, tr('The icon changes on all your devices. A shortcut already on a home screen keeps its old icon until you add it again.')),
+  )));
 
   // ---- folders
   const folders = store.folders.slice();
@@ -689,7 +710,7 @@ export function settingsView() {
       folders.splice(i, 1); await store.saveSettings({ folders }); renderFolders(); toast(tr('Folder removed from library'));
     } }, icon('close', 16)) : null)));
   renderFolders();
-  const newFolder = h('input.field', { type: 'text', placeholder: '/Users/ime/Music/Drugi folder', 'aria-label': tr('Folder path') });
+  const newFolder = h('input.field', { type: 'text', placeholder: '/Users/you/Music/Another folder', 'aria-label': tr('Folder path') });
   root.append(section(tr('Music on this computer'), h('div.form', {},
     h('p.muted', {}, tr('{n} in your libraries. New songs appear on their own as soon as you drop them in the folder.', { n: songs(store.library.length) })),
     folderList,
@@ -707,7 +728,7 @@ export function settingsView() {
       e.target.disabled = false;
     } }, icon('refresh', 16), tr('Rescan')),
     h('p.muted', {}, tr('Tip: the '), h('a', { href: 'https://beets.io', target: '_blank', rel: 'noopener' }, 'beets'),
-      tr(' tool fixes tags and covers and sorts files by artist and album. Command: '), h('code', {}, 'beet import ~/Downloads/novi-album')))));
+      tr(' tool fixes tags and covers and sorts files by artist and album. Command: '), h('code', {}, 'beet import ~/Downloads/new-album')))));
 
   // ---- ListenBrainz
   const lbInput = h('input.field', { type: 'password', placeholder: store.settings.hasListenbrainz ? tr('Token saved') : tr('Paste token'), 'aria-label': 'ListenBrainz token', autocomplete: 'off' });

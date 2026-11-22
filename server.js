@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import QRCode from 'qrcode';
 
-import { Store, cleanTrack } from './lib/store.js';
+import { Store, cleanTrack, ICONS } from './lib/store.js';
 import { Library, MIME } from './lib/library.js';
 import { audius, archive, radio, jamendo, lyrics, listenbrainz } from './lib/sources.js';
 import { proxyAudio } from './lib/proxy.js';
@@ -54,7 +54,22 @@ async function body(req) {
     chunks.push(c);
   }
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); }
-  catch { throw Object.assign(new Error('Neispravan JSON'), { status: 400 }); }
+  catch { throw Object.assign(new Error('Invalid JSON'), { status: 400 }); }
+}
+
+const iconName = () => (ICONS.includes(store.data.settings.icon) ? store.data.settings.icon : ICONS[0]);
+
+// The manifest lists the chosen icon; ?v= makes browsers fetch it again after a change.
+function serveManifest(res, startUrl) {
+  const m = JSON.parse(fs.readFileSync(path.join(PUBLIC, 'manifest.webmanifest'), 'utf8'));
+  const v = iconName();
+  m.icons = [
+    { src: `/icons/app-192.png?v=${v}`, sizes: '192x192', type: 'image/png' },
+    { src: `/icons/app-512.png?v=${v}`, sizes: '512x512', type: 'image/png' },
+    { src: `/icons/app.svg?v=${v}`, sizes: 'any', type: 'image/svg+xml' },
+  ];
+  if (startUrl) { m.start_url = startUrl; m.id = '/'; }
+  res.writeHead(200, { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'no-store' }).end(JSON.stringify(m));
 }
 
 async function serveFile(req, res, file, type, { cache = 'no-cache' } = {}) {
@@ -283,7 +298,9 @@ route('GET', /^\/api\/playlists\/([\w-]+)\/m3u$/, (req, res, [, id]) => {
 route('PUT', /^\/api\/settings$/, async (req, res) => {
   const patch = await body(req);
   const oldFolders = JSON.stringify(store.data.settings.folders);
+  const oldIcon = store.data.settings.icon;
   store.updateSettings(patch);
+  if (store.data.settings.icon !== oldIcon) broadcast('icon', { icon: iconName() });
   const out = { ok: true };
   if (typeof patch.listenbrainzToken === 'string' && patch.listenbrainzToken && patch.listenbrainzToken !== '••••') {
     try {
@@ -416,13 +433,7 @@ function startPhone() {
       }
       // Manifest for "Add to Home Screen": the icon opens the link with the key, because
       // a home screen app (iPhone) does not share cookies with Safari.
-      if (url.pathname === '/manifest.webmanifest') {
-        const m = JSON.parse(fs.readFileSync(path.join(PUBLIC, 'manifest.webmanifest'), 'utf8'));
-        m.start_url = `/?k=${token}`;
-        m.id = '/';
-        res.writeHead(200, { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'no-store' }).end(JSON.stringify(m));
-        return;
-      }
+      if (url.pathname === '/manifest.webmanifest') return serveManifest(res, `/?k=${token}`);
       handle(req, res, { lan: true });
     });
     srv.once('error', reject);
@@ -519,6 +530,14 @@ async function handle(req, res, { lan = false } = {}) {
     if (p.startsWith('/fonts/')) {
       const f = safeJoin(FONTS, p.slice(7));
       return f ? serveFile(req, res, f, STATIC_TYPES[path.extname(f)] || 'application/octet-stream', { cache: 'max-age=31536000' }) : res.writeHead(404).end();
+    }
+
+    if (p === '/manifest.webmanifest') return serveManifest(res);
+    // Stable icon addresses that point to the chosen variant (old /icons/icon* links included).
+    const ic = /^\/icons\/(?:app|icon)(-192|-512)?\.(svg|png)$/.exec(p);
+    if (ic) {
+      const file = path.join(PUBLIC, 'icons', iconName(), `icon${ic[2] === 'png' ? ic[1] || '-512' : ''}.${ic[2]}`);
+      return serveFile(req, res, file, STATIC_TYPES['.' + ic[2]]);
     }
 
     let f = safeJoin(PUBLIC, p === '/' ? 'index.html' : p.slice(1));

@@ -40,7 +40,8 @@ Da izgleda kao prava aplikacija: u Safari-ju odaberi **File → Add to Dock**, a
 
 - Jezik: engleski ili bosanski (Postavke), mijenja se bez prekidanja muzike
 - Na telefonu: **Dodaj na početni ekran** (iPhone i Android), uz uputstvo i za Tailscale verziju
-- Offline buffer: trenutna i sljedeće pjesme se skidaju na telefon, pa muzika svira i kad nestane interneta
+- Offline buffer: trenutna i sljedeće pjesme se skidaju na telefon, pa muzika svira i kad nestane interneta. Pjesme koje nisu puštane 3 dana brišu se same
+- Ikonica aplikacije: četiri varijante u Postavke → Izgled; izbor važi na svim uređajima
 - Nastavak slušanja na drugom uređaju od iste sekunde (laptop → mobitel i obrnuto)
 - Slušanje na mobitelu kod kuće (Wi-Fi) i van kuće (Tailscale), preko QR koda
 - Tema: crna ili noćni indigo (Postavke)
