@@ -132,6 +132,17 @@ class Player extends EventTarget {
     this.emit('queue');
   }
 
+  // Nastavak sa drugog uređaja: isti red, ista pjesma, ista sekunda.
+  resumeAt(queue, index, time, context) {
+    if (!queue?.length) return;
+    this.queue = queue.slice();
+    this.unshuffled = queue.slice();
+    this.context = context || null;
+    this.pendingSeek = time > 1 ? time : 0;
+    this.load(Math.min(Math.max(0, index), queue.length - 1), true);
+    this.emit('queue');
+  }
+
   playNext(tracks) {
     tracks = [].concat(tracks);
     if (!this.track) return this.playList(tracks, 0, { shuffle: false });
@@ -214,6 +225,11 @@ class Player extends EventTarget {
     this.plain.removeAttribute('src');
     this.el = this.fx;
     this.fx.src = t.stream;
+    if (this.pendingSeek && !t.live) {
+      const at = this.pendingSeek;
+      this.fx.addEventListener('loadedmetadata', () => { this.fx.currentTime = at; this.lastT = at; this.emit('time'); }, { once: true });
+    }
+    this.pendingSeek = 0;
     if (autoplay) {
       this.ensureGraph();
       this.fx.play().catch((e) => { if (e.name !== 'AbortError') this.emit('error', tr('Puštanje je blokirano: klikni Play.')); });

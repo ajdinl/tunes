@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Dvoklik na ovaj fajl pokreće Slušaonicu i otvara je u browseru.
+# Dvoklik na ovaj fajl pokreće Tunes i otvara je u browseru.
 # Sa opcijom --telefon server je dostupan i drugim uređajima u kućnoj mreži.
 cd "$(dirname "$0")"
 
@@ -13,7 +13,7 @@ PORT=${PORT:-4545}
 if [[ "$1" == "--telefon" ]]; then export HOST=0.0.0.0; fi
 
 if curl -s -o /dev/null "http://localhost:$PORT/api/state"; then
-  echo "Slušaonica već radi."
+  echo "Tunes već radi."
   open "http://localhost:$PORT"
   exit 0
 fi

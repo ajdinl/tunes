@@ -1,5 +1,5 @@
 {
-  "name": "slusaonica",
+  "name": "tunes",
   "version": "1.0.0",
   "description": "Self-hosted music player with no subscription: your local library plus free, legal sources (Audius, Internet Archive, internet radio, synced lyrics)",
   "type": "module",
@@ -18,7 +18,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ajdinl/slusaonica.git"
+    "url": "https://github.com/ajdinl/tunes.git"
   },
   "keywords": [
     "music",

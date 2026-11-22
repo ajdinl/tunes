@@ -94,7 +94,7 @@ function navLink(n) {
 function renderNav() {
   const side = $('side');
   side.replaceChildren(
-    h('a.brand', { href: '#/' }, h('span.brand__mark', { 'aria-hidden': 'true' }), 'Slušaonica'),
+    h('a.brand', { href: '#/' }, h('span.brand__mark', { 'aria-hidden': 'true' }), 'Tunes'),
     h('div.nav', {}, NAV.map(navLink)),
     h('div.nav', {}, h('p.nav__label', {}, tr('Kolekcija')), NAV_LIB.map(navLink)),
     h('div.nav.nav--lists', {},
@@ -203,13 +203,13 @@ function updateTrack() {
     els.title.textContent = tr('Ništa ne svira');
     els.title.removeAttribute('href');
     els.artist.textContent = tr('Odaberi pjesmu, album ili stanicu');
-    document.title = 'Slušaonica';
+    document.title = 'Tunes';
   } else {
     els.title.textContent = t.title;
     els.title.href = player.context?.href || '#/';
     els.title.title = player.context ? tr('Pušteno iz: ') + player.context.label : '';
     els.artist.replaceChildren(sourceTag(t.source), ' ', t.live ? (player.icyTitle || t.artist) : t.artist || '');
-    document.title = `${player.icyTitle || t.title} · Slušaonica`;
+    document.title = `${player.icyTitle || t.title} · Tunes`;
   }
   updateFav();
   updateTime();
@@ -508,6 +508,7 @@ async function openPhone() {
   dlg.addEventListener('close', () => dlg.remove());
   document.body.append(dlg);
   dlg.showModal();
+  let tab = 'wifi';
 
   const head = () => h('div.dlg__head', {}, h('h2.dlg__title', {}, tr('Slušaj na mobitelu')),
     iconBtn('close', tr('Zatvori'), () => dlg.close(), { size: 18 }));
@@ -516,25 +517,40 @@ async function openPhone() {
     renderNav();
     const parts = [head()];
     if (err) parts.push(h('p.err', {}, err));
-    if (st.enabled && st.qr) {
-      parts.push(
-        h('div.phone__qr', { html: st.qr, role: 'img', 'aria-label': tr('QR kod za otvaranje na telefonu') }),
-        h('ol.phone__steps', {},
-          h('li', {}, tr('Otvori kameru na telefonu i usmjeri je na kod.')),
-          h('li', {}, tr('Dodirni link koji se pojavi. Slušaonica se otvara u browseru.')),
-          h('li', {}, tr('Telefon mora biti na istoj Wi-Fi mreži kao ovaj računar.'))),
-        h('p.phone__url', {}, st.urls[0]),
-        h('p.muted.phone__note', {}, tr('Ako macOS pita da li „node” smije primati veze, klikni Allow.')),
-        h('div.dlg__actions', {},
-          h('button.btn.btn--ghost', { type: 'button', onclick: () => toggle(false) }, tr('Isključi pristup')),
-          h('button.btn.btn--primary', { type: 'button', onclick: () => dlg.close() }, tr('Gotovo'))));
-    } else if (st.enabled) {
-      parts.push(h('p', {}, tr('Računar nije spojen ni na jednu mrežu. Spoji se na Wi-Fi pa pokušaj ponovo.')),
-        h('div.dlg__actions', {}, h('button.btn', { type: 'button', onclick: () => api('/api/phone').then((x) => render(x)) }, icon('refresh', 16), tr('Pokušaj ponovo'))));
-    } else {
+    if (!st.enabled) {
       parts.push(h('p.muted', {}, tr('Pristup sa telefona je isključen. Kad ga uključiš, muzika, plejliste i omiljene su iste kao na računaru.')),
         h('div.dlg__actions', {}, h('button.btn.btn--primary', { type: 'button', onclick: () => toggle(true) }, icon('phone', 16), tr('Uključi'))));
+      body.replaceChildren(...parts);
+      return;
     }
+    parts.push(h('div.tabs.tabs--small.phone__tabs', { role: 'tablist' },
+      [['wifi', tr('Kod kuće (Wi-Fi)')], ['tailscale', tr('Van kuće (Tailscale)')]].map(([k, label]) =>
+        h('button.tab', { type: 'button', role: 'tab', 'aria-selected': String(tab === k), class: tab === k ? 'is-on' : '', onclick: () => { tab = k; render(st); } }, label))));
+    const cur = tab === 'wifi' ? st.wifi : st.tailscale;
+    if (cur.qr) {
+      parts.push(h('div.phone__qr', { html: cur.qr, role: 'img', 'aria-label': tr('QR kod za otvaranje na telefonu') }));
+      parts.push(tab === 'wifi'
+        ? h('ol.phone__steps', {},
+          h('li', {}, tr('Otvori kameru na telefonu i usmjeri je na kod.')),
+          h('li', {}, tr('Dodirni link koji se pojavi. Tunes se otvara u browseru.')),
+          h('li', {}, tr('Telefon mora biti na istoj Wi-Fi mreži kao ovaj računar.')))
+        : h('ol.phone__steps', {},
+          h('li', {}, tr('Na telefonu uključi Tailscale aplikaciju, prijavljenu na isti nalog kao ovaj računar.')),
+          h('li', {}, tr('Skeniraj kod kamerom i dodirni link.')),
+          h('li', {}, tr('Radi bilo gdje: kod kuće, na poslu ili na mobilnim podacima. Računar mora ostati upaljen.'))));
+      parts.push(h('p.phone__url', {}, cur.url));
+    } else if (tab === 'tailscale') {
+      parts.push(h('p', {}, st.tailscale.running ? tr('Tailscale radi, ali računar još nema adresu u mreži. Pokušaj ponovo za par sekundi.')
+        : tr('Tailscale nije pokrenut na ovom računaru. Pokreni Tailscale aplikaciju (ikonica gore u traci menija) pa pokušaj ponovo.')),
+      h('p.muted', {}, tr('Tailscale je besplatan za lične uređaje: '), h('a', { href: 'https://tailscale.com/download', target: '_blank', rel: 'noopener' }, 'tailscale.com/download')));
+    } else {
+      parts.push(h('p', {}, tr('Računar nije spojen ni na jednu mrežu. Spoji se na Wi-Fi pa pokušaj ponovo.')));
+    }
+    parts.push(h('p.muted.phone__note', {}, tr('Ako macOS pita da li „node” smije primati veze, klikni Allow.')),
+      h('div.dlg__actions', {},
+        h('button.btn.btn--ghost', { type: 'button', onclick: () => toggle(false) }, tr('Isključi pristup')),
+        h('button.btn', { type: 'button', onclick: () => api('/api/phone').then((x) => render(x)) }, icon('refresh', 16), tr('Osvježi')),
+        h('button.btn.btn--primary', { type: 'button', onclick: () => dlg.close() }, tr('Gotovo'))));
     body.replaceChildren(...parts);
   };
   const toggle = async (on) => {
@@ -543,20 +559,99 @@ async function openPhone() {
       const st = await api('/api/phone', { method: 'POST', body: { enabled: on } });
       render(st);
       if (!on) toast(tr('Pristup sa telefona je isključen. Stari link više ne radi.'));
-    } catch (e) { render({ enabled: false, urls: [] }, e.message); }
+    } catch (e) { render({ enabled: false }, e.message); }
   };
   body.append(head(), loading());
   try {
     const st = await api('/api/phone');
     // Jedan klik: ako je isključeno, odmah uključi i pokaži QR kod.
     if (!st.enabled) await toggle(true); else render(st);
-  } catch (e) { render({ enabled: false, urls: [] }, e.message); }
+  } catch (e) { render({ enabled: false }, e.message); }
 }
 document.addEventListener('open-phone', openPhone);
 
 function loading() {
   return h('p.loading', { role: 'status' }, h('span.loading__dot'), tr('Učitavam…'));
 }
+
+// ============================================================ nastavak na drugom uređaju
+const DEVICE_ID = (() => {
+  let id = null;
+  try { id = localStorage.getItem('sl.device'); } catch { /* */ }
+  if (!id) {
+    id = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    try { localStorage.setItem('sl.device', id); } catch { /* */ }
+  }
+  return id;
+})();
+const DEVICE_NAME = player.mobile ? tr('Mobitel') : tr('Računar');
+let activeHere = false;   // da li je na ovom uređaju puštano u ovoj sesiji
+let lastReport = 0;
+let remote = null;        // šta svira na drugom uređaju
+let dismissedFor = null;
+
+function reportSession(force = false) {
+  const t = player.track;
+  if (!t || !activeHere) return;
+  const now = Date.now();
+  if (!force && now - lastReport < 5000) return;
+  lastReport = now;
+  const start = Math.max(0, player.index - 20);
+  api('/api/session', { method: 'POST', body: {
+    deviceId: DEVICE_ID, device: DEVICE_NAME, track: t, time: player.track.live ? 0 : player.time,
+    playing: player.playing, index: player.index - start, queue: player.queue.slice(start, start + 500), context: player.context,
+  } }).catch(() => {});
+}
+
+const handoff = h('div.handoff', { hidden: true, role: 'region', 'aria-label': tr('Nastavi slušanje') });
+document.body.append(handoff);
+
+function remoteTime() {
+  if (!remote || remote.track.live) return 0;
+  const t = remote.time + (remote.playing ? (Date.now() - remote.at) / 1000 : 0);
+  return remote.track.duration ? Math.min(t, remote.track.duration - 1) : t;
+}
+
+function renderHandoff() {
+  const r = remote;
+  const show = r && r.deviceId !== DEVICE_ID && dismissedFor !== r.track.id + r.deviceId
+    && (r.playing || Date.now() - r.at < 6 * 3600e3)
+    && !(player.playing && player.track?.id === r.track.id);
+  handoff.hidden = !show;
+  if (!show) return;
+  const when = r.track.live ? tr('uživo') : fmtTime(remoteTime());
+  handoff.replaceChildren(
+    cover(r.track.cover, r.track.title, 'handoff__cv'),
+    h('div.handoff__text', {},
+      h('span.handoff__label', {}, r.playing ? tr('Svira na uređaju: {d}', { d: r.device }) : tr('Pauzirano na uređaju: {d}', { d: r.device })),
+      h('span.handoff__title', {}, h('span.handoff__name', {}, r.track.title), h('span.handoff__time', {}, when))),
+    h('button.btn.btn--primary', { type: 'button', onclick: takeOver }, icon('play', 16), tr('Nastavi ovdje')),
+    iconBtn('close', tr('Sakrij'), () => { dismissedFor = r.track.id + r.deviceId; renderHandoff(); }, { size: 18 }));
+}
+
+async function takeOver() {
+  try {
+    const { session } = await api('/api/session');
+    if (!session) return;
+    remote = session;
+    const time = remoteTime();
+    player.resumeAt(session.queue, session.index, time, session.context);
+    activeHere = true;
+    api('/api/session/takeover', { method: 'POST', body: { deviceId: DEVICE_ID, device: DEVICE_NAME } }).catch(() => {});
+    handoff.hidden = true;
+    toast(session.track.live ? tr('Nastavljeno ovdje') : tr('Nastavljeno ovdje od {t}', { t: fmtTime(time) }));
+  } catch (e) { toast(e.message, { error: true }); }
+}
+
+player.addEventListener('state', () => {
+  if (player.playing && !activeHere) activeHere = true;
+  reportSession(true);
+  renderHandoff();
+});
+player.addEventListener('track', () => reportSession(true));
+player.addEventListener('time', () => reportSession(false));
+setInterval(() => { if (!handoff.hidden) renderHandoff(); }, 1000);
+new ResizeObserver(() => document.documentElement.style.setProperty('--deck-h', deck.offsetHeight + 'px')).observe(deck);
 
 // ============================================================ prečice
 document.addEventListener('keydown', (e) => {
@@ -615,6 +710,15 @@ function connectEvents() {
     if (d.changed) toast(tr('Biblioteka je osvježena: {n}', { n: songs(d.count) }));
   });
   es.addEventListener('icy', (e) => { const d = JSON.parse(e.data); player.setIcy(d.sid, d.title); });
+  es.addEventListener('session', (e) => { remote = JSON.parse(e.data); renderHandoff(); });
+  es.addEventListener('takeover', (e) => {
+    const d = JSON.parse(e.data);
+    if (d.deviceId === DEVICE_ID) return;
+    if (player.playing) {
+      player.pause();
+      toast(tr('Muzika se nastavlja na uređaju: {d}', { d: d.device }));
+    }
+  });
 }
 
 // Mobilni meni
@@ -640,11 +744,12 @@ async function boot() {
   buildDeck();
   updateTrack(); updateState(); updateMode(); updateVolume(); updateSleep();
   try { await store.load(); }
-  catch (e) { toast(tr('Server ne odgovara. Da li je Slušaonica pokrenuta?'), { error: true, timeout: 10000 }); }
+  catch (e) { toast(tr('Server ne odgovara. Da li je Tunes pokrenuta?'), { error: true, timeout: 10000 }); }
   renderNav();
   render();
   updateTrack();
   connectEvents();
+  api('/api/session').then(({ session }) => { remote = session; renderHandoff(); }).catch(() => {});
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 boot();

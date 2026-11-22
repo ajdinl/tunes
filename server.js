@@ -1,4 +1,4 @@
-// Slušaonica: lokalni muzički server.
+// Tunes: lokalni muzički server.
 // Pokretanje: node server.js   (zatim otvori http://localhost:4545)
 import http from 'node:http';
 import fs from 'node:fs';
@@ -6,6 +6,7 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { pipeline } from 'node:stream/promises';
+import { execFile } from 'node:child_process';
 import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
@@ -149,7 +150,7 @@ route('GET', /^\/api\/img$/, async (req, res, m, q) => {
   for (const u of candidates) {
     if (!/^https?:$/.test(new URL(u).protocol)) continue;
     try {
-      const r = await fetch(u, { headers: { 'User-Agent': 'Slusaonica/1.0' }, signal: AbortSignal.timeout(6000) });
+      const r = await fetch(u, { headers: { 'User-Agent': 'Tunes/1.0' }, signal: AbortSignal.timeout(6000) });
       const type = r.headers.get('content-type') || '';
       if (!r.ok || !type.startsWith('image/')) continue;
       const buf = Buffer.from(await r.arrayBuffer());
@@ -314,7 +315,7 @@ route('POST', /^\/api\/download$/, async (req, res) => {
   const dir = path.join(folder, artist, album);
   const file = path.join(dir, sanitize(num + track.title, 120) + ext);
   if (fs.existsSync(file)) return json(res, 200, { ok: true, file, existed: true });
-  const r = await fetch(u, { headers: { 'User-Agent': 'Slusaonica/1.0' }, signal: AbortSignal.timeout(300000) });
+  const r = await fetch(u, { headers: { 'User-Agent': 'Tunes/1.0' }, signal: AbortSignal.timeout(300000) });
   if (!r.ok || !r.body) return json(res, 502, { error: 'Izvor je vratio ' + r.status });
   await fsp.mkdir(dir, { recursive: true });
   const tmp = file + '.part';
@@ -329,7 +330,7 @@ route('GET', /^\/api\/export$/, (req, res) => {
   const { settings, ...rest } = store.data;
   res.writeHead(200, {
     'Content-Type': 'application/json; charset=utf-8',
-    'Content-Disposition': `attachment; filename="slusaonica-${new Date().toISOString().slice(0, 10)}.json"`,
+    'Content-Disposition': `attachment; filename="tunes-${new Date().toISOString().slice(0, 10)}.json"`,
   });
   res.end(JSON.stringify(rest, null, 2));
 });
@@ -340,19 +341,57 @@ route('GET', /^\/api\/export$/, (req, res) => {
 const PHONE_PORT = PORT + 1;
 let lanServer = null;
 
+const isTailscaleIp = (ip) => {
+  const [a, b] = ip.split('.').map(Number);
+  return a === 100 && b >= 64 && b <= 127; // 100.64.0.0/10
+};
+
 function lanAddresses() {
   const list = Object.entries(os.networkInterfaces())
     .flatMap(([name, ifs]) => (ifs || []).map((i) => ({ ...i, name })))
-    .filter((i) => i.family === 'IPv4' && !i.internal && !i.address.startsWith('169.254.'));
+    .filter((i) => i.family === 'IPv4' && !i.internal && !i.address.startsWith('169.254.') && !isTailscaleIp(i.address));
   // Wi-Fi (en0) prvi, pa ostali.
   list.sort((a, b) => (a.name === 'en0' ? -1 : 0) - (b.name === 'en0' ? -1 : 0));
   return list.map((i) => i.address);
 }
 
-function phoneState() {
+// Tailscale: privatna mreža između tvojih uređaja, radi i van kuće.
+const TAILSCALE_CLI = ['/Applications/Tailscale.app/Contents/MacOS/Tailscale', 'tailscale'];
+function tailscaleInfo() {
+  return new Promise((resolve) => {
+    const tryCli = (i) => {
+      if (i >= TAILSCALE_CLI.length) {
+        const ip = Object.values(os.networkInterfaces()).flat().find((x) => x && x.family === 'IPv4' && isTailscaleIp(x.address));
+        return resolve(ip ? { running: true, host: ip.address, name: null } : { running: false });
+      }
+      execFile(TAILSCALE_CLI[i], ['status', '--json'], { timeout: 3000 }, (err, out) => {
+        if (err) return tryCli(i + 1);
+        try {
+          const d = JSON.parse(out);
+          const dns = (d.Self?.DNSName || '').replace(/\.$/, '');
+          const ip = (d.Self?.TailscaleIPs || []).find((x) => x.includes('.'));
+          resolve({ running: d.BackendState === 'Running', host: dns || ip || null, name: d.Self?.HostName || null });
+        } catch { tryCli(i + 1); }
+      });
+    };
+    tryCli(0);
+  });
+}
+
+async function phoneState() {
   const ph = store.data.settings.phone || {};
-  const urls = ph.enabled && lanServer ? lanAddresses().map((ip) => `http://${ip}:${PHONE_PORT}/?k=${ph.token}`) : [];
-  return { enabled: Boolean(ph.enabled && lanServer), urls };
+  const on = Boolean(ph.enabled && lanServer);
+  const link = (host) => `http://${host}:${PHONE_PORT}/?k=${ph.token}`;
+  const ts = await tailscaleInfo();
+  const qr = (u) => (u ? QRCode.toString(u, { type: 'svg', margin: 1, color: { dark: '#000000', light: '#ffffff' } }) : null);
+  const wifiUrl = on ? lanAddresses().map(link)[0] || null : null;
+  const tsUrl = on && ts.running && ts.host ? link(ts.host) : null;
+  return {
+    enabled: on,
+    port: PHONE_PORT,
+    wifi: { url: wifiUrl, qr: await qr(wifiUrl) },
+    tailscale: { running: Boolean(ts.running), url: tsUrl, qr: await qr(tsUrl) },
+  };
 }
 
 function startPhone() {
@@ -372,7 +411,7 @@ function startPhone() {
       }
       if (!token || cookie !== token) {
         res.writeHead(401, { 'Content-Type': 'text/html; charset=utf-8' })
-          .end('<meta name="viewport" content="width=device-width"><body style="font:17px system-ui;background:#000;color:#eee;padding:24px">Skeniraj QR kod u Slušaonici na računaru (dugme „Slušaj na mobitelu”).</body>');
+          .end('<meta name="viewport" content="width=device-width"><body style="font:17px system-ui;background:#000;color:#eee;padding:24px">Skeniraj QR kod u Tunes na računaru (dugme „Slušaj na mobitelu”).</body>');
         return;
       }
       handle(req, res, { lan: true });
@@ -386,11 +425,7 @@ function stopPhone() {
   if (lanServer) { lanServer.close(); lanServer.closeAllConnections?.(); lanServer = null; }
 }
 
-route('GET', /^\/api\/phone$/, async (req, res) => {
-  const st = phoneState();
-  const qr = st.urls[0] ? await QRCode.toString(st.urls[0], { type: 'svg', margin: 1, color: { dark: '#000000', light: '#ffffff' } }) : null;
-  json(res, 200, { ...st, qr, port: PHONE_PORT });
-});
+route('GET', /^\/api\/phone$/, async (req, res) => json(res, 200, await phoneState()));
 
 route('POST', /^\/api\/phone$/, async (req, res) => {
   const { enabled } = await body(req);
@@ -405,9 +440,44 @@ route('POST', /^\/api\/phone$/, async (req, res) => {
     stopPhone();
   }
   store.save();
-  const st = phoneState();
-  const qr = st.urls[0] ? await QRCode.toString(st.urls[0], { type: 'svg', margin: 1 }) : null;
-  json(res, 200, { ...st, qr, port: PHONE_PORT });
+  json(res, 200, await phoneState());
+});
+
+// ------------------------------------------------------------ nastavak slušanja na drugom uređaju
+// Uređaj koji svira javlja šta svira i na kojoj je minuti. Drugi uređaj može
+// preuzeti: nastavlja od iste sekunde, a prvi se pauzira.
+let session = null;
+
+route('GET', /^\/api\/session$/, (req, res) => json(res, 200, { session }));
+
+route('POST', /^\/api\/session$/, async (req, res) => {
+  const b = await body(req);
+  if (!b.deviceId || !b.track?.id) return json(res, 400, { error: 'Nedostaje pjesma' });
+  const changed = !session || session.deviceId !== b.deviceId || session.track.id !== b.track.id || session.playing !== Boolean(b.playing);
+  session = {
+    deviceId: String(b.deviceId).slice(0, 64),
+    device: String(b.device || '').slice(0, 40),
+    track: cleanTrack(b.track),
+    time: Number(b.time) || 0,
+    playing: Boolean(b.playing),
+    index: Number(b.index) || 0,
+    queue: Array.isArray(b.queue) ? b.queue.slice(0, 500).map(cleanTrack) : [cleanTrack(b.track)],
+    context: b.context && typeof b.context === 'object' ? { label: String(b.context.label || '').slice(0, 200), href: String(b.context.href || '').slice(0, 300) } : null,
+    at: Date.now(),
+  };
+  json(res, 200, { ok: true });
+  // Ostale uređaje obavještavamo samo kad se nešto bitno promijeni (ili svakih 15 s).
+  if (changed || !session.lastBroadcast || Date.now() - session.lastBroadcast > 15000) {
+    session.lastBroadcast = Date.now();
+    const { queue, ...summary } = session;
+    broadcast('session', summary);
+  }
+});
+
+route('POST', /^\/api\/session\/takeover$/, async (req, res) => {
+  const { deviceId, device } = await body(req);
+  broadcast('takeover', { deviceId: String(deviceId || ''), device: String(device || '').slice(0, 40) });
+  json(res, 200, { ok: true });
 });
 
 // ------------------------------------------------------------ server
@@ -450,7 +520,7 @@ const server = http.createServer((req, res) => handle(req, res));
 
 server.listen(PORT, HOST, () => {
   const local = `http://localhost:${PORT}`;
-  console.log(`\n  Slušaonica radi na ${local}`);
+  console.log(`\n  Tunes radi na ${local}`);
   if (HOST === '0.0.0.0') {
     const ips = Object.values(os.networkInterfaces()).flat().filter((i) => i && i.family === 'IPv4' && !i.internal);
     for (const i of ips) console.log(`  Sa telefona:  http://${i.address}:${PORT}`);

@@ -1,6 +1,6 @@
 {
-  "name": "Slušaonica",
-  "short_name": "Slušaonica",
+  "name": "Tunes",
+  "short_name": "Tunes",
   "description": "Lični muzički player: tvoja biblioteka, internet radio, Audius i Internet Archive.",
   "start_url": "/",
   "scope": "/",

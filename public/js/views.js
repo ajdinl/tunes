@@ -27,7 +27,7 @@ export function home() {
     root.append(h('div.note', {},
       h('h2', {}, tr('Dodaj svoju muziku')),
       h('p', {}, tr('Ubaci MP3, FLAC ili M4A fajlove u folder '), h('code', {}, store.folders[0] || '~/Music/Biblioteka'),
-        tr('. Slušaonica ih vidi za par sekundi i sama ih ređa po izvođačima i albumima.')),
+        tr('. Tunes ih vidi za par sekundi i sama ih ređa po izvođačima i albumima.')),
       h('a.btn', { href: '#/podesavanja' }, icon('folder', 16), tr('Podesi foldere'))));
   }
 
@@ -746,7 +746,7 @@ export function settingsView() {
   });
   root.append(section(tr('Uvoz plejliste sa Spotify-ja'), h('div.form', {},
     h('p.muted', {}, tr('Na '), h('a', { href: 'https://exportify.app', target: '_blank', rel: 'noopener' }, 'exportify.app'),
-      tr(' (otvoren kod) izvezi plejlistu ili „Liked Songs” u CSV. Slušaonica pronađe te pjesme u tvojoj biblioteci, napravi plejlistu i pokaže šta ti nedostaje.')),
+      tr(' (otvoren kod) izvezi plejlistu ili „Liked Songs” u CSV. Tunes pronađe te pjesme u tvojoj biblioteci, napravi plejlistu i pokaže šta ti nedostaje.')),
     file, h('label.btn', { for: 'csv' }, icon('plus', 16), tr('Odaberi CSV fajl')),
     importOut)));
 

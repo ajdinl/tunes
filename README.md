@@ -1,8 +1,8 @@
-# Slušaonica
+# Tunes
 
 **A self-hosted music player with no subscription.** It combines the music on your computer with free, legal sources in one interface: independent artists, live concert archives, internet radio and synced lyrics.
 
-*Slušaonica* is Bosnian for "listening room". The interface is available in Bosnian and English.
+The interface is available in Bosnian and English.
 
 [Bosanski README](README.bs.md)
 
@@ -10,7 +10,7 @@
 
 ## Why
 
-Self-hosted players like Navidrome or Jellyfin are great for your own files, but they usually need Docker or a server setup, and they don't help you find new music. Streaming services need a monthly subscription. Slušaonica sits in between:
+Self-hosted players like Navidrome or Jellyfin are great for your own files, but they usually need Docker or a server setup, and they don't help you find new music. Streaming services need a monthly subscription. Tunes sits in between:
 
 - It runs with a double-click on your computer. No Docker, no database server.
 - Your local library and legal online sources show up in one search, one queue and one history.
@@ -43,6 +43,8 @@ Self-hosted players like Navidrome or Jellyfin are great for your own files, but
 - **Save to library:** download songs whose license allows it (Internet Archive, Jamendo, Audius where enabled)
 - **Spotify playlist import** through an [Exportify](https://exportify.app) CSV: finds the songs you already own and lists what's missing
 - **Listen on your phone:** one click shows a QR code; the link carries a secret key, so nobody else on the network can get in
+- **Away from home through [Tailscale](https://tailscale.com):** a second QR code that works anywhere your phone has internet
+- **Continue on another device:** start a set on your laptop, tap *Continue here* on your phone and it picks up at the same second while the laptop pauses
 - Media keys and Control Center on macOS, installable as an app (PWA), keyboard shortcuts
 - Bosnian and English UI, black and "night indigo" themes
 
@@ -59,8 +61,8 @@ Self-hosted players like Navidrome or Jellyfin are great for your own files, but
 You need [Node.js](https://nodejs.org) 22 or newer.
 
 ```bash
-git clone https://github.com/ajdinl/slusaonica.git
-cd slusaonica
+git clone https://github.com/ajdinl/tunes.git
+cd tunes
 npm install
 npm start
 ```
@@ -72,6 +74,10 @@ Put your music in `~/Music/Biblioteka`, or add other folders under **Settings**.
 ### On your phone
 
 Click **Listen on phone** in the left menu and scan the QR code with your phone camera. The phone must be on the same Wi-Fi network. Turning access off invalidates the old link.
+
+To listen away from home, install [Tailscale](https://tailscale.com/download) on the computer and the phone (same account) and use the **Away from home (Tailscale)** tab. The computer has to stay on.
+
+When something is playing on one device, the other one shows a **Continue here** bar. Tap it to pick up the same song at the same second.
 
 ### As an app
 
@@ -97,7 +103,7 @@ Your data lives in `data/db.json`. You can download a backup under **Settings �
 
 ## Legal
 
-Slušaonica only uses sources that offer their music for free streaming, and only downloads files whose license allows it. It does not rip music from YouTube, Spotify or other subscription services.
+Tunes only uses sources that offer their music for free streaming, and only downloads files whose license allows it. It does not rip music from YouTube, Spotify or other subscription services.
 
 ## License
 

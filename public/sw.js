@@ -1,6 +1,6 @@
 // Service worker: omogućava instalaciju kao aplikacije (Dock / početni ekran).
 // Interfejs se uvek uzima sveži sa servera; keš služi samo kad server ne odgovara.
-const CACHE = 'slusaonica-v1';
+const CACHE = 'tunes-v1';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
