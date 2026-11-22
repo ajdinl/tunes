@@ -664,8 +664,11 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .deck__fav.is-on { color: var(--amber); }
 
 .deck__center { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.deck__progress, .deck__tools > .deck__mplay { display: none; }
+.now__tools { display: flex; align-items: center; justify-content: center; gap: 18px; }
+@media (min-width: 861px) { .now__lyricsbtn { display: none; } } /* lyrics are on the screen there */
 .deck__ctrls { display: flex; align-items: center; justify-content: center; gap: 6px; }
-.play {
+.play, .deck__mplay {
   display: grid;
   place-items: center;
   width: 40px;
@@ -676,8 +679,8 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
   color: var(--bg);
   position: relative;
 }
-.play:hover { background: var(--amber); color: var(--amber-ink); }
-.play.is-loading::after {
+.play:hover, .deck__mplay:hover { background: var(--amber); color: var(--amber-ink); }
+.play.is-loading::after, .deck__mplay.is-loading::after {
   content: '';
   position: absolute;
   inset: -4px;
@@ -1075,30 +1078,40 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
   .tr { gap: 10px; padding: 0 4px; }
   .tr__album, .tr__dur { display: none; }
   .tr__fav, .tr__more { opacity: 1; }
+  /* The compact bar: cover, song, heart | queue, play. Everything else is in Now Playing. */
   .deck {
+    position: relative;
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: 'now tools' 'center center';
-    gap: 8px 10px;
+    grid-template-areas: 'now tools';
+    gap: 8px;
     padding: 8px 10px;
-    /* Keep the seek dial clear of the iPhone home bar, where the swipe-up gesture starts. */
-    padding-bottom: calc(env(safe-area-inset-bottom) + 12px);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
+    cursor: pointer;
   }
+  .deck .deck__center { display: none; }
+  .deck__tools > * { display: none; }
+  .deck__tools > .deck__queue, .deck__tools > .deck__mplay { display: grid; }
+  .deck__mplay { width: 40px; height: 40px; margin-left: 4px; }
+  .deck__progress { display: block; position: absolute; left: 0; right: 0; top: -1px; height: 2px; background: rgba(127, 127, 127, 0.22); pointer-events: none; }
+  .deck__progress span { display: block; height: 100%; background: var(--amber); }
   .deck__now { grid-area: now; }
   .deck__tools { grid-area: tools; }
   .deck__center { grid-area: center; }
   .deck__cv, .deck__cv .cv { width: 46px; height: 46px; }
-  .deck__tools .volbox, .deck__tools .deck__eq, .deck__tools .deck__sleep { display: none; }
   .deck__time { min-width: 34px; font-size: 11.5px; }
   .dial { height: 46px; }
-  .panel { left: 0; width: auto; bottom: calc(150px + env(safe-area-inset-bottom)); }
+  .panel { left: 0; width: auto; bottom: var(--deck-h, 70px); }
   .now__body { grid-template-columns: 1fr; padding: 12px 22px; gap: 20px; }
   .now__lyrics { display: none; }
   .now__art { align-items: center; text-align: center; }
+  /* Smaller on phones, so the title, the dial and all the buttons fit below it. */
+  .now__cv { width: min(78%, 36vh); }
+  .now__title { font-size: clamp(24px, 7vw, 34px); }
   .now__artist { justify-content: center; }
   .now__deck { padding: 8px 18px calc(env(safe-area-inset-bottom) + 24px); }
   .dial--big { height: 80px; }
-  .eq { bottom: calc(150px + env(safe-area-inset-bottom)); right: 8px; }
-  .toasts { bottom: calc(160px + env(safe-area-inset-bottom)); }
+  .eq { bottom: calc(var(--deck-h, 70px) + 8px); right: 8px; }
+  .toasts { bottom: calc(var(--deck-h, 70px) + 12px); }
   .scdock { right: 8px; left: 8px; width: auto; bottom: calc(var(--deck-h, 140px) + 8px); }
   .side__toggle { display: none; }
 }

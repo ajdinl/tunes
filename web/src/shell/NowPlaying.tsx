@@ -1,11 +1,12 @@
-// "Now Playing" full screen: big cover, lyrics, the big dial and controls.
+// "Now Playing" full screen: big cover, lyrics, the big dial and controls. On phones it is
+// where all the player's controls live (the bar at the bottom is compact there).
 import { useEffect, useRef } from 'react';
 
 import { Icon, IconButton } from '../components/Icon.tsx';
 import { Cover } from '../components/common.tsx';
 import { Lyrics } from '../components/Lyrics.tsx';
 import { DialView } from './DialView.tsx';
-import { shownTrack } from './Deck.tsx';
+import { shownTrack, SleepButton } from './Deck.tsx';
 import { shell, useShell } from './ui.ts';
 import { player, usePlayer } from '../lib/player.ts';
 import { store, useStore } from '../lib/store.ts';
@@ -14,6 +15,7 @@ import { fmtTime, norm, cx } from '../lib/format.ts';
 import { stationFreq } from '../lib/dial.ts';
 import { toggleFav, artistHref } from '../lib/actions.ts';
 import { toPath } from '../lib/router.ts';
+import { media } from '../lib/media.ts';
 
 export function NowPlaying() {
   const ui = useShell();
@@ -51,7 +53,7 @@ export function NowPlaying() {
     <div ref={root} className="now" id="now" role="dialog" aria-modal="true" aria-label={tr('Now playing')} hidden={!open} onKeyDown={onKeyDown}>
       {open && t ? (
         <>
-          <div className="now__bg" style={t.cover ? { backgroundImage: `url("${t.cover}")` } : {}} />
+          <div className="now__bg" style={t.cover ? { backgroundImage: `url("${media(t.cover)}")` } : {}} />
           <div className="now__top">
             {p.context ? <p className="now__ctx">{tr('Playing from: ')}<a href={toPath(p.context.href)} onClick={close}>{p.context.label}</a></p> : <span />}
             <IconButton icon="collapse" label={tr('Close (Esc)')} className="now__close" onClick={close} />
@@ -82,9 +84,17 @@ export function NowPlaying() {
                 <Icon name={p.playing ? 'pause' : 'play'} size={28} />
               </button>
               <IconButton icon="next" size={24} label={tr('Next')} onClick={() => player.next()} />
+              <IconButton icon={p.repeat === 'one' ? 'repeat1' : 'repeat'} className={cx(p.repeat !== 'off' && 'is-on')}
+                label={{ off: tr('Repeat off (R)'), all: tr('Repeating the queue (R)'), one: tr('Repeating this song (R)') }[p.repeat]} onClick={() => player.cycleRepeat()} />
+            </div>
+            <div className="now__tools">
               <button type="button" className={cx('ibtn', fav && 'is-on')} aria-label={tr('Favorite')} onClick={() => p.track && toggleFav(p.track)}>
                 <Icon name={fav ? 'heartFill' : 'heart'} size={22} />
               </button>
+              {/* Lyrics and the queue open in the side panel, over the bar. */}
+              <IconButton icon="lyrics" label={tr('Lyrics (T)')} className="now__lyricsbtn" onClick={() => shell.set({ now: false, panel: 'lyrics' })} />
+              <IconButton icon="queue" label={tr('Play queue (Q)')} onClick={() => shell.set({ now: false, panel: 'queue' })} />
+              <SleepButton />
             </div>
           </div>
         </>

@@ -4,7 +4,9 @@ import { test, expect, open, playSong, position, appModule, touch, sleep } from 
 test('dial: a vertical swipe does not seek, a tap and a sideways drag do', async ({ device }) => {
   const phone = await device({ mobile: true });
   await playSong(phone, 'Morning Light'); // 200 s
-  const box = await phone.locator('.deck .dial').boundingBox();
+  // On phones the dial is in Now Playing (a tap on the compact bar opens it).
+  await phone.locator('.deck__meta').tap();
+  const box = await phone.locator('.now .dial').boundingBox();
   const cy = box.y + box.height / 2;
   const at = (f) => ({ x: box.x + box.width * f, y: cy });
   const t = await touch(phone);
@@ -119,7 +121,7 @@ test('tooltips show right away on mouse hover, not on touch', async ({ page, dev
 
   const phone = await device({ mobile: true });
   await playSong(phone, 'Low Tide');
-  await phone.locator('.deck .play').tap();
+  await phone.locator('.deck .deck__mplay').tap();
   await expect(phone.locator('.tip.is-on')).toHaveCount(0);
 });
 
@@ -221,16 +223,24 @@ test('phone: always the Minimal player style, nothing to choose, no equalizer', 
   // The phone has no Web Audio graph, so no spectrum and no equalizer.
   const phone = await device({ mobile: true });
   await playSong(phone, 'Morning Light');
-  await expect(phone.locator('.deck .dial')).toHaveAttribute('data-style', 'minimal'); // not the computer's Mirror
   await expect(phone.locator('.deck [aria-label="Equalizer (E)"]')).toHaveCount(0);
-  await expect(phone.locator('.deck [aria-label="Sleep timer"]')).toBeHidden(); // no room on a narrow phone
-  await expect(phone.locator('.deck [aria-label="Lyrics (T)"]')).toBeVisible();
+  // The compact bar: song, heart, queue and play; the rest is in Now Playing.
+  await expect(phone.locator('.deck .deck__center')).toBeHidden();
+  await expect(phone.locator('.deck .deck__queue')).toBeVisible();
+  await expect(phone.locator('.deck .deck__mplay')).toBeVisible();
+  await expect(phone.locator('.deck [aria-label="Sleep timer"]')).toBeHidden();
+  await phone.locator('.deck__meta').tap();
+  await expect(phone.locator('.now .dial')).toHaveAttribute('data-style', 'minimal'); // not the computer's Mirror
+  await expect(phone.locator('.now [aria-label="Sleep timer"]')).toBeVisible();
+  await expect(phone.locator('.now [aria-label="Lyrics (T)"]')).toBeVisible();
+  await phone.locator('.now__close').tap();
   await open(phone, '/settings');
   await expect(phone.locator('.dial-opt')).toHaveCount(0); // no player style picker
   await expect(phone.locator('.ctrls-opt')).toHaveCount(0); // player button layout is for computers
   // Even a phone choice saved by an older version doesn't apply any more.
   await phone.evaluate(() => localStorage.setItem('tunes.dialStylePhone', JSON.stringify('calm')));
   await phone.reload();
-  await expect(phone.locator('.deck .dial')).toHaveAttribute('data-style', 'minimal');
+  await phone.locator('.deck__meta').tap();
+  await expect(phone.locator('.now .dial')).toHaveAttribute('data-style', 'minimal');
   await expect(computer.locator('.deck .dial')).toHaveAttribute('data-style', 'mirror');
 });

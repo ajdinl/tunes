@@ -25,7 +25,8 @@ test('songs downloaded ahead play without a connection', async ({ device, baseUR
   expect(keys).toEqual(expect.arrayContaining(album.map((t) => t.id)));
 
   await phone.context().setOffline(true);
-  await phone.locator('.deck [aria-label^="Next"]').tap();
+  await phone.locator('.deck__meta').tap(); // Now Playing has the full controls on a phone
+  await phone.locator('.now [aria-label="Next"]').tap();
   await expect(phone.locator('.deck__title')).toHaveText('Slow River');
   await expectPlaying(phone);
   // It keeps playing without the network (the start can take a moment on a busy machine).

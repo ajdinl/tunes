@@ -1,4 +1,5 @@
-// The player bar at the bottom.
+// The player bar at the bottom. On phones it is a compact bar (cover, song, heart, queue,
+// play/pause and a thin progress line); a tap on it opens Now Playing with everything else.
 import { useEffect, useRef, useState } from 'react';
 
 import { Icon, IconButton } from '../components/Icon.tsx';
@@ -50,8 +51,19 @@ export function Deck() {
 
   useEffect(() => { prepareMini(); }, []);
 
+  const dur = p.duration;
+  const progress = t && !t.live && Number.isFinite(dur) && dur > 0 ? Math.min(1, p.time / dur) : t?.live ? 1 : 0;
+  // Phones: a tap anywhere on the compact bar except its buttons opens Now Playing.
+  const openNow = (e: React.MouseEvent) => {
+    if (!player.track || !matchMedia('(max-width: 860px)').matches) return;
+    if ((e.target as Element).closest('button, input, .dial')) return;
+    e.preventDefault();
+    shell.set({ now: true });
+  };
+
   return (
-    <footer ref={deckRef} className="deck" id="deck" aria-label={tr('Player')}>
+    <footer ref={deckRef} className="deck" id="deck" aria-label={tr('Player')} onClick={openNow}>
+      <div className="deck__progress" aria-hidden="true"><span style={{ width: (progress * 100).toFixed(2) + '%' }} /></div>
       <div className="deck__now">
         <button type="button" className="deck__cv" aria-label={tr('Open “Now playing”')} onClick={() => { if (player.track) shell.set({ now: true }); }}>
           <Cover src={t?.cover} label={t?.title || '♪'} />
@@ -88,7 +100,7 @@ export function Deck() {
       </div>
       <div className="deck__tools">
         <IconButton icon="lyrics" label={tr('Lyrics (T)')} className={cx(ui.panel === 'lyrics' && 'is-on')} onClick={() => shell.togglePanel('lyrics')} />
-        <IconButton icon="queue" label={tr('Play queue (Q)')} className={cx(ui.panel === 'queue' && 'is-on')} onClick={() => shell.togglePanel('queue')} />
+        <IconButton icon="queue" label={tr('Play queue (Q)')} className={cx('deck__queue', ui.panel === 'queue' && 'is-on')} onClick={() => shell.togglePanel('queue')} />
         {/* Phones have no equalizer (no Web Audio graph, or iOS stops the music on lock). */}
         {p.noGraph ? null : <IconButton icon="eq" label={tr('Equalizer (E)')} className={cx('deck__eq', (p.eq.enabled || ui.eq) && 'is-on')} onClick={() => shell.set({ eq: !ui.eq })} />}
         <SleepButton />
@@ -103,13 +115,17 @@ export function Deck() {
           <IconButton icon="pip" label={mini ? tr('Close mini player') : tr('Mini player')} className={cx(mini && 'is-on')} aria-pressed={mini}
             onClick={() => { toggleMini(); }} />
         ) : null}
-        <IconButton icon="expand" label={tr('Full screen (F)')} onClick={() => { if (player.track) shell.set({ now: true }); }} />
+        <IconButton icon="expand" label={tr('Full screen (F)')} disabled={!p.track} onClick={() => { if (player.track) shell.set({ now: true }); }} />
+        {/* The compact bar's own play button (phones); computers use the one above the dial. */}
+        <button type="button" className={cx('deck__mplay', p.loading && 'is-loading')} aria-label={playing ? tr('Pause') : tr('Play')} onClick={() => player.toggle()}>
+          <Icon name={playing ? 'pause' : 'play'} size={20} />
+        </button>
       </div>
     </footer>
   );
 }
 
-function SleepButton() {
+export function SleepButton() {
   const p = usePlayer('sleep');
   const [, tick] = useState(0);
   const s = p.sleep;

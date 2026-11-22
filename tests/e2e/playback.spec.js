@@ -432,3 +432,14 @@ test('playlists: songs move by their handle, with a finger on the phone or the k
   await expect.poll(order).toEqual(['Paper Boats', 'Slow River', 'Morning Light']);
   await request.delete('/api/playlists/' + p.id, { data: {} });
 });
+
+test('nothing chosen yet: full screen and the heart wait for a song', async ({ device }) => {
+  const page = await device(); // a new browser: nothing in the queue
+  await open(page, '/');
+  await expect(page.locator('.deck__title')).toHaveText('Nothing playing');
+  await expect(page.locator('.deck [aria-label="Full screen (F)"]')).toBeDisabled();
+  await expect(page.locator('.deck__fav')).toBeDisabled();
+  await playSong(page, 'Slow River');
+  await expect(page.locator('.deck [aria-label="Full screen (F)"]')).toBeEnabled();
+  await expect(page.locator('.deck__fav')).toBeEnabled();
+});
