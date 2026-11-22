@@ -1,6 +1,6 @@
 // Offline buffer (IndexedDB): songs ahead are downloaded, play without a connection, and
 // expire after 72 hours unless they are in the current window.
-import { test, expect, settle, expectPlaying, position, appModule, phoneURL } from './helpers.js';
+import { test, expect, settle, expectPlaying, position, appModule, phoneURL, touch } from './helpers.js';
 
 const cachedIds = (page) => appModule(page, 'offline', async (m) => { await m.offline.ready; return [...m.offline.index.keys()]; });
 
@@ -132,4 +132,37 @@ test('downloads for a trip: kept past 72 hours and the buffer limit, listed offl
   await phone.locator('dialog').getByRole('button', { name: 'Remove all downloads' }).tap();
   await expect(phone.locator('#main')).toContainText('Nothing downloaded yet.');
   await expect.poll(pinned).toEqual([]);
+});
+
+test('downloads: sort with one tap, search, and arrange "My order" with a finger', async ({ device, baseURL, request }) => {
+  const { tracks } = await (await request.get('/api/library')).json();
+  const album = tracks.filter((t) => t.album === 'Blue Hours'); // Morning Light, Slow River, Paper Boats
+  const phone = await device({ mobile: true });
+  await phone.goto(phoneURL(baseURL, '/downloads'));
+  await settle(phone);
+  await appModule(phone, 'offline', async (m, list) => { await m.offline.pin(list); }, album);
+  await expect.poll(() => appModule(phone, 'offline', (m) => m.offline.pinned().length), { timeout: 30000 }).toBe(3);
+  const titles = () => phone.locator('#main .tr .tr__title').allTextContents();
+
+  await phone.locator('.chip', { hasText: 'Title' }).tap();
+  await expect.poll(titles).toEqual(['Morning Light', 'Paper Boats', 'Slow River']);
+  await phone.locator('.field--filter').fill('river');
+  await expect.poll(titles).toEqual(['Slow River']);
+  await phone.locator('.field--filter').fill('');
+
+  // My order: handles appear; drag the first song below the last one.
+  await phone.locator('.chip', { hasText: 'My order' }).tap();
+  await expect(phone.locator('#main .tr__grip')).toHaveCount(3);
+  const before = await titles();
+  const g = await phone.locator('#main .tr__grip').first().boundingBox();
+  const last = await phone.locator('#main .tr').last().boundingBox();
+  const t = await touch(phone);
+  await t.swipe({ x: g.x + g.width / 2, y: g.y + g.height / 2 }, { x: g.x + g.width / 2, y: last.y + last.height - 4 }, 12);
+  await expect.poll(titles).toEqual([before[1], before[2], before[0]]);
+
+  // Kept on this device, with the chosen sort.
+  await phone.reload();
+  await settle(phone);
+  await expect(phone.locator('.chip', { hasText: 'My order' })).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(titles).toEqual([before[1], before[2], before[0]]);
 });

@@ -42,9 +42,15 @@ export function Playlist({ route }: { route: Route }) {
           p.tracks.length && !STANDALONE ? <a key="m3u" className="btn btn--ghost" href={`/api/playlists/${p.id}/m3u`} download=""><Icon name="download" size={16} />{tr('Export M3U')}</a> : null,
           <button key="delete" type="button" className="btn btn--ghost" onClick={remove}><Icon name="trash" size={16} />{tr('Delete')}</button>,
         ]} />
-      <TrackList tracks={p.tracks} context={ctx} playlist={p} sortable
+      <TrackList tracks={p.tracks} context={ctx} playlist={p}
+        onReorder={(from, to) => {
+          const list = p.tracks.slice();
+          const [x] = list.splice(from, 1);
+          list.splice(to, 0, x);
+          store.updatePlaylist(p.id, { tracks: list });
+        }}
         emptyText={tr('Add songs with the ⋯ menu next to any song, or by right-clicking a song.')} />
-      {p.tracks.length > 1 ? <p className="muted pad">{tr('Drag a song to change the order.')}</p> : null}
+      {p.tracks.length > 1 ? <p className="muted pad">{tr('Drag a song by its handle to change the order.')}</p> : null}
     </div>
   );
 }

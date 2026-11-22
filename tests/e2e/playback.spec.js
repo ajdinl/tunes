@@ -1,6 +1,6 @@
 // Playing music on one device: language switch, seeking, history, lyrics, shortcuts.
 import {
-  test, expect, open, go, settle, playSong, expectPlaying, position, deckTitle, appModule, sleep, LANGS,
+  test, expect, open, go, settle, playSong, expectPlaying, position, deckTitle, appModule, sleep, touch, LANGS,
 } from './helpers.js';
 
 test('switching language while music plays keeps playing and re-renders the UI', async ({ page }) => {
@@ -404,4 +404,31 @@ test('"Add to playlist" opens where there is room, never off screen', async ({ p
   await check(page, 1440); // the ⋯ button sits at the right edge
   const phone = await device({ mobile: true });
   await check(phone, 390);
+});
+
+test('playlists: songs move by their handle, with a finger on the phone or the keyboard', async ({ page, device, request }) => {
+  const { tracks } = await (await request.get('/api/library')).json();
+  const pick = ['Morning Light', 'Slow River', 'Paper Boats'].map((title) => tracks.find((t) => t.title === title));
+  const p = await (await request.post('/api/playlists', { data: { name: 'Road trip', tracks: pick } })).json();
+  const order = async () => (await (await request.get('/api/state')).json()).playlists.find((x) => x.id === p.id).tracks.map((t) => t.title);
+
+  // Keyboard on the computer: focus the handle, ↓ moves the song one down.
+  await open(page, '/playlist/' + p.id);
+  await page.locator('#main .tr__grip').first().focus();
+  await page.keyboard.press('ArrowDown');
+  await expect.poll(order).toEqual(['Slow River', 'Morning Light', 'Paper Boats']);
+
+  // A finger on the phone: drag the last song to the top.
+  const phone = await device({ mobile: true });
+  await open(phone, '/playlist/' + p.id);
+  // Music from an earlier test may still offer "Continue here" over the list: put it away.
+  const banner = phone.locator('.handoff:not([hidden])');
+  if (await banner.count()) await banner.locator('button').last().tap();
+  await expect(banner).toHaveCount(0);
+  const g = await phone.locator('#main .tr__grip').last().boundingBox();
+  const first = await phone.locator('#main .tr').first().boundingBox();
+  const t = await touch(phone);
+  await t.swipe({ x: g.x + g.width / 2, y: g.y + g.height / 2 }, { x: g.x + g.width / 2, y: first.y + 4 }, 12);
+  await expect.poll(order).toEqual(['Paper Boats', 'Slow River', 'Morning Light']);
+  await request.delete('/api/playlists/' + p.id, { data: {} });
 });

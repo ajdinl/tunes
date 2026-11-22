@@ -1,6 +1,6 @@
 // Track list. Large lists render in chunks as you scroll, so even 20,000 tracks stay smooth.
 import { useEffect, useRef, useState } from 'react';
-import type { ReactNode, KeyboardEvent as ReactKeyboardEvent } from 'react';
+import type { ReactNode, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 
 import { Icon } from './Icon.tsx';
 import { Cover, SourceTag, Empty } from './common.tsx';
@@ -25,15 +25,20 @@ export interface TrackListProps {
   coverArt?: boolean;
   playlist?: Playlist | null;
   leading?: (t: Track, i: number) => ReactNode;
-  sortable?: boolean;
+  // Given, every row gets a handle (≡) to move it: drag with a finger or the mouse, or
+  // focus it and press ↑ ↓. Called with the old and the new position.
+  onReorder?: (from: number, to: number) => void;
   emptyText?: string;
 }
 
-export function TrackList({ tracks, context = null, numbered = false, album = true, coverArt = true, playlist = null, leading, sortable = false, emptyText }: TrackListProps) {
+type Drag = { from: number; over: number };
+
+export function TrackList({ tracks, context = null, numbered = false, album = true, coverArt = true, playlist = null, leading, onReorder, emptyText }: TrackListProps) {
   const playingId = usePlayer('track').track?.id;
   useStore('favorites');
   useOffline();
   const [shown, setShown] = useState(CHUNK);
+  const [drag, setDrag] = useState<Drag | null>(null);
   const sentinel = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,31 +54,83 @@ export function TrackList({ tracks, context = null, numbered = false, album = tr
   const play = (i: number) => player.playList(tracks, i, { shuffle: false, context });
   const menuFor = (t: Track, i: number) => trackMenu(t, { playlist, index: i, list: tracks });
 
+  // Moving a row by its handle. The pointer is captured by the handle, so a finger can travel
+  // over other rows; near the top or bottom edge the screen scrolls by itself.
+  const startDrag = (e: ReactPointerEvent<HTMLButtonElement>, from: number) => {
+    if (!onReorder || e.button > 0) return;
+    e.preventDefault();
+    const grip = e.currentTarget;
+    const list = grip.closest('.tl') as HTMLElement;
+    const scroller = document.getElementById('main');
+    grip.setPointerCapture(e.pointerId);
+    let y = e.clientY;
+    let over = from;
+    let raf = 0;
+    const pick = () => {
+      const rows = [...list.querySelectorAll<HTMLElement>(':scope > .tr')];
+      over = Number(rows[rows.length - 1]?.dataset.i ?? from);
+      for (const r of rows) if (y < r.getBoundingClientRect().bottom) { over = Number(r.dataset.i); break; }
+      setDrag({ from, over });
+    };
+    const edgeScroll = () => {
+      if (scroller) {
+        const b = scroller.getBoundingClientRect();
+        const step = y < b.top + 60 ? -14 : y > b.bottom - 60 ? 14 : 0;
+        if (step) { scroller.scrollTop += step; pick(); }
+      }
+      raf = requestAnimationFrame(edgeScroll);
+    };
+    const move = (ev: PointerEvent) => { y = ev.clientY; pick(); };
+    const end = (ev: PointerEvent) => {
+      cancelAnimationFrame(raf);
+      grip.removeEventListener('pointermove', move);
+      grip.removeEventListener('pointerup', end);
+      grip.removeEventListener('pointercancel', end);
+      setDrag(null);
+      if (ev.type === 'pointerup' && over !== from) onReorder(from, over);
+    };
+    grip.addEventListener('pointermove', move);
+    grip.addEventListener('pointerup', end);
+    grip.addEventListener('pointercancel', end);
+    raf = requestAnimationFrame(edgeScroll);
+    setDrag({ from, over });
+  };
+
+  const gripKey = (e: ReactKeyboardEvent<HTMLButtonElement>, i: number) => {
+    if (!onReorder) return;
+    const to = e.key === 'ArrowUp' ? i - 1 : e.key === 'ArrowDown' ? i + 1 : -1;
+    if (to < 0 || to >= tracks.length) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const list = e.currentTarget.closest('.tl');
+    onReorder(i, to);
+    // Keep the focus on the moved song's handle.
+    requestAnimationFrame(() => (list?.querySelector(`.tr[data-i="${to}"] .tr__grip`) as HTMLElement | null)?.focus());
+  };
+
   return (
-    <div className={cx('tl', !album && 'tl--noalbum', !coverArt && 'tl--nocover')} role="list">
+    <div className={cx('tl', !album && 'tl--noalbum', !coverArt && 'tl--nocover', onReorder && 'tl--sortable', drag && 'is-dragging')} role="list">
       {tracks.slice(0, shown).map((t, i) => (
         <Row key={t.id + ':' + i} t={t} i={i} playing={t.id === playingId} fav={store.isFav(t.id)}
           lead={leading ? leading(t, i) : numbered ? (t.trackNo || i + 1) : i + 1}
           album={album} coverArt={coverArt} onPlay={() => play(i)} menu={() => menuFor(t, i)}
-          sortable={sortable && Boolean(playlist)} onMove={(from) => {
-            if (!playlist || from === i) return;
-            const list = playlist.tracks.slice();
-            const [x] = list.splice(from, 1);
-            list.splice(i, 0, x);
-            store.updatePlaylist(playlist.id, { tracks: list });
-          }} />
+          grip={onReorder ? { onPointerDown: (e) => startDrag(e, i), onKeyDown: (e) => gripKey(e, i) } : null}
+          dragState={!drag ? null : drag.from === i ? 'drag' : drag.over === i && drag.over !== drag.from ? (drag.over < drag.from ? 'before' : 'after') : null} />
       ))}
       {shown < tracks.length ? <div className="tl__more" aria-hidden="true" ref={sentinel} /> : null}
     </div>
   );
 }
 
-function Row({ t, i, playing, fav, lead, album, coverArt, onPlay, menu, sortable, onMove }: {
+interface GripHandlers {
+  onPointerDown: (e: ReactPointerEvent<HTMLButtonElement>) => void;
+  onKeyDown: (e: ReactKeyboardEvent<HTMLButtonElement>) => void;
+}
+
+function Row({ t, i, playing, fav, lead, album, coverArt, onPlay, menu, grip, dragState }: {
   t: Track; i: number; playing: boolean; fav: boolean; lead: ReactNode; album: boolean; coverArt: boolean;
-  onPlay: () => void; menu: () => ReturnType<typeof trackMenu>; sortable: boolean; onMove: (from: number) => void;
+  onPlay: () => void; menu: () => ReturnType<typeof trackMenu>; grip: GripHandlers | null; dragState: 'drag' | 'before' | 'after' | null;
 }) {
-  const [drag, setDrag] = useState(false);
-  const [over, setOver] = useState(false);
   const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     const r = e.currentTarget;
     if (e.target !== r) return;
@@ -83,23 +140,16 @@ function Row({ t, i, playing, fav, lead, album, coverArt, onPlay, menu, sortable
     if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) { const b = r.getBoundingClientRect(); openMenu(b.left + 40, b.bottom, menu()); e.preventDefault(); }
   };
   return (
-    <div className={cx('tr', playing && 'is-playing', drag && 'is-drag', over && 'is-over')} role="listitem" tabIndex={0}
-      data-id={t.id} data-i={i} aria-label={`${t.title}, ${t.artist || ''}`}
+    <div className={cx('tr', playing && 'is-playing', dragState === 'drag' && 'is-drag', dragState === 'before' && 'is-over', dragState === 'after' && 'is-over-after')}
+      role="listitem" tabIndex={0} data-id={t.id} data-i={i} aria-label={`${t.title}, ${t.artist || ''}`}
       onDoubleClick={onPlay} onKeyDown={onKeyDown}
       // On touch screens one tap on a song plays it (the buttons in the row keep their own job).
       onClick={TOUCH ? (e) => { if (!(e.target as Element).closest('button, a, input')) onPlay(); } : undefined}
-      onContextMenu={(e) => { e.preventDefault(); openMenu(e.clientX, e.clientY, menu()); }}
-      draggable={sortable || undefined}
-      onDragStart={sortable ? (e) => { e.dataTransfer.setData('text/x-index', String(i)); e.dataTransfer.effectAllowed = 'move'; setDrag(true); } : undefined}
-      onDragEnd={sortable ? () => setDrag(false) : undefined}
-      onDragOver={sortable ? (e) => { e.preventDefault(); setOver(true); } : undefined}
-      onDragLeave={sortable ? () => setOver(false) : undefined}
-      onDrop={sortable ? (e) => {
-        e.preventDefault();
-        setOver(false);
-        const from = Number(e.dataTransfer.getData('text/x-index'));
-        if (!Number.isNaN(from)) onMove(from);
-      } : undefined}>
+      onContextMenu={(e) => { e.preventDefault(); openMenu(e.clientX, e.clientY, menu()); }}>
+      {grip ? (
+        <button type="button" className="tr__grip" aria-label={tr('Drag to change the order')} title={tr('Drag to change the order')}
+          onPointerDown={grip.onPointerDown} onKeyDown={grip.onKeyDown} onClick={(e) => e.stopPropagation()}><Icon name="grip" size={18} /></button>
+      ) : null}
       <div className="tr__lead">
         <span className="tr__num">{lead}</span>
         <button type="button" className="tr__play" aria-label={tr('Play ') + t.title} onClick={(e) => { e.stopPropagation(); onPlay(); }}><Icon name="play" size={16} /></button>

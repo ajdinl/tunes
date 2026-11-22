@@ -426,6 +426,13 @@ select.field:disabled { opacity: 0.5; cursor: default; }
 .tr:focus-visible { background: var(--bg-2); }
 .tr.is-drag { opacity: 0.4; }
 .tr.is-over { box-shadow: inset 0 2px 0 var(--amber); }
+.tr.is-over-after { box-shadow: inset 0 -2px 0 var(--amber); }
+/* Lists you can arrange: a handle column in front. touch-action keeps a finger on the handle
+   from scrolling the page. */
+.tl--sortable .tr { grid-template-columns: 30px var(--cols); }
+.tr__grip { display: grid; place-items: center; width: 30px; height: 40px; padding: 0; border: 0; background: none; color: var(--faint); cursor: grab; touch-action: none; }
+.tr__grip:hover, .tr__grip:focus-visible { color: var(--text); }
+.tl.is-dragging, .tl.is-dragging .tr__grip { cursor: grabbing; user-select: none; }
 .tr__lead { position: relative; display: grid; place-items: center; height: 36px; }
 .tr__num { color: var(--faint); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tr__play {
