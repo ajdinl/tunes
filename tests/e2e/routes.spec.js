@@ -137,3 +137,28 @@ test('English and the black theme until the user picks others, whatever the brow
   await expect(page.locator('html')).toHaveAttribute('lang', 'bs');
   await ctx.close();
 });
+
+test('a stopped server shows a short note, not an old copy of the interface', async ({ browser, baseURL }) => {
+  const ctx = await browser.newContext({ baseURL, serviceWorkers: 'allow' });
+  const page = await ctx.newPage();
+  await open(page, '/');
+  // A cache left by the old service worker is removed when the new one takes over.
+  await page.evaluate(async () => {
+    await (await caches.open('tunes-v1')).put('/', new Response('<h1>Old Tunes</h1>', { headers: { 'Content-Type': 'text/html' } }));
+    for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
+  });
+  await page.reload();
+  await settle(page);
+  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  await expect.poll(() => page.evaluate(() => caches.keys())).toEqual([]);
+
+  await page.evaluate(() => localStorage.setItem('tunes.lang', JSON.stringify('bs')));
+  await ctx.setOffline(true);
+  await page.goto('/settings').catch(() => {});
+  await expect(page.locator('h1')).toHaveText('Tunes nije pokrenut');
+  await expect(page.locator('body')).not.toContainText('Old Tunes');
+  // Back as soon as the server answers again.
+  await ctx.setOffline(false);
+  await expect(page.locator('#main h1')).toHaveText('Postavke', { timeout: 10000 });
+  await ctx.close();
+});

@@ -1129,6 +1129,20 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
   .deck .deck__ctrls .ibtn svg { width: 18px; height: 18px; }
   .deck .deck__ctrls .play { width: 34px; height: 34px; }
   .deck .deck__ctrls .play svg { width: 18px; height: 18px; }
+  /* The song on the left and the tools on the right line up with the dial, not with the
+     middle of the whole bar: half of the buttons row (34px) plus the gap (8px) lower. */
+  .deck .deck__now, .deck .deck__tools { position: relative; top: 21px; }
+}
+@media (min-width: 861px) and (hover: hover) {
+  body.deck-hover .deck .deck__now, body.deck-hover .deck .deck__tools { top: 0; }
+}
+/* "Player buttons beside the progress bar" (Settings → Appearance): one row, like SoundCloud,
+   so the bar is lower. Narrower windows keep them above, or the dial gets too short. */
+@media (min-width: 1101px) {
+  body.deck-row .deck .deck__center { flex-direction: row; align-items: center; gap: 14px; }
+  body.deck-row .deck .deck__ctrls { flex: none; }
+  body.deck-row .deck .deck__dial { flex: 1; min-width: 0; }
+  body.deck-row .deck .deck__now, body.deck-row .deck .deck__tools { top: 0; }
 }
 
 /* ------------------------------------------------------------ mini player (picture-in-picture window) */
@@ -1147,6 +1161,36 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .mini__time { margin-left: auto; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .mini__bar { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: rgba(127, 127, 127, 0.22); cursor: pointer; }
 .mini__fill { display: block; height: 100%; background: var(--amber); }
+/* Safari's mini player is a video drawn from a canvas: kept in the page (or Safari won't float
+   it) but invisible here. */
+.mini-video { position: fixed; right: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* "Player buttons only on hover" (Settings → Appearance; computers with a mouse): the buttons
+   leave the bar, which gets lower, and float above the dial while the pointer is over the bar. */
+@media (min-width: 861px) and (hover: hover) {
+  body.deck-hover .deck .deck__center { position: relative; }
+  body.deck-hover .deck .deck__ctrls {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 2px);
+    padding: 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--bg-2);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 6px);
+    transition: opacity 0.15s, transform 0.15s;
+    z-index: 2;
+  }
+  body.deck-hover .deck:hover .deck__ctrls,
+  body.deck-hover .deck:has(.deck__ctrls :focus-visible) .deck__ctrls {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+  }
+}
 
 /* Narrow computer windows: make room for the dial (phones have their own layout below 861px). */
 @media (min-width: 861px) and (max-width: 1100px) {

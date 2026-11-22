@@ -212,9 +212,139 @@ test('mini player: a small window with the song and the controls', async ({ page
   await expect(page.locator('.deck [aria-label="Mini player"]')).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('mini player button is hidden where the browser has no picture-in-picture window', async ({ page }) => {
-  // Like Safari and Firefox.
-  await page.addInitScript(() => { Object.defineProperty(window, 'documentPictureInPicture', { configurable: true, value: undefined }); });
+test('mini player in Safari: a picture-in-picture video drawn from the song', async ({ page }) => {
+  // Safari has no Document Picture-in-Picture, only video picture-in-picture. Chromium plays
+  // Safari here: no picture-in-picture window, and the video's window is simulated (the test
+  // presses its play/pause button by calling play() and pause() on the video).
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'documentPictureInPicture', { configurable: true, value: undefined });
+    Object.defineProperty(document, 'pictureInPictureEnabled', { configurable: true, get: () => true });
+    let inPip = null;
+    Object.defineProperty(document, 'pictureInPictureElement', { configurable: true, get: () => inPip });
+    HTMLVideoElement.prototype.requestPictureInPicture = function () {
+      if (this.readyState < 1) return Promise.reject(new DOMException('No frame yet', 'InvalidStateError'));
+      inPip = this;
+      this.dispatchEvent(new Event('enterpictureinpicture'));
+      return Promise.resolve({ width: 320, height: 120 });
+    };
+    document.exitPictureInPicture = async () => {
+      const v = inPip;
+      inPip = null;
+      v?.dispatchEvent(new Event('leavepictureinpicture'));
+    };
+  });
+  await playSong(page, 'Paper Boats');
+  const video = page.locator('.mini-video');
+  const button = page.locator('.deck [aria-label="Mini player"]');
+  await expect(button).toBeVisible();
+  // Ready before the click (Safari allows picture-in-picture only right inside it).
+  await expect.poll(() => video.evaluate((v) => v.readyState)).toBeGreaterThanOrEqual(1);
+  await expect.poll(() => video.evaluate((v) => v.paused)).toBe(true);
+
+  await button.click();
+  await expect(page.locator('.deck [aria-label="Close mini player"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(video).toHaveAttribute('data-song', 'Paper Boats – Nadia Vale');
+  await expect.poll(() => video.evaluate((v) => v.paused)).toBe(false); // follows the music
+
+  // The picture: the progress line along the bottom is drawn in amber up to the position.
+  await page.locator('.deck .play').click();
+  await expectPlaying(page, false);
+  const box = await page.locator('.deck .dial').boundingBox();
+  await page.mouse.click(box.x + box.width * 0.6, box.y + box.height / 2);
+  const pixel = (fx) => video.evaluate((v, f) => {
+    const c = v.srcObject.getVideoTracks()[0].canvas;
+    return [...c.getContext('2d').getImageData(Math.round(c.width * f), c.height - 4, 1, 1).data].slice(0, 3);
+  }, fx);
+  await expect.poll(() => pixel(0.3)).toEqual([255, 181, 71]);
+  expect(await pixel(0.9)).not.toEqual([255, 181, 71]);
+  await expect.poll(() => video.evaluate((v) => v.paused)).toBe(true);
+
+  // The window's play/pause button drives the player.
+  await video.evaluate((v) => v.play());
+  await expectPlaying(page, true);
+  await video.evaluate((v) => v.pause());
+  await expectPlaying(page, false);
+  await video.evaluate((v) => v.play());
+  await expectPlaying(page, true);
+
+  // Next (from the window's Media Session buttons or anywhere else) shows the new song.
+  await appModule(page, 'player', (m) => m.player.next());
+  const next = await deckTitle(page);
+  expect(next).not.toBe('Paper Boats');
+  await expect(video).toHaveAttribute('data-song', new RegExp('^' + next.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' – '));
+
+  await page.locator('.deck [aria-label="Close mini player"]').click();
+  await expect(button).toHaveAttribute('aria-pressed', 'false');
+  await expect.poll(() => video.evaluate((v) => v.paused)).toBe(true);
+  await expectPlaying(page, true); // closing the window doesn't stop the music
+});
+
+test('mini player button is hidden where the browser has no picture-in-picture at all', async ({ page }) => {
+  // Like Firefox.
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'documentPictureInPicture', { configurable: true, value: undefined });
+    Object.defineProperty(document, 'pictureInPictureEnabled', { configurable: true, get: () => false });
+  });
   await playSong(page, 'Paper Boats');
   await expect(page.locator('.deck [aria-label="Mini player"]')).toHaveCount(0);
+  await expect(page.locator('.mini-video')).toHaveCount(0);
+});
+
+test('player buttons: above the dial, beside it in one row, or only on hover', async ({ page }) => {
+  await playSong(page, 'Slow River');
+  const deck = page.locator('.deck');
+  const ctrls = page.locator('.deck .deck__ctrls');
+  const play = ctrls.locator('.play');
+  const dial = page.locator('.deck .dial');
+  const height = async () => (await deck.boundingBox()).height;
+  const opacity = () => ctrls.evaluate((el) => getComputedStyle(el).opacity);
+  const before = await height();
+  await go(page, '/settings'); // no reload: the music keeps playing
+  await expectPlaying(page, true);
+  const pick = async (value) => {
+    await page.locator(`.ctrls-opt[data-ctrls="${value}"]`).click();
+    await expect(page.locator(`.ctrls-opt[data-ctrls="${value}"]`)).toHaveAttribute('aria-pressed', 'true');
+  };
+  // Above (the default): the buttons sit over the dial; the song and the tools line up with the dial.
+  await expect(page.locator('.ctrls-opt[data-ctrls="above"]')).toHaveAttribute('aria-pressed', 'true');
+  const mid = (b) => b.y + b.height / 2;
+  expect((await ctrls.boundingBox()).y + 20).toBeLessThan((await dial.boundingBox()).y);
+  expect(Math.abs(mid(await page.locator('.deck__now').boundingBox()) - mid(await dial.boundingBox()))).toBeLessThan(6);
+
+  // Beside: one row, like SoundCloud, and a lower bar.
+  await pick('beside');
+  await expect(page.locator('body')).toHaveClass(/deck-row/);
+  await expect.poll(height).toBeLessThan(before - 20);
+  expect(Math.abs(mid(await ctrls.boundingBox()) - mid(await dial.boundingBox()))).toBeLessThan(6);
+  expect((await ctrls.boundingBox()).x + (await ctrls.boundingBox()).width).toBeLessThan((await dial.boundingBox()).x);
+  await play.click();
+  await expectPlaying(page, false);
+  await play.click();
+  await expectPlaying(page, true);
+
+  // Only on hover: a lower bar, the buttons float up over it while the mouse is on the bar.
+  await pick('hover');
+  await expect(page.locator('body')).toHaveClass(/deck-hover/);
+  await expect(page.locator('body')).not.toHaveClass(/deck-row/);
+  await page.mouse.move(10, 10);
+  await expect.poll(height).toBeLessThan(before - 20);
+  await expect.poll(opacity).toBe('0');
+  await page.locator('.deck__dial').hover();
+  await expect.poll(opacity).toBe('1');
+  await play.click();
+  await expectPlaying(page, false);
+  // The keyboard still works while they are hidden.
+  await page.mouse.move(10, 10);
+  await page.evaluate(() => document.activeElement?.blur());
+  await page.keyboard.press('Space');
+  await expectPlaying(page, true);
+
+  // Remembered on this device.
+  await page.reload();
+  await settle(page);
+  await expect(page.locator('body')).toHaveClass(/deck-hover/);
+  await pick('above');
+  await expect(page.locator('body')).not.toHaveClass(/deck-hover|deck-row/);
+  await expect.poll(opacity).toBe('1');
+  await expect.poll(height).toBe(before);
 });

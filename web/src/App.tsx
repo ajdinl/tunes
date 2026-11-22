@@ -13,7 +13,7 @@ import { Handoff } from './shell/Handoff.tsx';
 import { ScDock } from './shell/ScDock.tsx';
 import { PhoneDialog, InstallDialog } from './shell/PhoneDialogs.tsx';
 import { MiniPlayer } from './shell/MiniPlayer.tsx';
-import { shell, useShell } from './shell/ui.ts';
+import { shell, useShell, CAN_HOVER } from './shell/ui.ts';
 import { player, usePlayer } from './lib/player.ts';
 import { useStore } from './lib/store.ts';
 import { tr, useLang } from './lib/i18n.ts';
@@ -59,7 +59,9 @@ export function App() {
     b.toggle('has-panel', Boolean(ui.panel));
     b.toggle('now-open', ui.now);
     b.toggle('side-mini', ui.sideMini);
-  }, [playing, ui.nav, ui.panel, ui.now, ui.sideMini]);
+    b.toggle('deck-row', ui.deckCtrls === 'beside');
+    b.toggle('deck-hover', ui.deckCtrls === 'hover' && CAN_HOVER);
+  }, [playing, ui.nav, ui.panel, ui.now, ui.sideMini, ui.deckCtrls]);
 
   useShortcuts();
 

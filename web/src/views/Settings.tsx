@@ -13,6 +13,9 @@ import { norm, songs } from '../lib/format.ts';
 import { store, useStore, api } from '../lib/store.ts';
 import type { Track } from '../lib/store.ts';
 import { toast } from '../lib/feedback.ts';
+import { shell, useShell, CAN_HOVER } from '../shell/ui.ts';
+import type { DeckCtrls } from '../shell/ui.ts';
+import { IS_PHONE } from '../lib/install.ts';
 import { playlistHref } from '../lib/actions.ts';
 import { go } from '../lib/router.ts';
 import type { Route } from '../lib/router.ts';
@@ -135,6 +138,7 @@ export function Settings(_: { route: Route }) {
           </div>
           <h3 className="form__label">{tr('Player style')}</h3>
           <DialStylePicker />
+          {IS_PHONE ? null : <DeckControlsPicker />}
           <h3 className="form__label">{tr('App icon')}</h3>
           {/* App icon: stored on the server, so the computer and the phone show the same one. */}
           <div className="theme-pick" role="group" aria-label={tr('App icon')}>
@@ -345,6 +349,25 @@ function DialPreview({ style }: { style: DialStyle }) {
     })}<line x1="24" y1="1" x2="24" y2="20" stroke="#ff5e3a" strokeWidth="1.5" /></>;
   }
   return <svg className="theme-opt__icon" width="48" height="22" viewBox="0 0 48 22" aria-hidden="true">{body}</svg>;
+}
+
+// Computers only (phones have their own player layout). "Only on hover" needs a mouse.
+function DeckControlsPicker() {
+  const ui = useShell();
+  const opts: [DeckCtrls, string][] = [['above', 'Above the progress bar'], ['beside', 'Beside the progress bar']];
+  if (CAN_HOVER) opts.push(['hover', 'Only on hover']);
+  return (
+    <>
+      <h3 className="form__label">{tr('Player buttons')}</h3>
+      <div className="theme-pick" role="group" aria-label={tr('Player buttons')}>
+        {opts.map(([value, label]) => (
+          <button key={value} type="button" className="theme-opt ctrls-opt" data-ctrls={value} aria-pressed={ui.deckCtrls === value}
+            onClick={() => shell.set({ deckCtrls: value })}>{tr(label)}</button>
+        ))}
+      </div>
+      <p className="muted">{tr('Beside the progress bar, or only when the mouse is over it, the player bar takes less room.')}</p>
+    </>
+  );
 }
 
 function DialStylePicker() {

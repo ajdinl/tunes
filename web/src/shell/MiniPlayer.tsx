@@ -1,6 +1,7 @@
 // Mini player: a small always-on-top window (Document Picture-in-Picture) with the cover,
 // the song and the basic controls, so Tunes stays at hand while you work in other apps.
-// Chrome, Edge and Brave on computers support it; elsewhere the button is hidden.
+// Chrome, Edge and Brave on computers support it. Safari gets a picture-in-picture video
+// instead (MiniVideo.ts); where neither exists (phones, Firefox) the button is hidden.
 // The window is a React portal: the same player and state, rendered into its document.
 import { useEffect, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
@@ -13,11 +14,17 @@ import { store, useStore } from '../lib/store.ts';
 import { tr } from '../lib/i18n.ts';
 import { fmtTime, cx } from '../lib/format.ts';
 import { toggleFav } from '../lib/actions.ts';
+import { videoPipSupported, videoMiniOpen, onVideoMiniChange, prepareVideoMini, openVideoMini, closeVideoMini } from './MiniVideo.ts';
 
 interface PipApi { requestWindow(opts: { width: number; height: number }): Promise<Window> }
 const pip = (): PipApi | undefined => (window as Window & { documentPictureInPicture?: PipApi }).documentPictureInPicture;
 
-export const miniSupported = (): boolean => Boolean(pip()) && !player.mobile;
+export const miniSupported = (): boolean => (Boolean(pip()) && !player.mobile) || videoPipSupported();
+
+// Safari's video needs to exist before the click (see MiniVideo.ts).
+export function prepareMini(): void {
+  if (!pip()) prepareVideoMini();
+}
 
 let win: Window | null = null;
 const listeners = new Set<() => void>();
@@ -27,6 +34,12 @@ function setWin(w: Window | null): void {
 }
 export function useMiniWindow(): Window | null {
   return useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => win);
+}
+
+// Either kind of mini player is open.
+export function useMiniOpen(): boolean {
+  const w = useMiniWindow();
+  return useSyncExternalStore(onVideoMiniChange, videoMiniOpen) || Boolean(w);
 }
 
 // The window gets the app's styles, theme and language, so it looks like the rest of Tunes.
@@ -58,8 +71,9 @@ function dress(w: Window): void {
 
 export async function toggleMini(): Promise<void> {
   if (win) { win.close(); return; }
+  if (videoMiniOpen()) { closeVideoMini(); return; }
   const api = pip();
-  if (!api) return;
+  if (!api) { openVideoMini(); return; }
   const w = await api.requestWindow({ width: 380, height: 124 });
   dress(w);
   w.addEventListener('pagehide', () => setWin(null));
