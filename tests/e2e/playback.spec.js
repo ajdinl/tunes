@@ -302,6 +302,19 @@ test('player buttons: above the dial, beside it in one row, or only on hover', a
   const height = async () => (await deck.boundingBox()).height;
   const opacity = () => ctrls.evaluate((el) => getComputedStyle(el).opacity);
   const before = await height();
+  const expectTipClear = async () => {
+    for (const style of ['dial', 'minimal']) {
+      await page.locator(`.dial-opt[data-style="${style}"]`).click();
+      const db = await dial.boundingBox();
+      await page.mouse.move(db.x + db.width * 0.42, db.y + db.height / 2);
+      const tip = page.locator('.deck .dial__tip');
+      await expect(tip).toBeVisible();
+      const tb = await tip.boundingBox();
+      const cb = await ctrls.boundingBox();
+      expect(tb.y, style).toBeGreaterThanOrEqual(db.y);
+      expect(tb.y > cb.y + cb.height || tb.x + tb.width < cb.x || tb.x > cb.x + cb.width, `${style}: tip under the buttons`).toBe(true);
+    }
+  };
   await go(page, '/settings'); // no reload: the music keeps playing
   await expectPlaying(page, true);
   const pick = async (value) => {
@@ -313,6 +326,7 @@ test('player buttons: above the dial, beside it in one row, or only on hover', a
   const mid = (b) => b.y + b.height / 2;
   expect((await ctrls.boundingBox()).y + 20).toBeLessThan((await dial.boundingBox()).y);
   expect(Math.abs(mid(await page.locator('.deck__now').boundingBox()) - mid(await dial.boundingBox()))).toBeLessThan(6);
+  await expectTipClear();
 
   // Beside: one row, like SoundCloud, and a lower bar.
   await pick('beside');
@@ -334,18 +348,8 @@ test('player buttons: above the dial, beside it in one row, or only on hover', a
   await expect.poll(opacity).toBe('0');
   await page.locator('.deck__dial').hover();
   await expect.poll(opacity).toBe('1');
-  // The time under the mouse stays visible: inside the dial, not behind the floating buttons.
-  for (const style of ['dial', 'minimal']) {
-    await page.locator(`.dial-opt[data-style="${style}"]`).click();
-    const db = await dial.boundingBox();
-    await page.mouse.move(db.x + db.width * 0.42, db.y + db.height / 2);
-    const tip = page.locator('.deck .dial__tip');
-    await expect(tip).toBeVisible();
-    const tb = await tip.boundingBox();
-    const cb = await ctrls.boundingBox();
-    expect(tb.y, style).toBeGreaterThanOrEqual(db.y);
-    expect(tb.y > cb.y + cb.height || tb.x + tb.width < cb.x || tb.x > cb.x + cb.width, `${style}: tip under the buttons`).toBe(true);
-  }
+  // The time under the mouse stays visible: inside the dial, not behind the buttons.
+  await expectTipClear();
   await page.locator('.deck__dial').hover();
   await play.click();
   await expectPlaying(page, false);
