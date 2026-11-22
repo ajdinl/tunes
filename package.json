@@ -1,0 +1,33 @@
+{
+  "name": "slusaonica",
+  "version": "1.0.0",
+  "description": "Self-hosted music player with no subscription: your local library plus free, legal sources (Audius, Internet Archive, internet radio, synced lyrics)",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "music-metadata": "^12.8.0",
+    "qrcode": "^1.5.4"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ajdinl/slusaonica.git"
+  },
+  "keywords": [
+    "music",
+    "music-player",
+    "self-hosted",
+    "audius",
+    "internet-archive",
+    "radio",
+    "lyrics",
+    "listenbrainz"
+  ]
+}
