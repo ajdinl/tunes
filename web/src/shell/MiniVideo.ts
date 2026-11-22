@@ -9,6 +9,8 @@ import { tr } from '../lib/i18n.ts';
 import { fmtTime } from '../lib/format.ts';
 import { toast } from '../lib/feedback.ts';
 import { shownTrack } from './Deck.tsx';
+import { media } from '../lib/media.ts';
+import { STANDALONE } from '../lib/env.ts';
 
 const W = 640;
 const H = 240;
@@ -48,8 +50,12 @@ function follow(): void {
 }
 function fromWindow(playing: boolean): void {
   if (!open || playing === want) return;
-  if (playing && !player.playing) player.play();
-  if (!playing && player.playing) player.pause();
+  if (playing) { if (!player.playing) player.play(); return; }
+  // Safari pauses the video when its window is closed, just before it says the window is
+  // gone: wait a moment, and leave the music playing if that pause came with the closing.
+  setTimeout(() => {
+    if (open && document.pictureInPictureElement === video && video?.paused && player.playing) player.pause();
+  }, 400);
 }
 // A paused video keeps showing its last frame, so a change while paused (another song,
 // a seek) plays it for a moment to get the new picture into the window.
@@ -71,8 +77,9 @@ function cover(src: string | null | undefined): HTMLImageElement | null {
   if (!src) return null;
   let url: string;
   try {
-    const abs = new URL(src, location.href);
-    url = abs.origin === location.origin || !/^https?:$/.test(abs.protocol) ? abs.href : '/api/img?u=' + encodeURIComponent(abs.href);
+    const abs = new URL(media(src), location.href);
+    // (The phone-only version has no proxy: there a cover from elsewhere may simply not load.)
+    url = abs.origin === location.origin || !/^https?:$/.test(abs.protocol) || STANDALONE ? abs.href : '/api/img?u=' + encodeURIComponent(abs.href);
   } catch { return null; }
   if (url !== coverUrl) {
     coverUrl = url;

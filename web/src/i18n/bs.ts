@@ -161,6 +161,7 @@ export const BS = {
  "Forgotten favorites": "Zaboravljene omiljene",
  "Found on this computer: {found} of {total}.": "Pronađeno na računaru: {found} od {total}.",
  "Free and legal music: artists who share it themselves, archives and Creative Commons.": "Besplatna i legalna muzika: izvođači koji je sami dijele, arhive i Creative Commons.",
+ "Free music from Audius, Internet Archive and internet radio.": "Besplatna muzika sa Audiusa, Internet Archivea i internet radija.",
  "French": "Francuski",
  "From SoundCloud": "Sa SoundClouda",
  "From Spotify": "Sa Spotify-ja",

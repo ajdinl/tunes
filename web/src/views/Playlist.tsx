@@ -9,6 +9,7 @@ import { toast, ask } from '../lib/feedback.ts';
 import { playlistHref } from '../lib/actions.ts';
 import { go } from '../lib/router.ts';
 import type { Route } from '../lib/router.ts';
+import { STANDALONE } from '../lib/env.ts';
 
 export function Playlist({ route }: { route: Route }) {
   useStore('playlists');
@@ -36,7 +37,7 @@ export function Playlist({ route }: { route: Route }) {
         actions={[
           ...playButtons(p.tracks, ctx),
           <button key="rename" type="button" className="btn btn--ghost" onClick={rename}>{tr('Rename')}</button>,
-          p.tracks.length ? <a key="m3u" className="btn btn--ghost" href={`/api/playlists/${p.id}/m3u`} download=""><Icon name="download" size={16} />{tr('Export M3U')}</a> : null,
+          p.tracks.length && !STANDALONE ? <a key="m3u" className="btn btn--ghost" href={`/api/playlists/${p.id}/m3u`} download=""><Icon name="download" size={16} />{tr('Export M3U')}</a> : null,
           <button key="delete" type="button" className="btn btn--ghost" onClick={remove}><Icon name="trash" size={16} />{tr('Delete')}</button>,
         ]} />
       <TrackList tracks={p.tracks} context={ctx} playlist={p} sortable

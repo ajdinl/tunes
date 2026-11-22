@@ -1,6 +1,9 @@
 import { defineConfig } from '@playwright/test';
 
 export const E2E_PORT = Number(process.env.TUNES_E2E_PORT) || 4730;
+// The phone-only version (web/dist-standalone), served like GitHub Pages under /tunes/.
+export const PAGES_PORT = E2E_PORT + 40;
+export const PAGES_URL = `http://127.0.0.1:${PAGES_PORT}/tunes/`;
 
 // The tests share one demo server (device sessions are global on the server), so they run
 // one at a time. Set TUNES_BROWSER to use an installed Chromium browser (e.g. Brave) instead

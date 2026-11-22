@@ -63,7 +63,9 @@ export const requests = []; // every external URL asked for, for assertions
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 const offline = (url) => Promise.reject(Object.assign(new TypeError('fetch failed'), { cause: new Error('getaddrinfo ENOTFOUND ' + url.hostname) }));
 
-function answer(url, init) {
+// The canned answer for a URL, or null when the fake internet has none. Also used by the
+// end-to-end tests of the phone-only version, where the browser asks the sources itself.
+export function answer(url, init) {
   const q = url.searchParams;
   const host = url.hostname;
   const p = url.pathname;

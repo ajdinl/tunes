@@ -18,6 +18,7 @@ import { savePref, setTheme, useTheme } from '../lib/prefs.ts';
 import { shell, useShell, CAN_HOVER } from '../shell/ui.ts';
 import type { DeckCtrls } from '../shell/ui.ts';
 import { IS_PHONE } from '../lib/install.ts';
+import { STANDALONE, asset } from '../lib/env.ts';
 import { playlistHref } from '../lib/actions.ts';
 import { go } from '../lib/router.ts';
 import type { Route } from '../lib/router.ts';
@@ -132,19 +133,11 @@ export function Settings(_: { route: Route }) {
           <h3 className="form__label">{tr('Player style')}</h3>
           <DialStylePicker />
           {IS_PHONE ? null : <DeckControlsPicker />}
-          <h3 className="form__label">{tr('App icon')}</h3>
-          {/* App icon: stored on the server, so the computer and the phone show the same one. */}
-          <div className="theme-pick" role="group" aria-label={tr('App icon')}>
-            {ICON_OPTS.map((o) => (
-              <button key={o.value} type="button" className="theme-opt" aria-pressed={icon === o.value} onClick={() => pickIcon(o.value)}>
-                <img className="theme-opt__icon" src={`/icons/${o.value}/icon.svg`} alt="" width={34} height={34} />{tr(o.label)}
-              </button>
-            ))}
-          </div>
-          <p className="muted">{tr('The icon changes on all your devices. A shortcut already on a home screen keeps its old icon until you add it again.')}</p>
+          {STANDALONE ? null : <AppIconPicker icon={icon} pick={pickIcon} />}
         </div>
       </Section>
 
+      {STANDALONE ? null : <>
       <Section title={tr('Music on this computer')}>
         <div className="form">
           <p className="muted">{tr('{n} in your libraries. New songs appear on their own as soon as you drop them in the folder.', { n: songs(store.library.length) })}</p>
@@ -211,29 +204,33 @@ export function Settings(_: { route: Route }) {
         </div>
       </Section>
 
+      </>}
+
       <Section title={tr('Offline playback')}><OfflineSettings /></Section>
 
       <Section title={tr('Backup')}>
         <div className="form">
           <p className="muted">{tr('Favorites, playlists and history in one JSON file.')}</p>
-          <a className="btn btn--ghost" href="/api/export" download=""><Icon name="download" size={16} />{tr('Download backup')}</a>
+          {STANDALONE
+            ? <button type="button" className="btn btn--ghost" onClick={downloadLocalBackup}><Icon name="download" size={16} />{tr('Download backup')}</button>
+            : <a className="btn btn--ghost" href="/api/export" download=""><Icon name="download" size={16} />{tr('Download backup')}</a>}
         </div>
       </Section>
 
-      <Section title={tr('Keyboard shortcuts')}>
+      {IS_PHONE ? null : <Section title={tr('Keyboard shortcuts')}>
         <dl className="keys">
           {KEYS.map(([k, d, translate]) => (
             <Fragment key={k}><dt><kbd>{translate ? tr(k) : k}</kbd></dt><dd>{tr(d)}</dd></Fragment>
           ))}
         </dl>
-      </Section>
+      </Section>}
 
-      <Section title={tr('Listening on your phone')}>
+      {STANDALONE ? null : <Section title={tr('Listening on your phone')}>
         <div className="form">
           <p className="muted">{tr('Click “Listen on phone” in the left menu and scan the QR code with your phone camera. The phone must be on the same Wi-Fi network.')}</p>
           <button type="button" className="btn" onClick={() => document.dispatchEvent(new CustomEvent('open-phone'))}><Icon name="phone" size={16} />{tr('Listen on phone')}</button>
         </div>
-      </Section>
+      </Section>}
     </div>
   );
 }
@@ -342,6 +339,35 @@ function DialPreview({ style }: { style: DialStyle }) {
     })}<line x1="24" y1="1" x2="24" y2="20" stroke="#ff5e3a" strokeWidth="1.5" /></>;
   }
   return <svg className="theme-opt__icon" width="48" height="22" viewBox="0 0 48 22" aria-hidden="true">{body}</svg>;
+}
+
+// App icon: stored on the server, so the computer and the phone show the same one. (The
+// phone-only version has a fixed home-screen icon, so it doesn't offer this.)
+function AppIconPicker({ icon, pick }: { icon: string; pick: (value: string) => void }) {
+  return (
+    <>
+      <h3 className="form__label">{tr('App icon')}</h3>
+      <div className="theme-pick" role="group" aria-label={tr('App icon')}>
+        {ICON_OPTS.map((o) => (
+          <button key={o.value} type="button" className="theme-opt" aria-pressed={icon === o.value} onClick={() => pick(o.value)}>
+            <img className="theme-opt__icon" src={asset(`icons/${o.value}/icon.svg`)} alt="" width={34} height={34} />{tr(o.label)}
+          </button>
+        ))}
+      </div>
+      <p className="muted">{tr('The icon changes on all your devices. A shortcut already on a home screen keeps its old icon until you add it again.')}</p>
+    </>
+  );
+}
+
+// The whole collection as a file, made in the browser (the phone-only version has no server).
+async function downloadLocalBackup(): Promise<void> {
+  if (!STANDALONE) return;
+  const { exportData } = await import('../standalone/backend.ts');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([exportData()], { type: 'application/json' }));
+  a.download = `tunes-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
 }
 
 // Computers only (phones have their own player layout). "Only on hover" needs a mouse.

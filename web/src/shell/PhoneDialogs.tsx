@@ -10,6 +10,7 @@ import { api, store } from '../lib/store.ts';
 import { tr } from '../lib/i18n.ts';
 import { cx } from '../lib/format.ts';
 import { toast } from '../lib/feedback.ts';
+import { STANDALONE } from '../lib/env.ts';
 
 function Modal({ open, label, onClose, children }: { open: boolean; label: string; onClose: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -147,7 +148,7 @@ export function InstallDialog() {
   const title = IS_PHONE ? tr('Add to Home Screen') : tr('Install app');
 
   useEffect(() => {
-    if (!ui.install || !IS_PHONE || ON_TAILSCALE) return;
+    if (!ui.install || !IS_PHONE || ON_TAILSCALE || STANDALONE) return;
     setLinks(null);
     api<{ tailscale: string | null }>('/api/phone/links').then(setLinks).catch(() => setLinks('error'));
   }, [ui.install]);
@@ -200,7 +201,8 @@ export function InstallDialog() {
   );
 
   let ts: ReactNode = null;
-  if (IS_PHONE) {
+  // Tailscale reaches the computer from away; the phone-only version needs no computer.
+  if (IS_PHONE && !STANDALONE) {
     if (ON_TAILSCALE) ts = <p>{tr('This version runs over Tailscale, so it works both at home and away. Add this one to your Home Screen.')}</p>;
     else if (links === null) ts = <p className="loading"><span className="loading__dot" />{tr('Loading…')}</p>;
     else if (links === 'error') ts = tsSteps(null);

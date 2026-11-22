@@ -6,3 +6,4 @@ test-results/
 playwright-report/
 .claude/settings.local.json
 web/dist/
+web/dist-standalone/

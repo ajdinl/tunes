@@ -8,6 +8,7 @@ import { toast, ask } from './feedback.ts';
 import type { MenuEntry } from './feedback.ts';
 import { norm, songs } from './format.ts';
 import { go } from './router.ts';
+import { STANDALONE } from './env.ts';
 
 export const artistHref = (name: string): string => '/artist/' + encodeURIComponent(norm(name));
 export const albumHref = (key: string): string => '/album/' + encodeURIComponent(key);
@@ -101,7 +102,7 @@ export function trackMenu(track: Track, { playlist, index, list }: { playlist?: 
     if (track.artist) items.push({ label: tr('Go to artist'), icon: 'artist', action: () => openArtist(track) });
     if (track.album) items.push({ label: tr('Go to album'), icon: 'album', action: () => openAlbum(track) });
   }
-  if (track.download) items.push({ label: tr('Save to computer'), icon: 'download', action: () => { saveToLibrary([track]); } });
+  if (track.download && !STANDALONE) items.push({ label: tr('Save to computer'), icon: 'download', action: () => { saveToLibrary([track]); } });
   if (track.link) items.push({ label: tr('Open on source website'), icon: 'external', action: () => { window.open(track.link!, '_blank', 'noopener'); } });
   if (playlist && index !== undefined) {
     items.push('-');

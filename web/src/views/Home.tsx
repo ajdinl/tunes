@@ -11,6 +11,7 @@ import { player } from '../lib/player.ts';
 import { store, useStore, api, SMART } from '../lib/store.ts';
 import type { Track } from '../lib/store.ts';
 import type { Route } from '../lib/router.ts';
+import { STANDALONE } from '../lib/env.ts';
 
 type Trending = { state: 'loading' } | { state: 'error'; msg: string } | { state: 'done'; list: Track[] };
 
@@ -55,12 +56,13 @@ export function Home(_props: { route: Route }) {
     <div className="view">
       <Header
         title={hello}
-        meta={lib.length
-          ? tr('On this computer: {a}, {b}, {c}', { a: songs(lib.length), b: plural(idx.artists.length, 'artist', 'artists'), c: plural(idx.albums.length, 'album', 'albums') })
-          : tr('Your local library is empty, but internet radio, Audius and Internet Archive work right away.')}
+        meta={STANDALONE ? tr('Free music from Audius, Internet Archive and internet radio.')
+          : lib.length
+            ? tr('On this computer: {a}, {b}, {c}', { a: songs(lib.length), b: plural(idx.artists.length, 'artist', 'artists'), c: plural(idx.albums.length, 'album', 'albums') })
+            : tr('Your local library is empty, but internet radio, Audius and Internet Archive work right away.')}
         big />
 
-      {!lib.length ? (
+      {!lib.length && !STANDALONE ? (
         <div className="note">
           <h2>{tr('Add your music')}</h2>
           <p>{tr('Put MP3, FLAC or M4A files in the folder ')}<code>{store.folders[0] || '~/Music/Tunes'}</code>

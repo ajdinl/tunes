@@ -161,6 +161,7 @@ export const MK = {
  "Forgotten favorites": "Заборавени омилени",
  "Found on this computer: {found} of {total}.": "Најдено на овој компјутер: {found} од {total}.",
  "Free and legal music: artists who share it themselves, archives and Creative Commons.": "Бесплатна и легална музика: изведувачи што самите ја споделуваат, архиви и Creative Commons.",
+ "Free music from Audius, Internet Archive and internet radio.": "Бесплатна музика од Audius, Internet Archive и интернет-радио.",
  "French": "Француски",
  "From SoundCloud": "Од SoundCloud",
  "From Spotify": "Од Spotify",

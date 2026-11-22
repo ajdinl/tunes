@@ -3,6 +3,7 @@
 // Phones open Tunes over plain http, which is not a secure context: no Service
 // Worker, no Cache API. Audio Blobs therefore live in IndexedDB and are played
 // through object URLs.
+import { media } from './media.ts';
 import { locale } from './i18n.ts';
 import type { Track } from '../../../lib/types.ts';
 
@@ -191,7 +192,7 @@ class Offline extends EventTarget {
     const ctrl = new AbortController();
     this.job = { id: t.id, ctrl };
     try {
-      const res = await fetch(t.stream!, { signal: ctrl.signal, cache: 'no-store' });
+      const res = await fetch(media(t.stream), { signal: ctrl.signal, cache: 'no-store' });
       const type = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
       if (res.status !== 200 || !AUDIO_TYPE.test(type)) throw new Error('Not downloadable');
       if (Number(res.headers.get('content-length')) > this.limitBytes) throw new Error('Too large');

@@ -2,6 +2,7 @@
 // The same renderer is used in the bottom bar and on the "Now Playing" screen.
 import { useSyncExternalStore } from 'react';
 
+import { STANDALONE } from './env.ts';
 import { player } from './player.ts';
 import type { Track } from './store.ts';
 
@@ -20,7 +21,7 @@ export type DialStyle = (typeof DIAL_STYLES)[number];
 // Phones have no spectrum (no Web Audio graph there, see player.ts), so they offer only the
 // styles that don't need it, Minimal by default. Their choice is kept (and synced) apart from
 // the computers' one.
-const MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+const MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || STANDALONE;
 export const PHONE_STYLES: readonly DialStyle[] = ['minimal', 'calm'];
 export const DEVICE_STYLES: readonly DialStyle[] = MOBILE ? PHONE_STYLES : DIAL_STYLES;
 export const DIAL_PREF = MOBILE ? 'dialStylePhone' : 'dialStyle';

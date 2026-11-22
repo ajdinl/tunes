@@ -3,6 +3,8 @@
 // the hash router (#/settings, and the Bosnian #/podesavanja) are redirected.
 import { useSyncExternalStore } from 'react';
 
+import { BASE } from './env.ts';
+
 export interface Route {
   name: string;            // first path segment ('' for home)
   arg: string;             // the rest, still URL-encoded
@@ -28,9 +30,19 @@ function legacyFix(path: string): string {
   return m && LEGACY[m[1]] ? '/' + LEGACY[m[1]] + path.slice(m[0].length) : path;
 }
 
+// App paths ('/settings') never include BASE; the address bar does ('/tunes/settings' in the
+// phone-only version on GitHub Pages).
+function appPath(pathname: string): string {
+  if (BASE === '/') return pathname;
+  if (pathname.startsWith(BASE)) return '/' + pathname.slice(BASE.length);
+  return pathname + '/' === BASE ? '/' : pathname;
+}
+const fullPath = (path: string): string => (BASE === '/' ? path : BASE.slice(0, -1) + path);
+
 function parse(): Route {
-  const [name = '', ...rest] = location.pathname.replace(/^\/+/, '').split('/');
-  return { name, arg: rest.join('/'), params: new URLSearchParams(location.search), path: location.pathname + location.search };
+  const pathname = appPath(location.pathname);
+  const [name = '', ...rest] = pathname.replace(/^\/+/, '').split('/');
+  return { name, arg: rest.join('/'), params: new URLSearchParams(location.search), path: pathname + location.search };
 }
 
 let current = parse();
@@ -43,14 +55,15 @@ function notify(): void {
 // An old hash address in the bar (bookmark, home-screen shortcut, a link in an old message).
 function redirectHash(): boolean {
   if (!location.hash.startsWith('#/')) return false;
-  history.replaceState(history.state, '', legacyFix(toPath(location.hash)));
+  history.replaceState(history.state, '', fullPath(legacyFix(toPath(location.hash))));
   return true;
 }
 
 export function initRouter(): void {
   redirectHash();
-  const fixed = legacyFix(location.pathname);
-  if (fixed !== location.pathname) history.replaceState(null, '', fixed + location.search);
+  const here = appPath(location.pathname);
+  const fixed = legacyFix(here);
+  if (fixed !== here) history.replaceState(null, '', fullPath(fixed) + location.search);
   current = parse();
   window.addEventListener('popstate', notify);
   window.addEventListener('hashchange', () => { if (redirectHash()) notify(); });
@@ -67,14 +80,14 @@ export function initRouter(): void {
 
 export function navigate(to: string, { replace = false } = {}): void {
   const path = legacyFix(toPath(to));
-  if (path === location.pathname + location.search && !replace) { notify(); return; }
-  if (replace) history.replaceState(null, '', path); else history.pushState(null, '', path);
+  if (path === current.path && !replace) { notify(); return; }
+  if (replace) history.replaceState(null, '', fullPath(path)); else history.pushState(null, '', fullPath(path));
   notify();
 }
 
 // Updates the address without re-rendering (search keeps the query in the URL while you type).
 export function replaceUrl(path: string): void {
-  history.replaceState(null, '', path);
+  history.replaceState(null, '', fullPath(path));
 }
 
 export function useRoute(): Route {

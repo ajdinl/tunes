@@ -161,6 +161,7 @@ export const SQ = {
  "Forgotten favorites": "Të preferuara të harruara",
  "Found on this computer: {found} of {total}.": "Gjetur në këtë kompjuter: {found} nga {total}.",
  "Free and legal music: artists who share it themselves, archives and Creative Commons.": "Muzikë falas dhe e ligjshme: artistë që e ndajnë vetë, arkiva dhe Creative Commons.",
+ "Free music from Audius, Internet Archive and internet radio.": "Muzikë falas nga Audius, Internet Archive dhe radio në internet.",
  "French": "Frëngjisht",
  "From SoundCloud": "Nga SoundCloud",
  "From Spotify": "Nga Spotify",

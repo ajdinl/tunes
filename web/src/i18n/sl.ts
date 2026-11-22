@@ -161,6 +161,7 @@ export const SL = {
  "Forgotten favorites": "Pozabljene priljubljene",
  "Found on this computer: {found} of {total}.": "Najdeno na računalniku: {found} od {total}.",
  "Free and legal music: artists who share it themselves, archives and Creative Commons.": "Brezplačna in zakonita glasba: izvajalci, ki jo delijo sami, arhivi in Creative Commons.",
+ "Free music from Audius, Internet Archive and internet radio.": "Brezplačna glasba z Audiusa, Internet Archiva in internetnega radia.",
  "French": "Francoščina",
  "From SoundCloud": "S SoundClouda",
  "From Spotify": "S Spotifyja",

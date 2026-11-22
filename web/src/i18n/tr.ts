@@ -161,6 +161,7 @@ export const TR = {
  "Forgotten favorites": "Unutulan favoriler",
  "Found on this computer: {found} of {total}.": "Bu bilgisayarda bulunan: {found} / {total}.",
  "Free and legal music: artists who share it themselves, archives and Creative Commons.": "Ücretsiz ve yasal müzik: müziğini kendisi paylaşan sanatçılar, arşivler ve Creative Commons.",
+ "Free music from Audius, Internet Archive and internet radio.": "Audius, Internet Archive ve internet radyosundan ücretsiz müzik.",
  "French": "Fransızca",
  "From SoundCloud": "SoundCloud'dan",
  "From Spotify": "Spotify'dan",

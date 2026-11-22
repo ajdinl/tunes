@@ -14,6 +14,7 @@ import { store, useStore } from '../lib/store.ts';
 import { tr } from '../lib/i18n.ts';
 import { fmtTime, cx } from '../lib/format.ts';
 import { toggleFav } from '../lib/actions.ts';
+import { media } from '../lib/media.ts';
 import { videoPipSupported, videoMiniOpen, onVideoMiniChange, prepareVideoMini, openVideoMini, closeVideoMini } from './MiniVideo.ts';
 
 interface PipApi { requestWindow(opts: { width: number; height: number }): Promise<Window> }
@@ -120,7 +121,7 @@ function MiniContent({ w }: { w: Window }) {
   return (
     <div className="mini">
       {/* Absolute URL: the window's own document may resolve relative ones differently. */}
-      <Cover src={t.cover ? new URL(t.cover, location.href).href : null} label={t.title} className="mini__cv" />
+      <Cover src={t.cover ? new URL(media(t.cover), location.href).href : null} label={t.title} className="mini__cv" />
       <div className="mini__main">
         <div className="mini__meta">
           <span className="mini__title">{t.live && p.icyTitle ? p.icyTitle : t.title}</span>

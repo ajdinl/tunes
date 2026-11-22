@@ -5,7 +5,8 @@ import './styles/app.css';
 import { App } from './App.tsx';
 import { initLang, tr } from './lib/i18n.ts';
 import { initRouter } from './lib/router.ts';
-import { store } from './lib/store.ts';
+import { store, setLocalBackend } from './lib/store.ts';
+import { STANDALONE, BASE, asset } from './lib/env.ts';
 import { player } from './lib/player.ts';
 import { offline } from './lib/offline.ts';
 import { toast } from './lib/feedback.ts';
@@ -32,13 +33,21 @@ async function boot(): Promise<void> {
   await initLang();
   startTooltips();
   const root = createRoot(document.getElementById('root')!);
+  // The phone-only version keeps everything in this browser: no server, no other devices.
+  if (STANDALONE) {
+    const local = await import('./standalone/backend.ts');
+    await local.openStore();
+    setLocalBackend(local.handle);
+  }
   try { await store.load(); await syncPrefs(); }
   catch { toast(tr('The server isn\'t responding. Is Tunes running?'), { error: true, timeout: 10000 }); }
   root.render(<App />);
-  connectEvents((count, changed) => { if (changed) toast(tr('Library updated: {n}', { n: songs(count) })); });
-  startSession();
+  if (!STANDALONE) {
+    connectEvents((count, changed) => { if (changed) toast(tr('Library updated: {n}', { n: songs(count) })); });
+    startSession();
+  }
   maybeShowInstallHint();
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register(asset('sw.js'), { scope: BASE }).catch(() => {});
 }
 
 boot();

@@ -161,6 +161,7 @@ export const FR = {
  "Forgotten favorites": "Favoris oubliés",
  "Found on this computer: {found} of {total}.": "Trouvés sur cet ordinateur : {found} sur {total}.",
  "Free and legal music: artists who share it themselves, archives and Creative Commons.": "De la musique gratuite et légale : des artistes qui la partagent eux-mêmes, des archives et du Creative Commons.",
+ "Free music from Audius, Internet Archive and internet radio.": "De la musique gratuite depuis Audius, Internet Archive et la radio en ligne.",
  "French": "Français",
  "From SoundCloud": "Depuis SoundCloud",
  "From Spotify": "Depuis Spotify",

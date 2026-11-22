@@ -280,6 +280,15 @@ test('mini player in Safari: a picture-in-picture video drawn from the song', as
   await expect(button).toHaveAttribute('aria-pressed', 'false');
   await expect.poll(() => video.evaluate((v) => v.paused)).toBe(true);
   await expectPlaying(page, true); // closing the window doesn't stop the music
+
+  // Safari's own close button pauses the video first and only then closes the window:
+  // the music keeps playing.
+  await button.click();
+  await expect.poll(() => video.evaluate((v) => v.paused)).toBe(false);
+  await video.evaluate((v) => { v.pause(); setTimeout(() => document.exitPictureInPicture(), 50); });
+  await expect(button).toHaveAttribute('aria-pressed', 'false');
+  await sleep(800);
+  await expectPlaying(page, true);
 });
 
 test('mini player button is hidden where the browser has no picture-in-picture at all', async ({ page }) => {

@@ -7,6 +7,8 @@ import { store, api } from './store.ts';
 import type { Context, Track } from './store.ts';
 import { shuffleArray } from './format.ts';
 import { tr } from './i18n.ts';
+import { STANDALONE } from './env.ts';
+import { media } from './media.ts';
 import { toast } from './feedback.ts';
 import { offline } from './offline.ts';
 import { SoundCloudElement } from './soundcloud.ts';
@@ -125,9 +127,12 @@ class Player extends EventTarget {
   // ------------------------------------------------------------ Web Audio
   // On phones audio skips Web Audio: iOS and Android silence it when the screen locks.
   get mobile(): boolean { return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent); }
+  // No graph on phones, nor in the phone-only version: there is no same-origin audio proxy,
+  // and Web Audio would silence streams from other sites.
+  get noGraph(): boolean { return this.mobile || STANDALONE; }
 
   ensureGraph(): void {
-    if (this.mobile) return;
+    if (this.noGraph) return;
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
     const Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) return;
@@ -308,10 +313,10 @@ class Player extends EventTarget {
     // Play the downloaded copy when there is one. Songs in the prefetch window already
     // have an object URL; others need a quick IndexedDB read first.
     const copy = t.live ? null : offline.url(t.id);
-    if (copy || t.live || !offline.isCached(t.id)) start(copy || t.stream || '', Boolean(copy));
+    if (copy || t.live || !offline.isCached(t.id)) start(copy || media(t.stream), Boolean(copy));
     else {
       this.fx.pause();
-      offline.get(t.id).then((url) => { if (seq === this.loadSeq) start(url || t.stream || '', Boolean(url)); });
+      offline.get(t.id).then((url) => { if (seq === this.loadSeq) start(url || media(t.stream), Boolean(url)); });
     }
     if (autoplay && !t.live) api('/api/nowplaying', { method: 'POST', body: { track: t } }).catch(() => {});
     this.updateMediaSession();
@@ -330,7 +335,7 @@ class Player extends EventTarget {
     if (this.el.paused) {
       this.ensureGraph();
       // After a pause radio restarts, so it doesn't play a stale buffer.
-      if (t.live && this.el === this.fx) this.fx.src = t.stream || '';
+      if (t.live && this.el === this.fx) this.fx.src = media(t.stream);
       this.el.play().catch(() => {});
     } else this.el.pause();
   }
@@ -431,7 +436,7 @@ class Player extends EventTarget {
     // Some radio stations don't work through the proxy: play them directly (no equalizer).
     if (t.live && !this.triedDirect) {
       this.triedDirect = true;
-      const direct = new URL(t.stream || '', location.href).searchParams.get('u');
+      const direct = STANDALONE ? null : new URL(t.stream || '', location.href).searchParams.get('u');
       if (direct) {
         this.fx.pause();
         this.el = this.plain;
@@ -550,7 +555,7 @@ class Player extends EventTarget {
     if (!ms || !t) return;
     const sc = this.scSound;
     const coverUrl = sc?.cover || t.cover;
-    const art = coverUrl ? [{ src: new URL(coverUrl, location.href).href, sizes: '512x512' }] : [];
+    const art = coverUrl ? [{ src: new URL(media(coverUrl), location.href).href, sizes: '512x512' }] : [];
     ms.metadata = new MediaMetadata({
       title: sc?.title || this.icyTitle || t.title,
       artist: sc ? sc.artist : this.icyTitle ? t.title : t.artist || '',
@@ -591,7 +596,7 @@ class Player extends EventTarget {
       this.el = this.sc;
       // Wait for the app to give the widget its dock.
       queueMicrotask(() => this.sc.load(t.link || t.stream || '', { autoplay: false, at: time }));
-    } else if (!t.live) this.fx.src = t.stream || ''; // radio isn't preloaded: toggle() starts it only on Play
+    } else if (!t.live) this.fx.src = media(t.stream); // radio isn't preloaded: toggle() starts it only on Play
     if (time && !t.live && t.source !== 'soundcloud') {
       this.fx.addEventListener('loadedmetadata', () => { this.fx.currentTime = time; this.lastT = time; this.emit('time'); }, { once: true });
     }

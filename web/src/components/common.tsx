@@ -2,6 +2,7 @@
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
+import { media } from '../lib/media.ts';
 import { Icon } from './Icon.tsx';
 import { tr } from '../lib/i18n.ts';
 import { SOURCES, cx } from '../lib/format.ts';
@@ -14,7 +15,7 @@ export function Cover({ src, label = '', className = '' }: { src?: string | null
   const empty = !src || failed;
   return (
     <div className={cx('cv', className, empty && 'cv--empty')} data-initial={empty ? initial : undefined}>
-      {!empty && <img src={src} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)} />}
+      {!empty && <img src={media(src)} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)} />}
     </div>
   );
 }
@@ -24,7 +25,7 @@ export function Collage({ covers, label }: { covers: (string | null | undefined)
   if (list.length < 4) return <Cover src={list[0]} label={label} className="tile__cv" />;
   return (
     <div className="cv cv--collage tile__cv">
-      {list.map((c) => <img key={c} src={c} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }} />)}
+      {list.map((c) => <img key={c} src={media(c)} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }} />)}
     </div>
   );
 }

@@ -4,23 +4,35 @@ import { useSyncExternalStore } from 'react';
 
 import { norm, shuffleArray } from './format.ts';
 import { tr } from './i18n.ts';
+import { STANDALONE, asset } from './env.ts';
 import type { Playlist, PublicSettings, PublicState, Track, HistoryEntry } from '../../../lib/types.ts';
 
 export type { Track, Playlist };
 export interface Context { label: string; href: string }
 
 // Points the favicon, the home screen icon and the logo at the chosen app icon variant.
-// ?v= forces browsers to drop the cached image after a change.
+// ?v= forces browsers to drop the cached image after a change. The phone-only version has no
+// server to pick the variant, so it points at the variant's own files.
 export function applyIcon(name: string | undefined): void {
   if (!name) return;
   const v = '?v=' + encodeURIComponent(name);
-  document.querySelector('link[rel=icon]')?.setAttribute('href', '/icons/app.svg' + v);
-  document.querySelector('link[rel=apple-touch-icon]')?.setAttribute('href', '/icons/app-512.png' + v);
-  document.documentElement.style.setProperty('--app-icon', `url("/icons/app.svg${v}")`);
+  const svg = STANDALONE ? asset(`icons/${name}/icon.svg`) : '/icons/app.svg' + v;
+  document.querySelector('link[rel=icon]')?.setAttribute('href', svg);
+  document.querySelector('link[rel=apple-touch-icon]')?.setAttribute('href', STANDALONE ? asset(`icons/${name}/icon-512.png`) : '/icons/app-512.png' + v);
+  document.documentElement.style.setProperty('--app-icon', `url("${svg}")`);
 }
+
+// The phone-only version answers /api requests in the browser (web/src/standalone/backend.ts).
+type Backend = (method: string, path: string, body?: unknown) => Promise<unknown>;
+let localBackend: Backend | null = null;
+export function setLocalBackend(b: Backend): void { localBackend = b; }
 
 // JSON request to the server. Error messages from the server are English and get translated here.
 export async function api<T = any>(path: string, { method = 'GET', body }: { method?: string; body?: unknown } = {}): Promise<T> {
+  if (localBackend) {
+    try { return await localBackend(method, path, body) as T; }
+    catch (e) { throw new Error(tr((e as Error).message || 'Error')); }
+  }
   const res = await fetch(path, {
     method,
     headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
