@@ -62,3 +62,12 @@ Da izgleda kao prava aplikacija: u Safari-ju odaberi **File → Add to Dock**, a
 ## Prečice
 
 `Razmak` pusti/pauziraj, `← →` premotaj, `Shift + ← →` prethodna/sljedeća, `↑ ↓` jačina, `L` omiljena, `S` nasumično, `R` ponavljanje, `Q` red, `T` tekst, `E` ekvalizer, `F` cijeli ekran, `/` pretraga.
+
+## Testovi
+
+```
+npx playwright install chromium   # jednom
+npm test                          # unit i API testovi (Vitest), pa end-to-end testovi (Playwright)
+```
+
+Testovi pokreću vlastite servere sa generisanom muzikom i lažnim internetom, pa ne diraju tvoje podatke i rade bez interneta. Detalji (na engleskom): [tests/README.md](tests/README.md).

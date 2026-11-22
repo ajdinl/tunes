@@ -5,7 +5,11 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "engines": {
     "node": ">=22"
@@ -29,5 +33,9 @@
     "radio",
     "lyrics",
     "listenbrainz"
-  ]
+  ],
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "vitest": "^4.1.12"
+  }
 }

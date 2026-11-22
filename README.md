@@ -105,6 +105,15 @@ Your data lives in `data/db.json`. You can download a backup under **Settings â†
 - `lib/proxy.js`: streams audio through the local server, so the equalizer and spectrum analyzer work for every source, and reads live song titles (ICY metadata) from radio streams
 - `public/`: the interface, plain JavaScript modules with no build step
 
+## Tests
+
+```
+npx playwright install chromium   # once
+npm test                          # unit and API tests (Vitest), then end-to-end tests (Playwright)
+```
+
+The tests start their own servers with a generated music library and a fake internet, so they never touch your data and work offline. See [tests/README.md](tests/README.md).
+
 ## Legal
 
 Tunes only uses sources that offer their music for free streaming, and only downloads files whose license allows it. It does not rip music from YouTube, Spotify or other subscription services.
