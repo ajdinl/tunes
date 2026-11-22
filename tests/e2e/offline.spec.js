@@ -87,3 +87,49 @@ test('nothing is deleted while the device is offline', async ({ device, baseURL 
   await phone.context().setOffline(false);
   expect(kept).toBe(true);
 });
+
+test('downloads for a trip: kept past 72 hours and the buffer limit, listed offline, removable', async ({ device, baseURL, request }) => {
+  const { tracks } = await (await request.get('/api/library')).json();
+  const album = tracks.filter((t) => t.album === 'Blue Hours');
+  const phone = await device({ mobile: true });
+  await phone.goto(phoneURL(baseURL, '/albums'));
+  await settle(phone);
+  await phone.locator('#main a[href*="/album/"]', { hasText: 'Blue Hours' }).first().click();
+  await expect(phone.locator('#main h1')).toHaveText('Blue Hours');
+
+  // One button keeps the whole album on the phone.
+  await phone.getByRole('button', { name: 'Download', exact: true }).tap();
+  const pinned = () => appModule(phone, 'offline', (m) => m.offline.pinned().map((x) => x.id).sort());
+  await expect.poll(pinned, { timeout: 30000 }).toEqual(album.map((t) => t.id).sort());
+  await expect(phone.getByRole('button', { name: 'Downloaded' })).toBeVisible();
+  await expect(phone.locator('#main .tr .tr__dl')).toHaveCount(album.length);
+
+  // A trip: ten days later, a full buffer and a cleared buffer don't touch them.
+  await appModule(phone, 'offline', async (m) => {
+    await m.offline.expire(Date.now() + 10 * 86400000);
+    await m.offline.evict(10 ** 12);
+    await m.offline.clear();
+  });
+  expect(await pinned()).toEqual(album.map((t) => t.id).sort());
+
+  // The Downloads screen lists them, and they play without a connection. (Opening the app
+  // itself offline is covered by the phone-only version's tests, which have a service worker.)
+  await phone.goto(phoneURL(baseURL, '/downloads'));
+  await settle(phone);
+  await expect(phone.locator('#main h1')).toHaveText('Downloads');
+  await expect(phone.locator('#main .tr')).toHaveCount(album.length);
+  await phone.context().setOffline(true);
+  await phone.locator('#main .tr .tr__title').first().tap();
+  await expectPlaying(phone);
+  expect(await appModule(phone, 'player', (m) => m.player.fx.src.startsWith('blob:'))).toBe(true);
+  await phone.context().setOffline(false);
+
+  // Removing: one from its menu, then all of them.
+  await phone.locator('#main .tr').nth(1).locator('.tr__more').tap();
+  await phone.locator('.menu__item', { hasText: 'Remove download' }).tap();
+  await expect(phone.locator('#main .tr')).toHaveCount(album.length - 1);
+  await phone.locator('#main').getByRole('button', { name: 'Remove all downloads' }).tap();
+  await phone.locator('dialog').getByRole('button', { name: 'Remove all downloads' }).tap();
+  await expect(phone.locator('#main')).toContainText('Nothing downloaded yet.');
+  await expect.poll(pinned).toEqual([]);
+});

@@ -31,6 +31,7 @@ import { Albums } from './views/Albums.tsx';
 import { Album } from './views/Album.tsx';
 import { Songs } from './views/Songs.tsx';
 import { Favorites } from './views/Favorites.tsx';
+import { Downloads } from './views/Downloads.tsx';
 import { History } from './views/History.tsx';
 import { Playlist } from './views/Playlist.tsx';
 import { Smart } from './views/Smart.tsx';
@@ -41,7 +42,7 @@ import { AudiusArtist } from './views/AudiusArtist.tsx';
 const ROUTES: Record<string, ComponentType<{ route: Route }>> = {
   '': Home, search: Search, discover: Discover, radio: Radio,
   artists: Artists, artist: Artist, albums: Albums, album: Album,
-  songs: Songs, favorites: Favorites, history: History,
+  songs: Songs, favorites: Favorites, downloads: Downloads, history: History,
   playlist: Playlist, smart: Smart, archive: ArchiveItem, settings: Settings,
   audius: AudiusArtist,
 };

@@ -140,3 +140,23 @@ test('backup: the whole collection as a file, made on the phone', async ({ phone
   expect(Object.keys(data.favorites)).toEqual(['audius:D7KyD']);
   expect(data.settings).toBeUndefined();
 });
+
+test('downloads for a trip: straight from the source, listed and playing with no connection', async ({ phone }) => {
+  await phone.goto('./');
+  await ready(phone);
+  await expect.poll(() => app(phone, () => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  const row = phone.locator('#main .tr', { hasText: 'Harbor Lights' }).first();
+  await row.locator('.tr__more').tap();
+  await phone.locator('.menu__item', { hasText: 'Download' }).tap();
+  await expect.poll(() => app(phone, () => window.__tunes.offline.isPinned('audius:D7KyD')), { timeout: 15000 }).toBe(true);
+  expect(phone.asked).toContain('https://api.audius.co/v1/tracks/D7KyD/stream?app_name=Tunes');
+
+  await phone.ctx.setOffline(true);
+  await phone.goto('downloads');
+  await ready(phone);
+  await expect(phone.locator('#main h1')).toHaveText('Downloads');
+  await phone.locator('#main .tr', { hasText: 'Harbor Lights' }).locator('.tr__title').tap();
+  await expect.poll(() => playing(phone)).toBe(true);
+  expect(await app(phone, () => window.__tunes.player.fx.src)).toMatch(/^blob:/);
+  await phone.ctx.setOffline(false);
+});

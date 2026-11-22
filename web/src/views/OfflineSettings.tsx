@@ -70,6 +70,7 @@ export function OfflineSettings() {
         {usage ? tr('Downloaded for offline') + ': ' + (count ? `${songs(count)}, ${fmtSize(usage.bytes)}` : tr('nothing yet')) : ''}
       </p>
       <p className="muted">{tr('Songs you haven\'t played for 3 days are deleted automatically.')}</p>
+      <p className="muted">{tr('Songs you download yourself stay until you remove them (Downloads in the menu).')}</p>
       <button type="button" className="btn btn--ghost" disabled={clearing || !count} onClick={clear}><Icon name="trash" size={16} />{tr('Clear downloaded songs')}</button>
       {HOME ? <p className="muted">{tr('On this computer, songs from your own folders are not downloaded: they are already here.')}</p> : null}
     </div>

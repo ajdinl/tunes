@@ -460,6 +460,9 @@ select.field:disabled { opacity: 0.5; cursor: default; }
 .tr:hover .tr__fav, .tr:hover .tr__more, .tr:focus-within .tr__fav, .tr:focus-within .tr__more, .tr__fav.is-on { opacity: 1; }
 .tr__fav:hover, .tr__more:hover { color: var(--text); background: var(--bg-3); }
 .tr__fav.is-on { color: var(--amber); }
+/* Downloaded for offline: a small filled arrow before the artist, like other music apps. */
+.tr__dl { display: inline-flex; margin-right: 5px; vertical-align: -2px; color: var(--amber); }
+.btn.is-on .ic { color: var(--amber); }
 .tr.is-playing .tr__title { color: var(--amber); }
 .tr.is-playing .tr__num { font-size: 0; }
 .tr.is-playing .tr__num::before {

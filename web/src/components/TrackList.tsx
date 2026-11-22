@@ -11,6 +11,7 @@ import { store, useStore } from '../lib/store.ts';
 import type { Context, Playlist, Track } from '../lib/store.ts';
 import { openMenu } from '../lib/feedback.ts';
 import { toggleFav, trackMenu } from '../lib/actions.ts';
+import { offline, useOffline } from '../lib/offline.ts';
 
 const TOUCH = matchMedia('(hover: none)').matches;
 
@@ -31,6 +32,7 @@ export interface TrackListProps {
 export function TrackList({ tracks, context = null, numbered = false, album = true, coverArt = true, playlist = null, leading, sortable = false, emptyText }: TrackListProps) {
   const playingId = usePlayer('track').track?.id;
   useStore('favorites');
+  useOffline();
   const [shown, setShown] = useState(CHUNK);
   const sentinel = useRef<HTMLDivElement>(null);
 
@@ -105,7 +107,10 @@ function Row({ t, i, playing, fav, lead, album, coverArt, onPlay, menu, sortable
       {coverArt ? <Cover src={t.cover} label={t.title} className="tr__cv" /> : null}
       <div className="tr__main">
         <span className="tr__title">{t.title}</span>
-        <span className="tr__artist">{t.artist || ''}</span>
+        <span className="tr__artist">
+          {offline.isPinned(t.id) ? <span className="tr__dl" role="img" aria-label={tr('Downloaded')} title={tr('Downloaded')}><Icon name="downloaded" size={13} /></span> : null}
+          {t.artist || ''}
+        </span>
       </div>
       {album ? <span className="tr__album">{t.album || ''}</span> : null}
       <span className="tr__src"><SourceTag source={t.source} /></span>

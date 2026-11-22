@@ -21,6 +21,7 @@ const NAV_LIB: NavItem[] = [
   { href: '/albums', name: 'albums', alt: ['album'], label: 'Albums', icon: 'album' },
   { href: '/songs', name: 'songs', label: 'Songs', icon: 'song' },
   { href: '/favorites', name: 'favorites', label: 'Favorites', icon: 'heart' },
+  { href: '/downloads', name: 'downloads', label: 'Downloads', icon: 'download' },
   { href: '/history', name: 'history', label: 'History', icon: 'history' },
 ];
 

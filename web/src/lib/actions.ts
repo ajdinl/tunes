@@ -9,6 +9,7 @@ import type { MenuEntry } from './feedback.ts';
 import { norm, songs } from './format.ts';
 import { go } from './router.ts';
 import { STANDALONE } from './env.ts';
+import { offline } from './offline.ts';
 
 export const artistHref = (name: string): string => '/artist/' + encodeURIComponent(norm(name));
 export const albumHref = (key: string): string => '/album/' + encodeURIComponent(key);
@@ -64,6 +65,19 @@ function openAlbum(track: Track): void {
   else go('/search?q=' + encodeURIComponent(track.album || ''));
 }
 
+// Keeps songs on this device for listening without a connection (a trip): they stay until
+// removed. Radio and SoundCloud can't be kept.
+export async function downloadTracks(tracks: Track[]): Promise<void> {
+  const n = await offline.pin(tracks);
+  if (!n) { toast(tr('These songs can\'t be downloaded'), { error: true }); return; }
+  toast(tr('Downloading {n}…', { n: songs(n) }), { action: tr('Downloads'), onAction: () => go('/downloads') });
+}
+
+export async function removeDownloads(tracks: Track[]): Promise<void> {
+  await offline.unpin(tracks.map((t) => t.id));
+  toast(tr('Removed from downloads'));
+}
+
 export async function saveToLibrary(tracks: Track[]): Promise<void> {
   const list = tracks.filter((t) => t.download);
   if (!list.length) { toast(tr('The source doesn\'t allow downloading these songs'), { error: true }); return; }
@@ -101,6 +115,11 @@ export function trackMenu(track: Track, { playlist, index, list }: { playlist?: 
   } else {
     if (track.artist) items.push({ label: tr('Go to artist'), icon: 'artist', action: () => openArtist(track) });
     if (track.album) items.push({ label: tr('Go to album'), icon: 'album', action: () => openAlbum(track) });
+  }
+  if (offline.supported && offline.eligible(track)) {
+    items.push(offline.isPinned(track.id) || offline.isPinning(track.id)
+      ? { label: tr('Remove download'), icon: 'trash', action: () => { removeDownloads([track]); } }
+      : { label: tr('Download'), icon: 'download', action: () => { downloadTracks([track]); } });
   }
   if (track.download && !STANDALONE) items.push({ label: tr('Save to computer'), icon: 'download', action: () => { saveToLibrary([track]); } });
   if (track.link) items.push({ label: tr('Open on source website'), icon: 'external', action: () => { window.open(track.link!, '_blank', 'noopener'); } });

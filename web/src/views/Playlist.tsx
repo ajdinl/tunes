@@ -10,6 +10,7 @@ import { playlistHref } from '../lib/actions.ts';
 import { go } from '../lib/router.ts';
 import type { Route } from '../lib/router.ts';
 import { STANDALONE } from '../lib/env.ts';
+import { DownloadButton } from '../components/DownloadButton.tsx';
 
 export function Playlist({ route }: { route: Route }) {
   useStore('playlists');
@@ -36,6 +37,7 @@ export function Playlist({ route }: { route: Route }) {
         art={<Collage covers={p.tracks.map((t) => t.cover)} label={p.name} />}
         actions={[
           ...playButtons(p.tracks, ctx),
+          <DownloadButton key="dl" tracks={p.tracks} />,
           <button key="rename" type="button" className="btn btn--ghost" onClick={rename}>{tr('Rename')}</button>,
           p.tracks.length && !STANDALONE ? <a key="m3u" className="btn btn--ghost" href={`/api/playlists/${p.id}/m3u`} download=""><Icon name="download" size={16} />{tr('Export M3U')}</a> : null,
           <button key="delete" type="button" className="btn btn--ghost" onClick={remove}><Icon name="trash" size={16} />{tr('Delete')}</button>,

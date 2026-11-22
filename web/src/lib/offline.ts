@@ -1,13 +1,20 @@
-// Offline buffer: downloads the current song and the next few in the queue to
-// the device, so playback survives a dropped connection (leaving Wi-Fi, a tunnel).
+// Songs kept on the device, in two kinds:
+// - the buffer: the current song and the next few in the queue, so playback survives a
+//   dropped connection (leaving Wi-Fi, a tunnel). Limited in size, deleted after 3 days unused.
+// - downloads ("pinned"): songs the user chose to keep for offline listening (a trip). They
+//   stay until the user removes them, don't count against the buffer limit and are never
+//   evicted. Their track is stored too, so the Downloads screen works without a connection.
 // Phones open Tunes over plain http, which is not a secure context: no Service
 // Worker, no Cache API. Audio Blobs therefore live in IndexedDB and are played
 // through object URLs.
 import { media } from './media.ts';
 import { locale } from './i18n.ts';
 import type { Track } from '../../../lib/types.ts';
+import { useSyncExternalStore } from 'react';
 
 const KEY = 'tunes.offline';
+const PINS_KEY = 'tunes.offline.pins'; // downloads asked for but not finished yet
+const PIN_MAX = 2 * 1024 * 1048576;     // a single download may be big (a long live set)
 const DB_NAME = 'tunes-offline';
 const DEFAULTS = { enabled: true, ahead: 3, limitMB: 500 };
 const RETRY_MS = 60000;   // wait before retrying a failed download
@@ -19,7 +26,7 @@ export const HOME = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(location
 const AUDIO_TYPE = /^(audio|video)\/|^application\/(ogg|octet-stream)$/;
 
 export interface OfflineSettings { enabled: boolean; ahead: number; limitMB: number }
-export interface Meta { id: string; size: number; type: string; title: string; artist: string; source: string; added: number; used: number }
+export interface Meta { id: string; size: number; type: string; title: string; artist: string; source: string; added: number; used: number; pinned?: boolean; track?: Track }
 
 function clean(s: Partial<OfflineSettings> | null): OfflineSettings {
   const n = (v: unknown, min: number, max: number, d: number) => (Number.isFinite(Number(v)) && v !== null && v !== undefined ? Math.min(max, Math.max(min, Math.round(Number(v)))) : d);
@@ -75,6 +82,7 @@ class Offline extends EventTarget {
   urls = new Map<string, string>(); // id -> object URL
   keep = new Set<string>();         // ids in the current window: never evicted or revoked
   want: Track[] = [];               // tracks to download, in order
+  pins: Track[] = loadPins();       // downloads still to fetch
   failed = new Map<string, number>(); // id -> time of last failure
   job: { id: string; ctrl: AbortController } | null = null;
   running = false;
@@ -92,7 +100,8 @@ class Offline extends EventTarget {
 
   get supported(): boolean { return typeof indexedDB !== 'undefined'; }
   get limitBytes(): number { return this.settings.limitMB * 1048576; }
-  get bytes(): number { let n = 0; for (const m of this.index.values()) n += m.size; return n; }
+  // Bytes in the buffer (downloads don't count against its limit).
+  get bytes(): number { let n = 0; for (const m of this.index.values()) if (!m.pinned) n += m.size; return n; }
 
   async init(): Promise<void> {
     if (!this.supported) return;
@@ -103,6 +112,7 @@ class Offline extends EventTarget {
       for (const m of await all) this.index.set(m.id, m);
       db.onversionchange = () => { db.close(); this.db = null; };
       if (this.index.size) this.emit({ type: 'loaded' });
+      if (this.pins.length) this.kick();
       setTimeout(() => this.expire(), FIRST_SWEEP_MS);
       setInterval(() => this.expire(), SWEEP_MS);
     } catch {
@@ -110,7 +120,10 @@ class Offline extends EventTarget {
     }
   }
 
-  emit(detail: Record<string, unknown>): void { this.dispatchEvent(new CustomEvent('change', { detail })); }
+  emit(detail: Record<string, unknown>): void {
+    version++;
+    this.dispatchEvent(new CustomEvent('change', { detail }));
+  }
 
   // Live radio never ends; local files are already on disk when running on the computer itself.
   eligible(t: Track | null | undefined): boolean {
@@ -122,6 +135,53 @@ class Offline extends EventTarget {
 
   // Object URL already created for a downloaded song (songs in the prefetch window get one ahead of time).
   url(id: string): string | null { return (this.index.has(id) && this.urls.get(id)) || null; }
+
+  // ---- downloads
+  isPinned(id: string): boolean { return Boolean(this.index.get(id)?.pinned); }
+  isPinning(id: string): boolean { return !this.isPinned(id) && this.pins.some((t) => t.id === id); }
+  // Downloaded songs, newest first.
+  pinned(): Meta[] { return [...this.index.values()].filter((m) => m.pinned && m.track).sort((a, b) => b.added - a.added); }
+  get pinnedBytes(): number { let n = 0; for (const m of this.index.values()) if (m.pinned) n += m.size; return n; }
+
+  // Keeps these songs on the device until removed. Returns how many can be downloaded.
+  async pin(tracks: Track[]): Promise<number> {
+    await this.ready;
+    const ok = tracks.filter((t) => this.eligible(t));
+    if (!this.db) return 0;
+    for (const t of ok) {
+      const m = this.index.get(t.id);
+      if (m) {
+        if (!m.pinned) { m.pinned = true; m.track = t; await run(this.db, ['meta'], 'readwrite', (meta) => meta.put(m)).catch(() => {}); }
+      } else if (!this.pins.some((x) => x.id === t.id)) this.pins.push(t);
+    }
+    savePins(this.pins);
+    // Ask the browser not to clear these when space runs low.
+    navigator.storage?.persist?.().catch(() => {});
+    this.emit({ type: 'pins' });
+    this.kick();
+    return ok.length;
+  }
+
+  // Removes downloads. A song in the current window stays as a buffer copy (it may be playing).
+  async unpin(ids: string[]): Promise<void> {
+    await this.ready;
+    const set = new Set(ids);
+    this.pins = this.pins.filter((t) => !set.has(t.id));
+    savePins(this.pins);
+    if (this.job && set.has(this.job.id) && !this.keep.has(this.job.id)) this.job.ctrl.abort();
+    const drop: string[] = [];
+    for (const id of set) {
+      const m = this.index.get(id);
+      if (!m) continue;
+      if (this.keep.has(id)) {
+        m.pinned = false;
+        delete m.track;
+        if (this.db) await run(this.db, ['meta'], 'readwrite', (meta) => meta.put(m)).catch(() => {});
+      } else drop.push(id);
+    }
+    if (drop.length) await this.remove(...drop);
+    this.emit({ type: 'pins' });
+  }
 
   // Object URL for the downloaded copy, or null.
   async get(id: string): Promise<string | null> {
@@ -163,44 +223,58 @@ class Offline extends EventTarget {
     });
   }
 
+  // Stops the buffer (downloads the user asked for go on).
   stop(): void {
     this.want = [];
-    this.job?.ctrl.abort();
+    if (this.job && !this.pins.some((t) => t.id === this.job!.id)) this.job.ctrl.abort();
     clearTimeout(this.retryTimer);
   }
 
   kick(): void {
-    if (this.running || !this.db || !this.settings.enabled) return;
+    if (this.running || !this.db || (!this.settings.enabled && !this.pins.length)) return;
     this.running = true;
     this.loop().finally(() => { this.running = false; });
   }
 
+  // The buffer window first (it is about to play), then the downloads.
   async loop(): Promise<void> {
-    const pending = () => this.want.filter((t) => !this.index.has(t.id));
+    const pending = () => [
+      ...(this.settings.enabled ? this.want.filter((t) => !this.index.has(t.id)) : []),
+      ...this.pins.filter((t) => !this.isPinned(t.id)),
+    ];
     for (;;) {
-      if (!this.settings.enabled || !this.db || navigator.onLine === false) break;
+      if (!this.db || navigator.onLine === false) break;
       const t = pending().find((x) => Date.now() - (this.failed.get(x.id) || 0) > RETRY_MS);
       if (!t) break;
       await this.download(t);
     }
     // Something failed: try again later (or as soon as the network is back).
     clearTimeout(this.retryTimer);
-    if (this.settings.enabled && pending().length) this.retryTimer = setTimeout(() => this.kick(), RETRY_MS);
+    if (pending().length) this.retryTimer = setTimeout(() => this.kick(), RETRY_MS);
   }
 
+  wantsPin(id: string): boolean { return this.pins.some((t) => t.id === id); }
+
   async download(t: Track): Promise<void> {
+    // Became a buffer copy meanwhile (it played): mark it, no second download.
+    if (this.index.has(t.id)) { if (this.wantsPin(t.id)) { await this.pin([t]); this.finishPin(t.id); } return; }
     const ctrl = new AbortController();
     this.job = { id: t.id, ctrl };
     try {
       const res = await fetch(media(t.stream), { signal: ctrl.signal, cache: 'no-store' });
       const type = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
       if (res.status !== 200 || !AUDIO_TYPE.test(type)) throw new Error('Not downloadable');
-      if (Number(res.headers.get('content-length')) > this.limitBytes) throw new Error('Too large');
+      const max = this.wantsPin(t.id) ? PIN_MAX : this.limitBytes;
+      if (Number(res.headers.get('content-length')) > max) throw new Error('Too large');
       let blob = await res.blob();
-      if (ctrl.signal.aborted || !this.keep.has(t.id)) return;
-      if (!blob.size || blob.size > this.limitBytes) throw new Error('Too large');
+      if (ctrl.signal.aborted) return;
+      if (this.index.has(t.id)) { if (this.wantsPin(t.id)) { await this.pin([t]); this.finishPin(t.id); } return; }
+      const pinned = this.wantsPin(t.id);
+      if (!pinned && !this.keep.has(t.id)) return;
+      if (!blob.size || blob.size > max) throw new Error('Too large');
       if (blob.type !== type) blob = new Blob([blob], { type });
-      await this.save(t, blob, type);
+      await this.save(t, blob, type, pinned);
+      if (pinned) this.finishPin(t.id);
     } catch (e) {
       if ((e as Error)?.name !== 'AbortError') this.failed.set(t.id, Date.now());
     } finally {
@@ -208,13 +282,23 @@ class Offline extends EventTarget {
     }
   }
 
-  async save(t: Pick<Track, 'id'> & Partial<Track>, blob: Blob, type: string): Promise<void> {
+  // A finished download leaves the to-do list.
+  finishPin(id: string): void {
+    this.pins = this.pins.filter((t) => t.id !== id);
+    savePins(this.pins);
+    this.emit({ type: 'pins' });
+  }
+
+  async save(t: Pick<Track, 'id'> & Partial<Track>, blob: Blob, type: string, pinned = false): Promise<void> {
     const db = this.db;
     if (!db) throw new Error('No database');
     const now = Date.now();
     const meta: Meta = { id: t.id, size: blob.size, type, title: t.title || '', artist: t.artist || '', source: t.source || '', added: now, used: now };
-    await this.evict(this.bytes + meta.size - this.limitBytes);
-    if (this.bytes + meta.size > this.limitBytes) throw new Error('No room');
+    if (pinned) { meta.pinned = true; meta.track = t as Track; }
+    else {
+      await this.evict(this.bytes + meta.size - this.limitBytes);
+      if (this.bytes + meta.size > this.limitBytes) throw new Error('No room');
+    }
     const put = (value: unknown) => run(db, ['meta', 'blobs'], 'readwrite', (m, b) => { m.put(meta); b.put(value, t.id); });
     try {
       await put(blob);
@@ -242,7 +326,7 @@ class Offline extends EventTarget {
     let freed = 0;
     for (const m of [...this.index.values()].sort((a, b) => a.used - b.used)) {
       if (freed >= need) break;
-      if (this.keep.has(m.id)) continue;
+      if (this.keep.has(m.id) || m.pinned) continue;
       victims.push(m.id);
       freed += m.size;
     }
@@ -254,7 +338,7 @@ class Offline extends EventTarget {
   async expire(now = Date.now()): Promise<void> {
     if (!this.db || navigator.onLine === false) return;
     const old = [...this.index.values()]
-      .filter((m) => !this.keep.has(m.id) && now - (m.used || m.added || 0) > EXPIRE_MS)
+      .filter((m) => !this.keep.has(m.id) && !m.pinned && now - (m.used || m.added || 0) > EXPIRE_MS)
       .map((m) => m.id);
     if (old.length) await this.remove(...old);
   }
@@ -273,23 +357,27 @@ class Offline extends EventTarget {
     this.emit({ type: 'removed', ids });
   }
 
-  // Deletes every downloaded song. URLs of the current window stay alive (one may be playing)
-  // and are revoked when they leave the window.
+  // Empties the buffer (downloads stay). URLs of the current window stay alive (one may be
+  // playing) and are revoked when they leave the window.
   async clear(): Promise<void> {
     await this.ready;
     this.stop();
-    if (this.db) {
-      try { await run(this.db, ['meta', 'blobs'], 'readwrite', (m, b) => { m.clear(); b.clear(); }); } catch { /* */ }
+    const ids = [...this.index.values()].filter((m) => !m.pinned).map((m) => m.id);
+    if (this.db && ids.length) {
+      try { await run(this.db, ['meta', 'blobs'], 'readwrite', (m, b) => { for (const id of ids) { m.delete(id); b.delete(id); } }); } catch { /* */ }
     }
-    this.index.clear();
+    for (const id of ids) this.index.delete(id);
     this.failed.clear();
-    for (const [id, url] of this.urls) if (!this.keep.has(id)) { URL.revokeObjectURL(url); this.urls.delete(id); }
+    for (const [id, url] of this.urls) if (!this.keep.has(id) && !this.index.has(id)) { URL.revokeObjectURL(url); this.urls.delete(id); }
     this.emit({ type: 'cleared' });
   }
 
+  // The buffer only (Settings → Offline playback); downloads have their own screen.
   async status(): Promise<{ count: number; bytes: number }> {
     await this.ready;
-    return { count: this.index.size, bytes: this.bytes };
+    let count = 0;
+    for (const m of this.index.values()) if (!m.pinned) count++;
+    return { count, bytes: this.bytes };
   }
 
   setSettings(patch: Partial<OfflineSettings>): void {
@@ -303,7 +391,21 @@ class Offline extends EventTarget {
   }
 }
 
+function loadPins(): Track[] {
+  try { const v = JSON.parse(localStorage.getItem(PINS_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
+}
+function savePins(pins: Track[]): void {
+  try { if (pins.length) localStorage.setItem(PINS_KEY, JSON.stringify(pins)); else localStorage.removeItem(PINS_KEY); } catch { /* storage full */ }
+}
+
+let version = 0;
 export const offline = new Offline();
+
+// Re-renders when downloads or the buffer change.
+export function useOffline(): typeof offline {
+  useSyncExternalStore((cb) => { offline.addEventListener('change', cb); return () => offline.removeEventListener('change', cb); }, () => version);
+  return offline;
+}
 
 export function fmtSize(bytes: number): string {
   const mb = bytes / 1048576;

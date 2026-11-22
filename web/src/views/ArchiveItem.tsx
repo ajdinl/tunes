@@ -9,9 +9,8 @@ import { tr } from '../lib/i18n.ts';
 import { totalMeta } from '../lib/format.ts';
 import { api } from '../lib/store.ts';
 import type { Track } from '../lib/store.ts';
-import { saveToLibrary } from '../lib/actions.ts';
 import type { Route } from '../lib/router.ts';
-import { STANDALONE } from '../lib/env.ts';
+import { DownloadButton } from '../components/DownloadButton.tsx';
 
 interface ArchiveData { album: ArchiveAlbum; tracks: Track[] }
 type Load = { state: 'loading' } | { state: 'error'; msg: string } | { state: 'done'; data: ArchiveData };
@@ -48,9 +47,7 @@ function ArchivePage({ id }: { id: string }) {
         meta={[a.year, tracks.length ? totalMeta(tracks) : null].filter(Boolean).join(', ')}
         art={<Cover src={a.cover} label={a.title} className="hd__cv" />}
         actions={[...playButtons(tracks, ctx),
-          tracks.length && !STANDALONE
-            ? <button key="save" type="button" className="btn btn--ghost" onClick={() => { saveToLibrary(tracks); }}><Icon name="download" size={16} />{tr('Save album to computer')}</button>
-            : null,
+          <DownloadButton key="dl" tracks={tracks} />,
           <a key="link" className="btn btn--ghost" href={a.link} target="_blank" rel="noopener"><Icon name="external" size={16} />archive.org</a>]} />
       {a.description ? <p className="desc">{a.description}</p> : null}
       {a.license ? <p className="muted pad">{tr('License: ')}<a href={a.license} target="_blank" rel="noopener">{a.license}</a></p> : null}
