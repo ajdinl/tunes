@@ -3,6 +3,7 @@
 import { store, api } from './store.js';
 import { shuffleArray, toast, tr } from './ui.js';
 import { offline } from './offline.js';
+import { SoundCloudElement } from './soundcloud.js';
 
 const STALL_MS = 8000; // stalled this long while offline: switch to the downloaded copy
 const STALL_ONLINE_MS = 15000; // same, when the browser still claims to be online
@@ -28,6 +29,7 @@ class Player extends EventTarget {
     super();
     this.fx = new Audio();     // goes through the equalizer and analyser
     this.plain = new Audio();  // fallback for stations that don't work through the proxy
+    this.sc = new SoundCloudElement(); // SoundCloud links, through the official embedded player
     this.fx.preload = 'metadata';
     this.el = this.fx;
     this.queue = [];
@@ -49,7 +51,7 @@ class Player extends EventTarget {
     this.offlineSrc = false;   // fx is playing a downloaded copy (blob URL)
     this.stallTimer = 0;
 
-    for (const el of [this.fx, this.plain]) {
+    for (const el of [this.fx, this.plain, this.sc]) {
       el.volume = this.volume;
       el.addEventListener('play', () => this.emit('state'));
       el.addEventListener('pause', () => this.emit('state'));
@@ -65,6 +67,9 @@ class Player extends EventTarget {
     this.fx.addEventListener('playing', () => this.schedulePrefetch());
     for (const type of ['waiting', 'stalled']) this.fx.addEventListener(type, () => this.armStall());
     for (const type of ['playing', 'timeupdate', 'pause', 'emptied']) this.fx.addEventListener(type, () => this.clearStall());
+    // Inside a SoundCloud set the song changes without Tunes loading anything.
+    this.sc.addEventListener('sound', () => { this.updateMediaSession(); this.emit('sound'); });
+    this.sc.addEventListener('blocked', () => { if (this.el === this.sc) this.emit('scblocked'); });
     this.setupMediaSession();
     this.restore();
   }
@@ -83,6 +88,13 @@ class Player extends EventTarget {
 
   // ------------------------------------------------------------ Web Audio
   // On phones audio skips Web Audio: iOS and Android silence it when the screen locks.
+  // What SoundCloud reports as playing inside a set or artist page (title, artist, artwork).
+  get scSound() {
+    const s = this.el === this.sc ? this.sc.sound : null;
+    if (!s || this.track?.kind === 'track') return null;
+    return { title: s.title, artist: s.user?.username || '', cover: s.artwork_url ? s.artwork_url.replace('-large.', '-t500x500.') : null };
+  }
+
   get mobile() { return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent); }
 
   ensureGraph() {
@@ -240,6 +252,20 @@ class Player extends EventTarget {
     const seq = ++this.loadSeq;
     const at = this.pendingSeek && !t.live ? this.pendingSeek : 0;
     this.pendingSeek = 0;
+    if (t.source === 'soundcloud') {
+      this.fx.pause();
+      this.fx.removeAttribute('src');
+      this.fx.load();
+      this.offlineSrc = false;
+      this.el = this.sc;
+      this.sc.load(t.link || t.stream, { autoplay, at });
+      this.updateMediaSession();
+      this.emit('track', t);
+      this.emit('state');
+      this.persist();
+      return;
+    }
+    this.sc.unload();
     const start = (src, isCopy) => {
       this.offlineSrc = isCopy;
       this.fx.src = src;
@@ -310,15 +336,15 @@ class Player extends EventTarget {
   setVolume(v) {
     this.volume = Math.max(0, Math.min(1, v));
     this.muted = this.volume === 0 ? this.muted : false;
-    this.fx.volume = this.plain.volume = this.volume;
-    this.fx.muted = this.plain.muted = this.muted;
+    this.fx.volume = this.plain.volume = this.sc.volume = this.volume;
+    this.fx.muted = this.plain.muted = this.sc.muted = this.muted;
     LS.set('volume', this.volume);
     this.emit('volume');
   }
 
   toggleMute() {
     this.muted = !this.muted;
-    this.fx.muted = this.plain.muted = this.muted;
+    this.fx.muted = this.plain.muted = this.sc.muted = this.muted;
     this.emit('volume');
   }
 
@@ -488,10 +514,12 @@ class Player extends EventTarget {
     const ms = navigator.mediaSession;
     const t = this.track;
     if (!ms || !t) return;
-    const art = t.cover ? [{ src: new URL(t.cover, location.href).href, sizes: '512x512' }] : [];
+    const sc = this.scSound;
+    const coverUrl = sc?.cover || t.cover;
+    const art = coverUrl ? [{ src: new URL(coverUrl, location.href).href, sizes: '512x512' }] : [];
     ms.metadata = new MediaMetadata({
-      title: this.icyTitle || t.title,
-      artist: this.icyTitle ? t.title : t.artist || '',
+      title: sc?.title || this.icyTitle || t.title,
+      artist: sc ? sc.artist : this.icyTitle ? t.title : t.artist || '',
       album: t.album || '',
       artwork: art,
     });
@@ -524,9 +552,12 @@ class Player extends EventTarget {
     this.context = s.context;
     const t = this.track;
     if (!t) return;
-    // Radio isn't preloaded: toggle() starts it only on Play.
-    if (!t.live) this.fx.src = t.stream;
-    if (s.time && !t.live) {
+    if (t.source === 'soundcloud') {
+      this.el = this.sc;
+      // Wait for the app to give the widget its dock.
+      queueMicrotask(() => this.sc.load(t.link || t.stream, { autoplay: false, at: s.time || 0 }));
+    } else if (!t.live) this.fx.src = t.stream; // radio isn't preloaded: toggle() starts it only on Play
+    if (s.time && !t.live && t.source !== 'soundcloud') {
       this.fx.addEventListener('loadedmetadata', () => { this.fx.currentTime = s.time; this.lastT = s.time; this.emit('time'); }, { once: true });
     }
     this.listened = 0;

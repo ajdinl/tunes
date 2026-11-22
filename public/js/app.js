@@ -232,8 +232,15 @@ function bindDial(box, dial, tip) {
   });
 }
 
-function updateTrack() {
+// The track as shown: inside a SoundCloud set, the song that is playing right now.
+function shownTrack() {
   const t = player.track;
+  const sc = player.scSound;
+  return t && sc ? { ...t, title: sc.title || t.title, artist: sc.artist || t.artist, cover: sc.cover || t.cover, album: t.title } : t;
+}
+
+function updateTrack() {
+  const t = shownTrack();
   els.cover.replaceChildren(cover(t?.cover, t?.title || '♪'));
   if (!t) {
     els.title.textContent = tr('Nothing playing');
@@ -492,7 +499,7 @@ function closeNow() {
 
 function renderNow() {
   if (now.hidden) return;
-  const t = player.track;
+  const t = shownTrack();
   if (!t) { closeNow(); return; }
   const canvas = h('canvas.dial__cv', { 'aria-hidden': 'true' });
   const tip = h('span.dial__tip', { hidden: true });
@@ -806,7 +813,33 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ============================================================ events
-player.addEventListener('track', () => { updateTrack(); renderPanel(); renderNow(); });
+player.addEventListener('track', () => { updateTrack(); renderPanel(); renderNow(); renderScDock(); });
+player.addEventListener('sound', () => { updateTrack(); if (!now.hidden) renderNow(); });
+player.addEventListener('scblocked', () => {
+  setScDockMin(false);
+  toast(tr('Tap play in the SoundCloud player to start'));
+});
+
+// ============================================================ SoundCloud player dock
+// SoundCloud links play in SoundCloud's own embedded player. It stays on screen (SoundCloud
+// requires that), and can be folded down to a small bar.
+const scBody = h('div.scdock__body');
+const scToggle = h('button.ibtn', { type: 'button', onclick: () => setScDockMin(!scDock.classList.contains('is-min')) });
+const scDock = h('section.scdock', { hidden: true, 'aria-label': 'SoundCloud' },
+  h('div.scdock__bar', {}, h('span.scdock__label', {}, icon('cloud', 16), 'SoundCloud'), scToggle),
+  scBody);
+document.body.append(scDock);
+player.sc.host = scBody;
+function setScDockMin(min) {
+  scDock.classList.toggle('is-min', min);
+  scToggle.replaceChildren(icon(min ? 'chevronUp' : 'chevronDown', 18));
+  scToggle.setAttribute('aria-label', min ? tr('Show SoundCloud player') : tr('Fold SoundCloud player'));
+  scToggle.setAttribute('aria-expanded', String(!min));
+  try { localStorage.setItem('tunes.scdockMin', JSON.stringify(min)); } catch { /* */ }
+}
+function renderScDock() { scDock.hidden = player.track?.source !== 'soundcloud'; }
+setScDockMin((() => { try { return JSON.parse(localStorage.getItem('tunes.scdockMin')) === true; } catch { return false; } })());
+renderScDock();
 player.addEventListener('state', updateState);
 player.addEventListener('time', updateTime);
 player.addEventListener('mode', () => { updateMode(); renderPanel(); });

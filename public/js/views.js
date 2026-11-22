@@ -2,6 +2,7 @@
 import { h, icon, cover, fmtTime, fmtDuration, songs, plural, relDay, sourceTag, toast, ask, norm, SOURCES, isSet, tr } from './ui.js';
 import { lang, setLang, locale } from './i18n.js';
 import { renderOfflineSettings } from './offline.js';
+import { findSoundCloudUrl } from './soundcloud.js';
 import { store, api, SMART } from './store.js';
 import { player, EQ_PRESETS } from './player.js';
 import {
@@ -121,10 +122,13 @@ export function search(params) {
       results.append(h('div.hints', {},
         h('p.muted', {}, tr('Try one of these:')),
         h('div.chips', {}, ['lofi', 'jazz', 'techno set', 'boiler room', 'Grateful Dead', 'ambient', 'Sarajevo radio'].map((x) =>
-          h('button.chip', { type: 'button', onclick: () => { input.value = x; run(x); } }, x)))));
+          h('button.chip', { type: 'button', onclick: () => { input.value = x; run(x); } }, x))),
+        h('p.muted', {}, tr('You can also paste a SoundCloud link to a song, set or artist.'))));
       return;
     }
     const here = '#/search?' + qs;
+    const scUrl = findSoundCloudUrl(q);
+    if (scUrl) { results.append(soundCloudResult(scUrl, here, () => my === token)); return; }
     const local = store.searchLocal(q);
     const localTracks = local.tracks.filter(byKind(kind));
     let shown = 0;
@@ -144,6 +148,12 @@ export function search(params) {
     }
     const online = h('div.online');
     results.append(online);
+    // SoundCloud can't be searched without a paid API key: search on their site, paste the link here.
+    if (kind !== 'radio') {
+      results.append(h('p.muted.pad.scsearch', {}, icon('cloud', 16), tr('Looking for something on SoundCloud? '),
+        h('a', { href: 'https://soundcloud.com/search?q=' + encodeURIComponent(q), target: '_blank', rel: 'noopener' }, tr('Search on SoundCloud')),
+        tr(', copy the link of a song, set or artist and paste it here.')));
+    }
     clearTimeout(onlineTimer);
     const src = KIND_SOURCES[kind].filter((x) => lastSources.includes(x === 'artists' ? 'audius' : x));
     if (!src.length) {
@@ -258,7 +268,7 @@ export function artists() {
     body.replaceChildren(list.length ? grid(list.map(artistTile), { round: true }) : emptyCollection(tr('No artists yet.')));
   };
   root.append(header({ title: tr('Artists'), meta: tr('{n} in your collection', { n: plural(all.length, ['izvođač', 'izvođača', 'izvođača'], ['artist', 'artists']) }) }),
-    all.length > 8 ? h('div.toolbar', {}, filterInput(tr('Filter artists'), render)) : null, body);
+    ...(all.length > 8 ? [h('div.toolbar', {}, filterInput(tr('Filter artists'), render))] : []), body);
   render('');
   return root;
 }
@@ -659,6 +669,23 @@ export function archiveView(params, id) {
     root.append(trackList(tracks, { context: ctx, numbered: true, album: false, coverArt: false, emptyText: tr('This release has no recordings your browser can play.') }));
   }).catch((e) => root.replaceChildren(errorBox(tr('Can\'t load this release: ') + e.message, () => go(location.hash))));
   return root;
+}
+
+// A pasted SoundCloud link: one result that plays through SoundCloud's own player.
+function soundCloudResult(url, here, current) {
+  const box = h('div', {}, loading(tr('Opening the SoundCloud link…')));
+  api('/api/soundcloud/resolve?u=' + encodeURIComponent(url)).then(({ track }) => {
+    if (!current()) return;
+    const what = { track: tr('Song'), set: tr('Set or playlist'), artist: tr('Artist page: plays their songs') }[track.kind] || '';
+    box.replaceChildren(
+      trackList([track], { context: { label: 'SoundCloud', href: here } }),
+      h('div.row', { style: { marginTop: '14px', gap: '10px', flexWrap: 'wrap' } },
+        h('button.btn.btn--primary', { type: 'button', onclick: () => player.playList([track], 0, { shuffle: false, context: { label: 'SoundCloud', href: here } }) }, icon('play', 16), tr('Play')),
+        h('a.btn', { href: track.link, target: '_blank', rel: 'noopener' }, icon('external', 16), 'soundcloud.com')),
+      h('p.muted', { style: { marginTop: '14px', maxWidth: '68ch' } }, [what, tr('It plays in SoundCloud\'s own player, so the equalizer, spectrum and offline playback don\'t work for it, and SoundCloud may show ads.')].filter(Boolean).join('. ')),
+    );
+  }).catch((e) => { if (current()) box.replaceChildren(errorBox(e.message)); });
+  return section(tr('From SoundCloud'), box);
 }
 
 // ============================================================ Settings

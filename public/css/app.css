@@ -21,6 +21,7 @@
   --c-archive: #f28b82;
   --c-radio: #7ec4e6;
   --c-jamendo: #f5a3d0;
+  --c-soundcloud: #ff8a4c;
 
   --r-sm: 6px;
   --r: 8px;
@@ -71,6 +72,7 @@
   --c-archive: #c03c33;
   --c-radio: #1f75a0;
   --c-jamendo: #b03c78;
+  --c-soundcloud: #c9500f;
   --bg-clear: rgba(244, 244, 246, 0);
   --deck-a: #ffffff;
   --deck-b: #f0f0f4;
@@ -282,6 +284,7 @@ label.btn { cursor: pointer; }
 .chip--archive { --c: var(--c-archive); }
 .chip--radio { --c: var(--c-radio); }
 .chip--jamendo { --c: var(--c-jamendo); }
+.chip--soundcloud { --c: var(--c-soundcloud); }
 
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
 .tab {
@@ -466,6 +469,7 @@ body.is-playing .tr.is-playing .tr__num::before { animation: bars 0.9s ease-in-o
 .src--archive { --c: var(--c-archive); }
 .src--radio { --c: var(--c-radio); }
 .src--jamendo { --c: var(--c-jamendo); }
+.src--soundcloud { --c: var(--c-soundcloud); }
 
 /* ------------------------------------------------------------ grid */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 24px 20px; }
@@ -951,6 +955,29 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .dlg__actions { display: flex; justify-content: flex-end; gap: 8px; }
 
 /* ------------------------------------------------------------ smaller screens */
+/* ------------------------------------------------------------ SoundCloud player dock */
+.scdock {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--deck-h, 90px) + 12px);
+  z-index: 24;
+  width: min(420px, calc(100vw - 32px));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
+  box-shadow: 0 18px 40px rgba(4, 5, 16, 0.45);
+}
+.scdock[hidden] { display: none; }
+.scsearch { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; margin-top: 24px; }
+.scsearch .ic { color: var(--c-soundcloud); margin-right: 4px; }
+.scsearch a { color: var(--c-soundcloud); font-weight: 650; }
+.scdock__bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 4px 4px 12px; color: var(--muted); font-size: 13px; font-weight: 650; }
+.scdock__label { display: inline-flex; align-items: center; gap: 8px; color: var(--c-soundcloud); }
+.scdock__body { height: 166px; overflow: hidden; transition: height 0.18s ease-out; }
+.scdock.is-min .scdock__body { height: 0; }
+.scdock__frame { display: block; width: 100%; height: 166px; border: 0; }
+
 @media (max-width: 1240px) {
   .deck { grid-template-columns: minmax(180px, 240px) minmax(0, 1fr) auto; gap: 16px; }
   .vol { width: 70px; }
@@ -1017,6 +1044,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
   .dial--big { height: 80px; }
   .eq { bottom: calc(150px + env(safe-area-inset-bottom)); right: 8px; }
   .toasts { bottom: calc(160px + env(safe-area-inset-bottom)); }
+  .scdock { right: 8px; left: 8px; width: auto; bottom: calc(var(--deck-h, 140px) + 8px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

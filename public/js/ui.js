@@ -66,6 +66,9 @@ const P = {
   moon: '<path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z"/>',
   expand: '<path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/>',
   collapse: '<path d="M20 10h-6V4M4 14h6v6M14 10l6-6M10 14l-6 6"/>',
+  chevronUp: '<path d="M6 15l6-6 6 6"/>',
+  chevronDown: '<path d="M6 9l6 6 6-6"/>',
+  cloud: '<path d="M7 18.5h10.5a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7.4 9.1 4.7 4.7 0 0 0 7 18.5z"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
   trash: '<path d="M5 7h14M10 7V5h4v2M7 7l1 12.5h8L17 7"/>',
   grip: '<circle cx="9" cy="7" r="1.2" fill="currentColor"/><circle cx="15" cy="7" r="1.2" fill="currentColor"/><circle cx="9" cy="12" r="1.2" fill="currentColor"/><circle cx="15" cy="12" r="1.2" fill="currentColor"/><circle cx="9" cy="17" r="1.2" fill="currentColor"/><circle cx="15" cy="17" r="1.2" fill="currentColor"/>',
@@ -133,6 +136,7 @@ export const SOURCES = {
   archive: { name: 'Internet Archive', short: 'Archive' },
   radio: { name: 'Radio', short: 'Radio' },
   jamendo: { name: 'Jamendo', short: 'Jamendo' },
+  soundcloud: { name: 'SoundCloud', short: 'SoundCloud' },
 };
 
 export function sourceTag(src) {

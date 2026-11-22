@@ -14,7 +14,7 @@ import QRCode from 'qrcode';
 
 import { Store, cleanTrack, ICONS, tildify } from './lib/store.js';
 import { Library, MIME } from './lib/library.js';
-import { audius, archive, radio, jamendo, lyrics, listenbrainz } from './lib/sources.js';
+import { audius, archive, radio, jamendo, lyrics, listenbrainz, soundcloud } from './lib/sources.js';
 import { proxyAudio } from './lib/proxy.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -175,6 +175,12 @@ route('GET', /^\/api\/img$/, async (req, res, m, q) => {
     } catch { /* try the next one */ }
   }
   res.writeHead(404, { 'Cache-Control': 'max-age=600' }).end();
+});
+
+// A pasted SoundCloud link -> a track for the queue (played by the SoundCloud widget).
+route('GET', /^\/api\/soundcloud\/resolve$/, async (req, res, m, q) => {
+  const raw = soundcloud.find(q.get('u')) || q.get('u') || '';
+  json(res, 200, { track: await soundcloud.resolve(raw) });
 });
 
 route('GET', /^\/api\/events$/, (req, res) => {
