@@ -122,3 +122,51 @@ test('tooltips show right away on mouse hover, not on touch', async ({ page, dev
   await phone.locator('.deck .play').tap();
   await expect(phone.locator('.tip.is-on')).toHaveCount(0);
 });
+
+test('player bar: the dial shrinks instead of running under the buttons', async ({ device }) => {
+  const page = await device();
+  await playSong(page, 'Morning Light');
+  for (const width of [1600, 1440, 1300, 1241, 1100, 900, 861]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.waitForTimeout(150);
+    const r = await page.evaluate(() => {
+      const end = document.querySelector('.deck .deck__time--end').getBoundingClientRect();
+      const dial = document.querySelector('.deck .dial').getBoundingClientRect();
+      const tools = document.querySelector('.deck__tools').getBoundingClientRect();
+      const first = document.querySelector('.deck__tools > *').getBoundingClientRect();
+      return { gap: Math.round(first.left - end.right), dial: Math.round(dial.width), toolsFit: tools.right <= innerWidth + 1 };
+    });
+    expect(r.gap, `room between the dial and the buttons at ${width}px`).toBeGreaterThanOrEqual(16);
+    expect(r.toolsFit, `buttons inside the window at ${width}px`).toBe(true);
+    expect(r.dial, `dial width at ${width}px`).toBeGreaterThan(190);
+  }
+});
+
+test('sidebar: the playlist section never runs over the items at the bottom', async ({ device }) => {
+  const page = await device();
+  await open(page, '/');
+  for (const height of [900, 700, 560, 480]) {
+    await page.setViewportSize({ width: 1300, height });
+    await page.waitForTimeout(120);
+    // What is actually drawn in the middle of each bottom item must be that item.
+    // (In a very short window the menu scrolls: bring each item into view first.)
+    const covered = await page.evaluate(() => [...document.querySelectorAll('.nav--foot .nav__link')].filter((el) => {
+      el.scrollIntoView({ block: 'nearest' });
+      const b = el.getBoundingClientRect();
+      const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+      return !hit || !el.contains(hit);
+    }).map((el) => el.textContent));
+    expect(covered, `bottom items covered at ${height}px`).toEqual([]);
+    // Nothing from the playlist section may show below its own box (over the items under it).
+    const spill = await page.evaluate(() => {
+      const lists = document.querySelector('.nav--lists');
+      const lb = lists.getBoundingClientRect();
+      const clipped = getComputedStyle(lists).overflowY !== 'visible';
+      return [...lists.querySelectorAll('*')].filter((el) => {
+        const b = el.getBoundingClientRect();
+        return b.height > 0 && (clipped ? Math.min(b.bottom, lb.bottom) : b.bottom) > lb.bottom + 0.5;
+      }).map((el) => el.textContent.slice(0, 40));
+    });
+    expect(spill, `playlist section spills at ${height}px`).toEqual([]);
+  }
+});

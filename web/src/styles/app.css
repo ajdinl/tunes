@@ -139,7 +139,9 @@ code, kbd {
   padding: 18px 12px 12px;
   background: var(--bg-2);
   border-right: 1px solid var(--line);
-  overflow: hidden;
+  /* In a very short window the whole menu scrolls, so Settings stays reachable. */
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 .brand {
   display: flex;
@@ -173,7 +175,9 @@ code, kbd {
 .nav__link:hover { color: var(--text); background: var(--bg-3); }
 .nav__link.is-on { color: var(--text); background: var(--bg-3); }
 .nav__link.is-on .ic { color: var(--amber); }
-.nav--lists { flex: 1; min-height: 0; }
+/* Playlists take the room that is left; they scroll, and never spill over the items below. */
+.nav--lists { flex: 1 0 auto; flex-basis: 0; min-height: 84px; overflow: hidden; }
+.nav--lists > .nav__head { flex: none; }
 .nav__scroll { overflow-y: auto; min-height: 0; margin-top: 4px; }
 .nav__link--pl { justify-content: space-between; min-height: 32px; font-weight: 500; }
 .nav__link--pl span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -628,9 +632,10 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 /* ------------------------------------------------------------ player bar */
 .deck {
   display: grid;
-  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) minmax(220px, 300px);
+  /* The tools take the room they need; the dial in the middle shrinks instead of being covered. */
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) auto;
   align-items: center;
-  gap: 24px;
+  gap: 28px;
   padding: 10px 16px 12px;
   padding-bottom: max(12px, env(safe-area-inset-bottom));
   background: linear-gradient(180deg, var(--deck-a), var(--deck-b));
@@ -720,7 +725,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 }
 .dial:focus-visible { outline-offset: 3px; }
 
-.deck__tools { display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
+.deck__tools { display: flex; flex: none; align-items: center; justify-content: flex-end; gap: 2px; }
 .volbox { display: flex; align-items: center; gap: 4px; }
 .vol {
   --v: 80%;
@@ -1015,7 +1020,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .scdock__frame { display: block; width: 100%; height: 166px; border: 0; }
 
 @media (max-width: 1240px) {
-  .deck { grid-template-columns: minmax(180px, 240px) minmax(0, 1fr) auto; gap: 16px; }
+  .deck { grid-template-columns: minmax(180px, 240px) minmax(0, 1fr) auto; gap: 20px; }
   .vol { width: 70px; }
   .tl { --cols: 44px 40px minmax(0, 1.5fr) minmax(0, 1fr) 34px 52px 34px; }
   .tl--noalbum { --cols: 44px 40px minmax(0, 1fr) 34px 52px 34px; }
@@ -1142,3 +1147,12 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .mini__time { margin-left: auto; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .mini__bar { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: rgba(127, 127, 127, 0.22); cursor: pointer; }
 .mini__fill { display: block; height: 100%; background: var(--amber); }
+
+/* Narrow computer windows: make room for the dial (phones have their own layout below 861px). */
+@media (min-width: 861px) and (max-width: 1100px) {
+  .deck { grid-template-columns: minmax(150px, 200px) minmax(0, 1fr) auto; }
+  .vol { width: 56px; }
+}
+@media (min-width: 861px) and (max-width: 960px) {
+  .deck .volbox .vol { display: none; } /* the mute button stays; ↑ ↓ still change the volume */
+}
