@@ -12,6 +12,8 @@ import type { Context, Playlist, Track } from '../lib/store.ts';
 import { openMenu } from '../lib/feedback.ts';
 import { toggleFav, trackMenu } from '../lib/actions.ts';
 
+const TOUCH = matchMedia('(hover: none)').matches;
+
 const CHUNK = 200;
 
 export interface TrackListProps {
@@ -82,6 +84,8 @@ function Row({ t, i, playing, fav, lead, album, coverArt, onPlay, menu, sortable
     <div className={cx('tr', playing && 'is-playing', drag && 'is-drag', over && 'is-over')} role="listitem" tabIndex={0}
       data-id={t.id} data-i={i} aria-label={`${t.title}, ${t.artist || ''}`}
       onDoubleClick={onPlay} onKeyDown={onKeyDown}
+      // On touch screens one tap on a song plays it (the buttons in the row keep their own job).
+      onClick={TOUCH ? (e) => { if (!(e.target as Element).closest('button, a, input')) onPlay(); } : undefined}
       onContextMenu={(e) => { e.preventDefault(); openMenu(e.clientX, e.clientY, menu()); }}
       draggable={sortable || undefined}
       onDragStart={sortable ? (e) => { e.dataTransfer.setData('text/x-index', String(i)); e.dataTransfer.effectAllowed = 'move'; setDrag(true); } : undefined}

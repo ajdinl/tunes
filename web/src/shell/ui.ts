@@ -2,6 +2,8 @@
 // the mobile menu, the folded sidebar, the SoundCloud dock and where the player buttons sit.
 import { useSyncExternalStore } from 'react';
 
+import { STANDALONE } from '../lib/env.ts';
+
 // Where the player buttons sit on computers: above the dial, beside it (one row, the bar is
 // lower), or only while the mouse is over the bar.
 export const DECK_CTRLS = ['above', 'beside', 'hover'] as const;
@@ -51,4 +53,5 @@ export function useShell(): ShellState {
 // A real mouse: hover-only things make sense (not on phones, tablets or touch screens).
 export const CAN_HOVER = matchMedia('(hover: hover) and (pointer: fine)').matches;
 
-export const IS_LOCAL = ['localhost', '127.0.0.1', '[::1]', '::1'].includes(location.hostname);
+// Opened on the computer that runs the Tunes server (the phone-only version has none).
+export const IS_LOCAL = !STANDALONE && ['localhost', '127.0.0.1', '[::1]', '::1'].includes(location.hostname);

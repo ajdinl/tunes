@@ -12,21 +12,16 @@ import { idbGet, idbSet } from './idb.ts';
 
 const DATA_KEY = 'data';
 
+// Every change is written right away (several in one go count as one write): a phone may
+// close the app a moment after a tap.
 class BrowserStore extends DataStore {
-  private timer = 0;
+  private queued = false;
 
   override save(): void {
-    clearTimeout(this.timer);
-    this.timer = window.setTimeout(() => { void this.flush(); }, 300);
+    if (this.queued) return;
+    this.queued = true;
+    queueMicrotask(() => { this.queued = false; void idbSet(DATA_KEY, this.data); });
   }
-
-  async flush(): Promise<void> {
-    clearTimeout(this.timer);
-    this.timer = 0;
-    await idbSet(DATA_KEY, this.data);
-  }
-
-  get pending(): boolean { return this.timer !== 0; }
 }
 
 let store: BrowserStore;
@@ -34,10 +29,6 @@ let store: BrowserStore;
 export async function openStore(): Promise<void> {
   const saved = await idbGet<Partial<Data>>(DATA_KEY).catch(() => null);
   store = new BrowserStore(saved || null);
-  // The page may be closed right after a change (a phone switching apps): write it now.
-  const flushNow = () => { if (store.pending) void store.flush(); };
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushNow(); });
-  window.addEventListener('pagehide', flushNow);
 }
 
 type Body = Record<string, any>;
