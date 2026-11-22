@@ -473,15 +473,24 @@ route('POST', /^\/api\/phone$/, async (req, res) => {
 // The playing device reports what is playing and at what position. Another device can
 // take over: it continues from the same second and the first one pauses.
 let session = null;
+// Like Spotify, music plays on one device at a time: the device that last started playback
+// owns it. Any other device that is still playing gets told to pause.
+let owner = null; // { deviceId, device, at }
 
 route('GET', /^\/api\/session$/, (req, res) => json(res, 200, { session }));
 
 route('POST', /^\/api\/session$/, async (req, res) => {
   const b = await body(req);
   if (!b.deviceId || !b.track?.id) return json(res, 400, { error: 'Song is missing' });
-  const changed = !session || session.deviceId !== b.deviceId || session.track.id !== b.track.id || session.playing !== Boolean(b.playing);
+  const deviceId = String(b.deviceId).slice(0, 64);
+  if (b.playing && owner && owner.deviceId !== deviceId) {
+    // Missed the takeover event (sleeping tab, dropped connection): pause now.
+    return json(res, 200, { ok: true, yield: owner.device });
+  }
+  if (b.playing && !owner) owner = { deviceId, device: String(b.device || '').slice(0, 40), at: Date.now() };
+  const changed = !session || session.deviceId !== deviceId || session.track.id !== b.track.id || session.playing !== Boolean(b.playing);
   session = {
-    deviceId: String(b.deviceId).slice(0, 64),
+    deviceId,
     device: String(b.device || '').slice(0, 40),
     track: cleanTrack(b.track),
     time: Number(b.time) || 0,
@@ -490,19 +499,23 @@ route('POST', /^\/api\/session$/, async (req, res) => {
     queue: Array.isArray(b.queue) ? b.queue.slice(0, 500).map(cleanTrack) : [cleanTrack(b.track)],
     context: b.context && typeof b.context === 'object' ? { label: String(b.context.label || '').slice(0, 200), href: String(b.context.href || '').slice(0, 300) } : null,
     at: Date.now(),
+    lastBroadcast: changed ? 0 : session.lastBroadcast,
   };
   json(res, 200, { ok: true });
   // Other devices are only notified when something important changes (or every 15 s).
   if (changed || !session.lastBroadcast || Date.now() - session.lastBroadcast > 15000) {
     session.lastBroadcast = Date.now();
-    const { queue, ...summary } = session;
+    const { queue, lastBroadcast, ...summary } = session;
     broadcast('session', summary);
   }
 });
 
+// Called by a device when it starts playing: every other device pauses.
 route('POST', /^\/api\/session\/takeover$/, async (req, res) => {
   const { deviceId, device } = await body(req);
-  broadcast('takeover', { deviceId: String(deviceId || ''), device: String(device || '').slice(0, 40) });
+  if (!deviceId) return json(res, 400, { error: 'Device is missing' });
+  owner = { deviceId: String(deviceId).slice(0, 64), device: String(device || '').slice(0, 40), at: Date.now() };
+  broadcast('takeover', { deviceId: owner.deviceId, device: owner.device });
   json(res, 200, { ok: true });
 });
 

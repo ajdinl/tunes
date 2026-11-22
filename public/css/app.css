@@ -51,6 +51,36 @@
   --menu-bg: #1c1c1f;
 }
 
+/* Light theme: for daylight. The dial stays a backlit display. Accent and source colours are
+   darker so they stay readable on white. */
+:root[data-theme='light'] {
+  --bg: #f4f4f6;
+  --bg-2: #ffffff;
+  --bg-3: #e9e9ee;
+  --bg-4: #dcdce3;
+  --line: #d6d6de;
+  --text: #16161b;
+  --muted: #565662;
+  --faint: #85858f;
+  --amber: #c26d00;
+  --amber-ink: #1d1203;
+  --needle: #e0401a;
+  --danger: #c3392b;
+  --c-local: #3f7f22;
+  --c-audius: #7d43bd;
+  --c-archive: #c03c33;
+  --c-radio: #1f75a0;
+  --c-jamendo: #b03c78;
+  --bg-clear: rgba(244, 244, 246, 0);
+  --deck-a: #ffffff;
+  --deck-b: #f0f0f4;
+  --menu-bg: #ffffff;
+  color-scheme: light;
+}
+:root[data-theme='light'] .btn--primary:hover { background: #d97b00; }
+:root[data-theme='light'] .now__bg { opacity: 0.12; }
+:root[data-theme='light'] .btn--danger, :root[data-theme='light'] .toast--error { color: #ffffff; }
+
 *, *::before, *::after { box-sizing: border-box; }
 html, body { height: 100%; }
 body {

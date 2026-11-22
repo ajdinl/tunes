@@ -690,6 +690,8 @@ let dismissedFor = null;
 function reportSession(force = false) {
   const t = player.track;
   if (!t || !activeHere) return;
+  // Playback just started here: take it over first, or the server would tell us to yield.
+  if (player.playing && !ownsPlayback) { claimPlayback().then(() => reportSession(true)); return; }
   const now = Date.now();
   if (!force && now - lastReport < 5000) return;
   lastReport = now;
@@ -697,7 +699,22 @@ function reportSession(force = false) {
   api('/api/session', { method: 'POST', body: {
     deviceId: DEVICE_ID, device: DEVICE_KIND, track: t, time: player.track.live ? 0 : player.time,
     playing: player.playing, index: player.index - start, queue: player.queue.slice(start, start + 500), context: player.context,
-  } }).catch(() => {});
+  } }).then((r) => { if (r?.yield) yieldTo(r.yield); }).catch(() => {});
+}
+
+// Another device started playing: stop here, so music never plays on two devices at once.
+function yieldTo(device) {
+  ownsPlayback = false;
+  if (!player.playing) return;
+  player.pause();
+  toast(tr('Music continues on: {d}', { d: deviceName(device) }));
+}
+
+// Tell the server (and through it every other device) that playback moved here.
+let ownsPlayback = false; // this device has told the others that playback is here
+function claimPlayback() {
+  ownsPlayback = true;
+  return api('/api/session/takeover', { method: 'POST', body: { deviceId: DEVICE_ID, device: DEVICE_KIND } }).catch(() => {});
 }
 
 const handoff = h('div.handoff', { hidden: true, role: 'region' });
@@ -735,15 +752,16 @@ async function takeOver() {
     const time = remoteTime();
     player.resumeAt(session.queue, session.index, time, session.context);
     activeHere = true;
-    api('/api/session/takeover', { method: 'POST', body: { deviceId: DEVICE_ID, device: DEVICE_KIND } }).catch(() => {});
+    claimPlayback(); // also sent when playback starts; here in case autoplay is blocked
     handoff.hidden = true;
     toast(session.track.live ? tr('Continued here') : tr('Continued here from {t}', { t: fmtTime(time) }));
   } catch (e) { toast(e.message, { error: true }); }
 }
 
 player.addEventListener('state', () => {
+  if (!player.playing) ownsPlayback = false; // the next play claims again
   if (player.playing && !activeHere) activeHere = true;
-  reportSession(true);
+  reportSession(true); // claims first if playback just started
   renderHandoff();
 });
 player.addEventListener('track', () => reportSession(true));
@@ -812,11 +830,7 @@ function connectEvents() {
   es.addEventListener('session', (e) => { remote = JSON.parse(e.data); renderHandoff(); });
   es.addEventListener('takeover', (e) => {
     const d = JSON.parse(e.data);
-    if (d.deviceId === DEVICE_ID) return;
-    if (player.playing) {
-      player.pause();
-      toast(tr('Music continues on: {d}', { d: deviceName(d.device) }));
-    }
+    if (d.deviceId !== DEVICE_ID) yieldTo(d.device);
   });
 }
 

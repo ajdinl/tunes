@@ -667,7 +667,7 @@ export function settingsView() {
   root.append(header({ title: tr('Settings') }));
 
   // ---- appearance
-  const THEMES = [{ value: 'black', label: tr('Black'), sw: '#000000' }, { value: 'indigo', label: tr('Night indigo'), sw: '#1c1f3a' }];
+  const THEMES = [{ value: 'black', label: tr('Black'), sw: '#000000' }, { value: 'indigo', label: tr('Night indigo'), sw: '#1c1f3a' }, { value: 'light', label: tr('Light'), sw: '#f4f4f6' }];
   const pick = h('div.theme-pick', { role: 'group', 'aria-label': tr('Theme') });
   const renderThemes = () => pick.replaceChildren(...THEMES.map((t) => h('button.theme-opt', {
     type: 'button', 'aria-pressed': String((document.documentElement.dataset.theme || 'black') === t.value),
@@ -794,7 +794,7 @@ export function settingsView() {
 
 function setTheme(t) {
   document.documentElement.dataset.theme = t;
-  document.querySelector('meta[name=theme-color]').content = t === 'black' ? '#000000' : '#1c1f3a';
+  document.querySelector('meta[name=theme-color]').content = t === 'black' ? '#000000' : t === 'light' ? '#f4f4f6' : '#1c1f3a';
   try { localStorage.setItem('tunes.theme', JSON.stringify(t)); } catch { /* */ }
 }
 
