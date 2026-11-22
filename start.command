@@ -19,4 +19,5 @@ if curl -s -o /dev/null "http://localhost:$PORT/api/state"; then
 fi
 
 (sleep 1.2 && open "http://localhost:$PORT") &
+npm run build --silent -- --logLevel warn || { read -k1 "?Build failed. Press any key…"; exit 1; }
 exec node server.ts

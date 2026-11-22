@@ -28,6 +28,11 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url));
 // DATA_DIR allows a separate copy of the data (e.g. for a demo or testing).
 const DATA = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(ROOT, 'data');
 const PUBLIC = path.join(ROOT, 'public');
+// The React frontend, built by Vite into web/dist (npm start builds it first).
+// Icons, the manifest and the service worker are plain files in public/.
+const WEB_DIST = path.join(ROOT, 'web', 'dist');
+const UI_ROOT = WEB_DIST;
+if (!fs.existsSync(path.join(WEB_DIST, 'index.html'))) console.warn('The app is not built yet (web/dist is missing): run npm run build, or start with npm start.');
 const FONTS = path.join(ROOT, 'node_modules', '@fontsource-variable', 'bricolage-grotesque');
 const PORT = Number(process.env.PORT) || 4545;
 // Only this computer by default. HOST=0.0.0.0 allows access from phones on the same network.
@@ -104,7 +109,7 @@ async function serveFile(req: Req, res: Res, file: string, type: string, { cache
 const STATIC_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json',
-  '.woff2': 'font/woff2', '.json': 'application/json',
+  '.woff2': 'font/woff2', '.json': 'application/json', '.map': 'application/json',
 };
 
 function safeJoin(base: string, rel: string): string | null {
@@ -599,9 +604,13 @@ async function handle(req: Req, res: Res, { lan = false } = {}): Promise<void> {
       return await serveFile(req, res, file, STATIC_TYPES['.' + ic[2]]);
     }
 
-    let f = safeJoin(PUBLIC, p === '/' ? 'index.html' : p.slice(1));
-    if (!f || !fs.existsSync(f) || fs.statSync(f).isDirectory()) f = path.join(PUBLIC, 'index.html');
-    return await serveFile(req, res, f, STATIC_TYPES[path.extname(f)] || 'application/octet-stream');
+    // A file from the frontend, then from public/, otherwise the app itself (it routes by path).
+    const rel = p === '/' ? 'index.html' : p.slice(1);
+    let f = [UI_ROOT, PUBLIC].map((base) => safeJoin(base, rel)).find((x) => x && fs.existsSync(x) && !fs.statSync(x).isDirectory()) || null;
+    if (!f) f = path.join(UI_ROOT, 'index.html');
+    // Vite names built files by content hash, so they can be cached for good.
+    const cache = f.startsWith(path.join(WEB_DIST, 'assets') + path.sep) ? 'max-age=31536000, immutable' : 'no-cache';
+    return await serveFile(req, res, f, STATIC_TYPES[path.extname(f)] || 'application/octet-stream', { cache });
   } catch (e) {
     const err = e as HttpError;
     console.error(req.method, p, '-', err.message);

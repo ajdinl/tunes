@@ -1,9 +1,8 @@
 // Shared helpers for the end-to-end tests.
 //
-// The tests drive the app through the DOM and the class names from css/app.css (.tr, .deck,
-// .handoff, body.is-playing …). The React port keeps app.css, so they keep working. The few
-// places that reach into app internals go through appModule() below: update it in one place
-// when the module layout changes.
+// The tests drive the app through the DOM and the class names from web/src/styles/app.css
+// (.tr, .deck, .handoff, body.is-playing …). The few places that reach into app internals go
+// through appModule() below: update it in one place when the module layout changes.
 import { test as base, expect } from '@playwright/test';
 
 export { expect };
@@ -14,7 +13,7 @@ export const LANGS = ['en', 'bs', 'sr', 'hr', 'de', 'tr'];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // Host names that reach the test server. phone.local is mapped to 127.0.0.1 (playwright.config.js).
 const LOCAL_HOSTS = ['127.0.0.1', 'localhost', 'phone.local'];
-export const phoneURL = (baseURL, hash = '#/') => baseURL.replace('127.0.0.1', 'phone.local') + '/' + hash;
+export const phoneURL = (baseURL, path = '/') => baseURL.replace('127.0.0.1', 'phone.local') + path;
 
 // Every page and context the test opens: page errors fail the test, and requests leave
 // 127.0.0.1 only when a test routes them itself (the fake SoundCloud widget).
@@ -69,13 +68,13 @@ export const test = base.extend({
   },
 });
 
-// Opens the app at a hash route and waits until the screen has rendered.
-export async function open(page, hash = '#/') {
-  await page.goto('/' + hash);
+// Opens the app at a path ('/songs'). An old hash address ('#/songs') is opened as is, to
+// test the redirect.
+export async function open(page, path = '/') {
+  await page.goto(path.startsWith('#') ? '/' + path : path);
   await settle(page);
 }
 
-// Waits until the screen is drawn: no loading indicator and no API request in flight, twice in a row.
 export async function settle(page) {
   await page.locator('#main > *').first().waitFor();
   const quiet = () => page.evaluate(() => !document.querySelector('#main .loading')).then((noSpinner) => noSpinner && !(inflight.get(page)?.size));
@@ -89,12 +88,12 @@ export async function settle(page) {
 }
 
 // Changes the route inside the running app (no reload) and waits for the new screen.
-export async function go(page, hash) {
+export async function go(page, path) {
   await page.evaluate(() => {
     document.activeElement?.blur();
     document.querySelector('#main > *')?.setAttribute('data-stale', '');
   });
-  await page.evaluate((h) => { location.hash = h; }, hash);
+  await page.evaluate((p) => { history.pushState(null, '', p); dispatchEvent(new PopStateEvent('popstate')); }, path);
   await page.locator('#main > :not([data-stale])').first().waitFor();
   await settle(page);
 }
@@ -116,11 +115,17 @@ export async function position(page) {
   return parts.reduce((a, b) => a * 60 + b, 0);
 }
 
+// The current route: '/songs' (an old '#/songs' that hasn't been redirected yet counts too).
+export function routeOf(page) {
+  const u = new URL(page.url());
+  return u.hash.startsWith('#/') ? u.hash.slice(1) : u.pathname + u.search;
+}
+
 export const deckTitle = (page) => page.locator('.deck__title').textContent();
 
 // Plays a song from the Songs screen by its title.
 export async function playSong(page, title) {
-  if (!page.url().includes('#/songs')) await open(page, '#/songs');
+  if (routeOf(page) !== '/songs') await open(page, '/songs');
   const row = page.locator('.tr', { has: page.locator('.tr__title', { hasText: new RegExp(`^${title}$`) }) });
   await row.locator('.tr__play').click();
   await expect(page.locator('.deck__title')).toHaveText(title);
@@ -131,10 +136,12 @@ export async function toasts(page) {
   return page.locator('.toast').allTextContents();
 }
 
-// App modules inside the page (internals; see the note at the top).
+// App modules inside the page (internals; see the note at the top). main.tsx puts them on
+// window.__tunes; `mod` looks like the module: { player }, { offline }, or the i18n module.
 export function appModule(page, name, fn, arg) {
   return page.evaluate(async ({ name, fn, arg }) => {
-    const mod = await import(`/js/${name}.js`);
+    const t = window.__tunes;
+    const mod = name === 'i18n' ? t.i18n : { [name]: t[name] };
     return new Function('mod', 'arg', `return (${fn})(mod, arg);`)(mod, arg);
   }, { name, fn: fn.toString(), arg });
 }

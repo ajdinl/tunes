@@ -7,8 +7,8 @@ import { test, expect, open, settle, sleep } from './helpers.js';
 test('choosing an app icon updates favicon, home-screen icon and manifest on every open device', async ({ device, request }) => {
   const laptop = await device();
   const phone = await device({ mobile: true });
-  await open(phone, '#/');
-  await open(laptop, '#/settings');
+  await open(phone, '/');
+  await open(laptop, '/settings');
 
   await laptop.locator('.theme-opt', { hasText: /^Vinyl$/ }).click();
   await expect(laptop.locator('.theme-opt', { hasText: /^Vinyl$/ })).toHaveAttribute('aria-pressed', 'true');

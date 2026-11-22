@@ -32,7 +32,14 @@ describe('static files and safety', () => {
     expect(home.headers.get('content-type')).toMatch(/text\/html/);
     expect(home.body).toContain('<html');
     expect((await api.get('/some/deep/link')).body).toBe(home.body);
-    expect((await api.get('/js/app.js')).headers.get('content-type')).toMatch(/javascript/);
+    expect((await api.get('/album/a%7Cb')).body).toBe(home.body);
+    // Built files from web/dist: content-hashed names, cached for good.
+    const script = /src="(\/assets\/[^"]+\.js)"/.exec(home.body)[1];
+    const js = await api.get(script);
+    expect(js.headers.get('content-type')).toMatch(/javascript/);
+    expect(js.headers.get('cache-control')).toBe('max-age=31536000, immutable');
+    expect(home.headers.get('cache-control')).toBe('no-cache');
+    expect((await api.get('/sw.js')).headers.get('content-type')).toMatch(/javascript/);
   });
 
   it('does not serve files outside public/ or the font folder', async () => {

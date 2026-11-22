@@ -5,14 +5,14 @@ import {
 
 test('switching language while music plays keeps playing and re-renders the UI', async ({ page }) => {
   await playSong(page, 'Morning Light');
-  await go(page, '#/settings');
+  await go(page, '/settings');
   const expected = { bs: 'Postavke', sr: 'Podešavanja', hr: 'Postavke', de: 'Einstellungen', tr: 'Ayarlar', en: 'Settings' };
   for (const code of [...LANGS.slice(1), 'en']) {
     const before = await position(page);
     await page.locator(`.lang-opt[lang="${code}"]`).click();
     await expect(page.locator('html')).toHaveAttribute('lang', code);
     await expect(page.locator(`.lang-opt[lang="${code}"]`)).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.nav a[href="#/settings"]')).toContainText(expected[code]);
+    await expect(page.locator('.nav a[href$="/settings"]')).toContainText(expected[code]);
     await expectPlaying(page);
     expect(await deckTitle(page)).toBe('Morning Light');
     await sleep(1200);
@@ -69,7 +69,7 @@ test('history shows a song once per day with the number of plays', async ({ page
   expect((await (await request.post('/api/history', { data: { track: song, at: at + 1000 } })).json()).counted).toBe(false);
   await request.post('/api/history', { data: { track: other, at: at - 3600000 } });
 
-  await open(page, '#/history');
+  await open(page, '/history');
   const rows = page.locator('.tr', { has: page.locator('.tr__title', { hasText: 'Low Tide' }) });
   await expect(rows).toHaveCount(1);
   await expect(rows.locator('.hist__n')).toHaveText('3×');
@@ -104,8 +104,8 @@ test('lyrics: a .lrc file next to the song, LRCLIB for an exact match, nothing f
 });
 
 test('the queue panel lists what plays next', async ({ page }) => {
-  await open(page, '#/albums');
-  await page.locator('#main a[href^="#/album/"]', { hasText: 'Blue Hours' }).first().click();
+  await open(page, '/albums');
+  await page.locator('#main a[href*="/album/"]', { hasText: 'Blue Hours' }).first().click();
   await expect(page.locator('#main h1')).toHaveText('Blue Hours');
   await page.locator('#main .tr .tr__play').first().click();
   await expectPlaying(page);
@@ -136,4 +136,22 @@ test('Media Session shows the song and handles the lock-screen buttons', async (
   await page.evaluate(() => window.__ms.nexttrack());
   await expect(page.locator('.deck__title')).not.toHaveText('Northbound');
   await expect.poll(() => page.evaluate(() => navigator.mediaSession.metadata?.title)).not.toBe('Northbound');
+});
+
+test('deleting the history and a playlist from the UI works', async ({ page, request }) => {
+  const { tracks } = await (await request.get('/api/library')).json();
+  await request.post('/api/history', { data: { track: tracks[0], at: Date.now() - 3600000 } });
+  const p = await (await request.post('/api/playlists', { data: { name: 'To delete', tracks: tracks.slice(0, 2) } })).json();
+
+  await open(page, '/history');
+  await page.locator('#main .btn', { hasText: 'Delete history' }).click();
+  await page.locator('dialog.dlg .btn--danger').click();
+  await expect(page.locator('#main .empty')).toBeVisible();
+  expect((await (await request.get('/api/state')).json()).history).toEqual([]);
+
+  await open(page, `/playlist/${p.id}`);
+  await page.locator('#main .btn', { hasText: /^Delete$/ }).click();
+  await page.locator('dialog.dlg .btn--danger').click();
+  await expect.poll(async () => (await (await request.get('/api/state')).json()).playlists.some((x) => x.id === p.id)).toBe(false);
+  await expect(page.locator('.nav a', { hasText: 'To delete' })).toHaveCount(0);
 });

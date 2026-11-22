@@ -1,6 +1,6 @@
 // Offline buffer (IndexedDB): songs ahead are downloaded, play without a connection, and
 // expire after 72 hours unless they are in the current window.
-import { test, expect, settle, expectPlaying, position, appModule, phoneURL, sleep } from './helpers.js';
+import { test, expect, settle, expectPlaying, position, appModule, phoneURL } from './helpers.js';
 
 const cachedIds = (page) => appModule(page, 'offline', async (m) => { await m.offline.ready; return [...m.offline.index.keys()]; });
 
@@ -9,9 +9,9 @@ test('songs downloaded ahead play without a connection', async ({ device, baseUR
   const album = tracks.filter((t) => t.album === 'Blue Hours').sort((a, b) => a.trackNo - b.trackNo);
   // A phone on Wi-Fi: local songs are buffered there (on the computer itself they are already on disk).
   const phone = await device({ mobile: true });
-  await phone.goto(phoneURL(baseURL, '#/albums'));
+  await phone.goto(phoneURL(baseURL, '/albums'));
   await settle(phone);
-  await phone.locator('#main a[href^="#/album/"]', { hasText: 'Blue Hours' }).first().click();
+  await phone.locator('#main a[href*="/album/"]', { hasText: 'Blue Hours' }).first().click();
   await expect(phone.locator('#main h1')).toHaveText('Blue Hours');
   await phone.locator('#main .tr .tr__play').first().click();
   await expectPlaying(phone);
@@ -28,9 +28,9 @@ test('songs downloaded ahead play without a connection', async ({ device, baseUR
   await phone.locator('.deck [aria-label^="Next"]').tap();
   await expect(phone.locator('.deck__title')).toHaveText('Slow River');
   await expectPlaying(phone);
+  // It keeps playing without the network (the start can take a moment on a busy machine).
   const t0 = await position(phone);
-  await sleep(2500);
-  expect(await position(phone)).toBeGreaterThan(t0);
+  await expect.poll(() => position(phone), { timeout: 10000 }).toBeGreaterThan(t0 + 1);
   expect(await appModule(phone, 'player', (m) => m.player.fx.src.startsWith('blob:'))).toBe(true);
 
   // A stream that fails while offline switches to the downloaded copy at the same spot.
@@ -48,7 +48,7 @@ test('songs downloaded ahead play without a connection', async ({ device, baseUR
 
 test('songs unused for 72 hours are deleted, except the current window', async ({ device, baseURL }) => {
   const phone = await device({ mobile: true });
-  await phone.goto(phoneURL(baseURL, '#/'));
+  await phone.goto(phoneURL(baseURL, '/'));
   await settle(phone);
   const r = await appModule(phone, 'offline', async (m) => {
     const { offline } = m;
@@ -73,7 +73,7 @@ test('songs unused for 72 hours are deleted, except the current window', async (
 
 test('nothing is deleted while the device is offline', async ({ device, baseURL }) => {
   const phone = await device({ mobile: true });
-  await phone.goto(phoneURL(baseURL, '#/'));
+  await phone.goto(phoneURL(baseURL, '/'));
   await settle(phone);
   await phone.context().setOffline(true);
   const kept = await appModule(phone, 'offline', async (m) => {

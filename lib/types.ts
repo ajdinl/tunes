@@ -66,6 +66,15 @@ export interface Data {
   radioStations: Record<string, Track>;
 }
 
+// What GET /api/state sends: the data without secrets (tokens masked, no phone key).
+export interface PublicSettings extends Omit<Settings, 'phone'> {
+  hasListenbrainz: boolean;
+  hasJamendo: boolean;
+  phone: undefined;
+  phoneOn: boolean;
+}
+export type PublicState = Omit<Data, 'settings'> & { settings: PublicSettings };
+
 // An Error with an HTTP status, so route handlers can throw and the server answers with it.
 export interface HttpError extends Error {
   status?: number;

@@ -23,6 +23,10 @@ npm install
 npm start
 ```
 
+`npm start` prvo napravi interfejs (oko sekunde), pa pokrene server. Treba Node.js 22.18 ili noviji.
+
+Za rad na interfejsu: `npm run dev` pokreće Vite sa automatskim osvježavanjem na `http://localhost:5173`, a zahtjeve šalje Tunes serveru koji radi uporedo (`npm start`).
+
 Za telefon: klikni **Slušaj na mobitelu** u lijevom meniju i skeniraj QR kod kamerom telefona (ista Wi-Fi mreža). Link nosi tajni ključ, pa niko drugi u mreži ne može ući. Kad isključiš pristup, stari link prestaje raditi.
 
 Van kuće: instaliraj [Tailscale](https://tailscale.com/download) na računar i telefon (isti nalog) i koristi karticu **Van kuće (Tailscale)**. Računar mora ostati upaljen.
@@ -67,7 +71,7 @@ Da izgleda kao prava aplikacija: u Safari-ju odaberi **File → Add to Dock**, a
 
 ```
 npx playwright install chromium   # jednom
-npm test                          # unit i API testovi (Vitest), pa end-to-end testovi (Playwright)
+npm test                          # provjera tipova, build, unit i API testovi (Vitest), end-to-end testovi (Playwright)
 ```
 
 Testovi pokreću vlastite servere sa generisanom muzikom i lažnim internetom, pa ne diraju tvoje podatke i rade bez interneta. Detalji (na engleskom): [tests/README.md](tests/README.md).

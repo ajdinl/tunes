@@ -62,7 +62,7 @@ Self-hosted players like Navidrome or Jellyfin are great for your own files, but
 
 ## Getting started
 
-You need [Node.js](https://nodejs.org) 22 or newer.
+You need [Node.js](https://nodejs.org) 22.18 or newer.
 
 ```bash
 git clone https://github.com/ajdinl/tunes.git
@@ -71,7 +71,7 @@ npm install
 npm start
 ```
 
-Then open <http://localhost:4545>. On macOS you can also double-click `start.command`.
+Then open <http://localhost:4545>. `npm start` builds the interface first (about a second), then starts the server. On macOS you can also double-click `start.command`.
 
 Put your music in `~/Music/Tunes`, or add other folders under **Settings**.
 
@@ -103,13 +103,17 @@ Your data lives in `data/db.json`. You can download a backup under **Settings â†
 - `lib/library.ts`: scans folders, reads tags with [music-metadata](https://github.com/Borewit/music-metadata) and watches for changes
 - `lib/sources.ts`: Audius, Internet Archive, Radio Browser, Jamendo, LRCLIB and ListenBrainz clients
 - `lib/proxy.ts`: streams audio through the local server, so the equalizer and spectrum analyzer work for every source, and reads live song titles (ICY metadata) from radio streams
-- `public/`: the interface, plain JavaScript modules with no build step
+- `web/`: the interface in React + TypeScript, built with [Vite](https://vite.dev) into `web/dist`. `web/src/lib` holds the parts without UI (player engine, offline buffer, SoundCloud adapter, router, translations); `web/src/shell` the player bar, panels and dialogs; `web/src/views` the screens
+- `lib/types.ts`: the data shapes shared by the server and the interface
+- `public/`: icons, the web app manifest and the service worker
+
+For working on the interface, `npm run dev` starts Vite with hot reload on <http://localhost:5173> and sends API requests to a running Tunes server (`npm start`).
 
 ## Tests
 
 ```
 npx playwright install chromium   # once
-npm test                          # unit and API tests (Vitest), then end-to-end tests (Playwright)
+npm test                          # type check, build, unit and API tests (Vitest), end-to-end tests (Playwright)
 ```
 
 The tests start their own servers with a generated music library and a fake internet, so they never touch your data and work offline. See [tests/README.md](tests/README.md).

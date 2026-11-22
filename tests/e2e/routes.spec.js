@@ -1,14 +1,14 @@
 // Every screen renders in every language without page errors and without stray
 // "null" / "undefined" / "NaN" text; old Bosnian addresses redirect.
-import { test, expect, open, go, settle, setLanguage, LANGS } from './helpers.js';
+import { test, expect, open, go, settle, setLanguage, routeOf, LANGS } from './helpers.js';
 import { ARCHIVE_DOC, AUDIUS_USER } from '../support/fake-net.js';
 
 const STATIC_ROUTES = [
-  '#/', '#/search', '#/search?q=river', '#/search?q=river&type=sets', '#/search?q=river&type=artists',
-  '#/discover', '#/discover?source=archive', '#/discover?source=jamendo', '#/radio',
-  '#/artists', '#/albums', '#/songs', '#/favorites', '#/history',
-  '#/smart/mix', '#/smart/most-played', '#/smart/forgotten', '#/smart/recent', '#/smart/unplayed', '#/smart/online',
-  '#/settings', `#/audius/${AUDIUS_USER.id}`, `#/archive/${ARCHIVE_DOC.identifier}`,
+  '/', '/search', '/search?q=river', '/search?q=river&type=sets', '/search?q=river&type=artists',
+  '/discover', '/discover?source=archive', '/discover?source=jamendo', '/radio',
+  '/artists', '/albums', '/songs', '/favorites', '/history',
+  '/smart/mix', '/smart/most-played', '/smart/forgotten', '/smart/recent', '/smart/unplayed', '/smart/online',
+  '/settings', `/audius/${AUDIUS_USER.id}`, `/archive/${ARCHIVE_DOC.identifier}`,
 ];
 
 function strayText() {
@@ -39,18 +39,18 @@ test.beforeAll(async ({ request }) => {
 
 for (const lang of LANGS) {
   test(`every screen renders in ${lang}`, async ({ page }) => {
-    await open(page, '#/');
+    await open(page, '/');
     await setLanguage(page, lang);
     await page.reload();
     await settle(page);
     await expect(page.locator('html')).toHaveAttribute('lang', lang);
 
     // Routes that need ids from the data: an artist, an album and the playlist.
-    await open(page, '#/artists');
-    const artist = await page.locator('#main a[href^="#/artist/"]').first().getAttribute('href');
-    await open(page, '#/albums');
-    const album = await page.locator('#main a[href^="#/album/"]').first().getAttribute('href');
-    const playlist = await page.locator('.nav a[href^="#/playlist/"]').first().getAttribute('href');
+    await open(page, '/artists');
+    const artist = await page.locator('#main a[href*="/artist/"]').first().getAttribute('href');
+    await open(page, '/albums');
+    const album = await page.locator('#main a[href*="/album/"]').first().getAttribute('href');
+    const playlist = await page.locator('.nav a[href*="/playlist/"]').first().getAttribute('href');
 
     for (const hash of [...STATIC_ROUTES, artist, album, playlist]) {
       await go(page, hash);
@@ -61,28 +61,46 @@ for (const lang of LANGS) {
   });
 }
 
-test('old Bosnian addresses redirect to the English ones', async ({ page }) => {
+test('old hash addresses (and old Bosnian ones) redirect to paths', async ({ page }) => {
   const pairs = {
-    '#/podesavanja': '#/settings', '#/pretraga?q=jazz': '#/search?q=jazz', '#/omiljene': '#/favorites',
+    '#/settings': '#/settings', '#/album/x%7Cy': '#/album/x%7Cy', '#/podesavanja': '#/settings', '#/pretraga?q=jazz': '#/search?q=jazz', '#/omiljene': '#/favorites',
     '#/istorija': '#/history', '#/izvodjaci': '#/artists', '#/albumi': '#/albums', '#/pesme': '#/songs', '#/otkrij': '#/discover',
   };
   for (const [from, to] of Object.entries(pairs)) {
     await open(page, from);
-    expect(new URL(page.url()).hash).toBe(to);
+    expect(routeOf(page)).toBe(to.slice(1));
+    expect(new URL(page.url()).hash).toBe('');
   }
 });
 
 test('online screens show results from the sources', async ({ page }) => {
-  await open(page, '#/search?q=river');
+  await open(page, '/search?q=river');
   await expect(page.locator('#main')).toContainText('Harbor Lights');
   await expect(page.locator('#main')).toContainText('Coastline FM');
   await expect(page.locator('#main')).toContainText('The Fen Lights Live at the Mill');
   // Local songs match too.
   await expect(page.locator('#main')).toContainText('Slow River');
-  await open(page, `#/archive/${ARCHIVE_DOC.identifier}`);
+  await open(page, `/archive/${ARCHIVE_DOC.identifier}`);
   await expect(page.locator('#main .tr__title')).toHaveText(['fen01 Opening Song', 'Intro']);
-  await open(page, `#/audius/${AUDIUS_USER.id}`);
+  await open(page, `/audius/${AUDIUS_USER.id}`);
   await expect(page.locator('#main h1')).toHaveText('Kaito');
-  await open(page, '#/radio');
+  await open(page, '/radio');
   await expect(page.locator('#main')).toContainText('Coastline FM');
+});
+
+test('paths load directly, and back and forward work', async ({ page }) => {
+  await open(page, '/albums');
+  await expect(page.locator('#main h1')).toHaveText('Albums');
+  await page.locator('#main a[href*="/album/"]').first().click();
+  await expect(page.locator('#main h1')).not.toHaveText('Albums');
+  expect(routeOf(page)).toMatch(/^\/album\//);
+  await page.goBack();
+  await expect(page.locator('#main h1')).toHaveText('Albums');
+  await page.goForward();
+  await expect(page.locator('#main h1')).not.toHaveText('Albums');
+  // A link in the app is handled in place, without a page load.
+  await page.evaluate(() => { window.__sameDocument = true; });
+  await page.locator('.nav a[href="/songs"]').click();
+  await expect(page.locator('#main h1')).toHaveText('Songs');
+  expect(await page.evaluate(() => window.__sameDocument)).toBe(true);
 });

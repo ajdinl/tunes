@@ -27,7 +27,7 @@ test('dial: a vertical swipe does not seek, a tap and a sideways drag do', async
 
 test('menu: opens from the button, closes on a tap outside and on Escape', async ({ device }) => {
   const phone = await device({ mobile: true });
-  await open(phone, '#/');
+  await open(phone, '/');
   const isOpen = () => phone.evaluate(() => document.body.classList.contains('nav-open'));
   await phone.locator('#navToggle').tap();
   await expect.poll(isOpen).toBe(true);
@@ -68,7 +68,7 @@ test('menu: opens from the button, closes on a tap outside and on Escape', async
 
   // Following a link closes it too.
   await phone.locator('#navToggle').tap();
-  await phone.locator('.nav a[href="#/songs"]').tap();
+  await phone.locator('.nav a[href$="/songs"]').tap();
   await expect.poll(isOpen).toBe(false);
   await expect(phone.locator('#main h1')).toBeVisible();
 });
@@ -78,7 +78,8 @@ test('iPhone: opaque status bar, safe areas, and no Web Audio graph on mobile', 
   await playSong(phone, 'Slow River');
   await expect(phone.locator('meta[name="apple-mobile-web-app-status-bar-style"]')).toHaveAttribute('content', 'black');
   await expect(phone.locator('meta[name="viewport"]')).toHaveAttribute('content', /viewport-fit=cover/);
-  const css = await (await phone.request.get('/css/app.css')).text();
+  const cssUrl = await phone.locator('link[rel="stylesheet"][href*="/assets/"]').getAttribute('href');
+  const css = await (await phone.request.get(cssUrl)).text();
   for (const side of ['top', 'bottom', 'left', 'right']) expect(css).toContain(`env(safe-area-inset-${side}`);
   // iOS stops audio that goes through Web Audio when the screen locks.
   expect(await appModule(phone, 'player', (m) => ({ mobile: m.player.mobile, graph: Boolean(m.player.ctx) }))).toEqual({ mobile: true, graph: false });

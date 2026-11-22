@@ -6,7 +6,7 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 
-import type { Data, Playlist, Settings, Track } from './types.ts';
+import type { Data, Playlist, PublicState, Track } from './types.ts';
 
 const HISTORY_LIMIT = 5000;
 
@@ -39,13 +39,6 @@ export function tildify(f: string): string {
 // App icon variants (folders in public/icons). The choice is stored here, so every device shows the same icon.
 export const ICONS = ['dial', 'night', 'vinyl', 'bars'];
 
-export interface PublicSettings extends Omit<Settings, 'phone'> {
-  hasListenbrainz: boolean;
-  hasJamendo: boolean;
-  phone: undefined;
-  phoneOn: boolean;
-}
-export type PublicState = Omit<Data, 'settings'> & { settings: PublicSettings };
 
 export interface SettingsPatch {
   folders?: unknown;

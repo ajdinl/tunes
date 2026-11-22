@@ -15,7 +15,7 @@ test.beforeEach(async ({ context }) => {
 });
 
 const calls = (page, name) => page.evaluate((n) => (window.__sc?.calls || []).filter((c) => c[0] === n), name);
-const searchFor = (page, url) => open(page, '#/search?q=' + encodeURIComponent(url));
+const searchFor = (page, url) => open(page, '/search?q=' + encodeURIComponent(url));
 
 test('a pasted track link resolves and plays, pauses, seeks and sets the volume through the widget', async ({ page }) => {
   await searchFor(page, 'Listen: https://soundcloud.com/nadia-vale/slow-river?si=xyz');

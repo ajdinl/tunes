@@ -11,7 +11,7 @@ test('handoff: the phone continues at the same second and the computer pauses', 
   await laptop.locator('.deck__ctrls').hover(); // the dial tooltip is not in the way
   await sleep(5500); // the playing device reports every 5 s
 
-  await open(phone, '#/');
+  await open(phone, '/');
   const banner = phone.locator('.handoff');
   await expect(banner).toBeVisible();
   await expect(banner.locator('.handoff__label')).toHaveText('Playing on: Computer');
