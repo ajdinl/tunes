@@ -1,5 +1,5 @@
-// Tunes: lokalni muzički server.
-// Pokretanje: node server.js   (zatim otvori http://localhost:4545)
+// Tunes: local music server.
+// Run: node server.js   (then open http://localhost:4545)
 import http from 'node:http';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
@@ -18,19 +18,19 @@ import { audius, archive, radio, jamendo, lyrics, listenbrainz } from './lib/sou
 import { proxyAudio } from './lib/proxy.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
-// DATA_DIR omogućava odvojenu kopiju podataka (npr. za demo ili testiranje).
+// DATA_DIR allows a separate copy of the data (e.g. for a demo or testing).
 const DATA = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(ROOT, 'data');
 const PUBLIC = path.join(ROOT, 'public');
 const FONTS = path.join(ROOT, 'node_modules', '@fontsource-variable', 'bricolage-grotesque');
 const PORT = Number(process.env.PORT) || 4545;
-// Podrazumevano samo ovaj računar. HOST=0.0.0.0 otvara pristup sa telefona u istoj mreži.
+// Only this computer by default. HOST=0.0.0.0 allows access from phones on the same network.
 const HOST = process.env.HOST || '127.0.0.1';
 
 const store = new Store(path.join(DATA, 'db.json'));
 for (const f of store.data.settings.folders) fs.mkdirSync(f, { recursive: true });
 const library = new Library({ dataDir: DATA, getFolders: () => store.data.settings.folders });
 
-// ------------------------------------------------------------ događaji (SSE)
+// ------------------------------------------------------------ events (SSE)
 const clients = new Set();
 function broadcast(type, data) {
   const msg = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
@@ -39,7 +39,7 @@ function broadcast(type, data) {
 library.on('changed', (d) => broadcast('library', d));
 const icyTitles = new Map();
 
-// ------------------------------------------------------------ pomoćne funkcije
+// ------------------------------------------------------------ helpers
 function json(res, code, data) {
   res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(data));
@@ -50,7 +50,7 @@ async function body(req) {
   let size = 0;
   for await (const c of req) {
     size += c.length;
-    if (size > 5e6) throw Object.assign(new Error('Zahtev je prevelik'), { status: 413 });
+    if (size > 5e6) throw Object.assign(new Error('Request too large'), { status: 413 });
     chunks.push(c);
   }
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); }
@@ -89,16 +89,16 @@ function safeJoin(base, rel) {
   return p.startsWith(base + path.sep) || p === base ? p : null;
 }
 
-// Zaštita od DNS rebinding napada: prihvatamo samo lokalne adrese.
+// Protection against DNS rebinding: only local addresses are accepted.
 function hostAllowed(req) {
   const h = (req.headers.host || '').replace(/:\d+$/, '').replace(/^\[|\]$/g, '');
   return h === 'localhost' || /^[\d.]+$/.test(h) || h.includes(':') || h.endsWith('.local') || h.endsWith('.ts.net');
 }
 
-const sanitize = (s, max = 80) => String(s || '').replace(/[\/\\:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().replace(/^\.+/, '').slice(0, max) || 'Nepoznato';
+const sanitize = (s, max = 80) => String(s || '').replace(/[\/\\:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().replace(/^\.+/, '').slice(0, max) || 'Unknown';
 const DOWNLOAD_HOSTS = /(^|\.)(archive\.org|audius\.co|jamendo\.com)$/;
 
-// ------------------------------------------------------------ rute
+// ------------------------------------------------------------ routes
 const routes = [];
 const route = (method, pattern, handler) => routes.push({ method, pattern, handler });
 
@@ -139,7 +139,7 @@ route('GET', /^\/api\/stream\/radio$/, (req, res, m, q) => {
   });
 });
 
-// Slike sa rezervnim serverima (Audius omoti), keširane u browseru.
+// Images with fallback servers (Audius covers), cached in the browser.
 route('GET', /^\/api\/img$/, async (req, res, m, q) => {
   let first;
   try { first = new URL(q.get('u') || ''); } catch { res.writeHead(400).end(); return; }
@@ -157,7 +157,7 @@ route('GET', /^\/api\/img$/, async (req, res, m, q) => {
       res.writeHead(200, { 'Content-Type': type, 'Content-Length': buf.length, 'Cache-Control': 'max-age=604800' });
       res.end(buf);
       return;
-    } catch { /* probaj sledeći */ }
+    } catch { /* try the next one */ }
   }
   res.writeHead(404, { 'Cache-Control': 'max-age=600' }).end();
 });
@@ -170,13 +170,13 @@ route('GET', /^\/api\/events$/, (req, res) => {
   req.on('close', () => { clients.delete(res); clearInterval(ping); });
 });
 
-// Pretraga svih onlajn izvora odjednom. Svaki izvor vraća svoj rezultat ili grešku.
+// Searches all online sources at once. Each source returns its own result or error.
 route('GET', /^\/api\/search$/, async (req, res, m, q) => {
   const term = (q.get('q') || '').trim();
   if (!term) return json(res, 200, {});
   const wanted = (q.get('src') || 'audius,archive,radio,jamendo').split(',');
-  // Za setove tražimo više rezultata, jer su dugi miksevi ređi od običnih pesama.
-  const many = q.get('tip') === 'setovi';
+  // Sets need more results, since long mixes are rarer than regular tracks.
+  const many = q.get('type') === 'sets';
   const jobs = {
     audius: () => audius.search(term, many ? 100 : 40),
     artists: () => audius.users(term),
@@ -189,7 +189,7 @@ route('GET', /^\/api\/search$/, async (req, res, m, q) => {
   const out = {};
   keys.forEach((k, i) => {
     const r = results[i];
-    out[k] = r.status === 'fulfilled' ? { items: r.value } : { error: r.reason?.message || 'Greška' };
+    out[k] = r.status === 'fulfilled' ? { items: r.value } : { error: r.reason?.message || 'Error' };
   });
   json(res, 200, out);
 });
@@ -219,19 +219,19 @@ route('GET', /^\/api\/lyrics$/, async (req, res, m, q) => json(res, 200, await l
 
 route('POST', /^\/api\/favorites\/toggle$/, async (req, res) => {
   const { track } = await body(req);
-  if (!track?.id) return json(res, 400, { error: 'Nedostaje pjesma' });
+  if (!track?.id) return json(res, 400, { error: 'Song is missing' });
   json(res, 200, { favorite: store.toggleFavorite(track) });
 });
 
 route('POST', /^\/api\/stations\/toggle$/, async (req, res) => {
   const { track } = await body(req);
-  if (!track?.id) return json(res, 400, { error: 'Nedostaje stanica' });
+  if (!track?.id) return json(res, 400, { error: 'Station is missing' });
   json(res, 200, { saved: store.toggleStation(track) });
 });
 
 route('POST', /^\/api\/history$/, async (req, res) => {
   const { track, at } = await body(req);
-  if (!track?.id) return json(res, 400, { error: 'Nedostaje pjesma' });
+  if (!track?.id) return json(res, 400, { error: 'Song is missing' });
   const when = Number(at) || Date.now();
   store.addHistory(track, when);
   json(res, 200, { ok: true, playCount: store.data.playCounts[track.id] });
@@ -258,7 +258,7 @@ route('POST', /^\/api\/playlists$/, async (req, res) => {
 
 route('PUT', /^\/api\/playlists\/([\w-]+)$/, async (req, res, [, id]) => {
   const p = store.updatePlaylist(id, await body(req));
-  p ? json(res, 200, p) : json(res, 404, { error: 'Plejlista ne postoji' });
+  p ? json(res, 200, p) : json(res, 404, { error: "Playlist doesn't exist" });
 });
 
 route('DELETE', /^\/api\/playlists\/([\w-]+)$/, (req, res, [, id]) => json(res, 200, { ok: store.deletePlaylist(id) }));
@@ -293,30 +293,30 @@ route('PUT', /^\/api\/settings$/, async (req, res) => {
     } catch (e) { out.listenbrainz = { valid: false, error: e.message }; }
   }
   if (JSON.stringify(store.data.settings.folders) !== oldFolders) {
-    for (const f of store.data.settings.folders) { try { fs.mkdirSync(f, { recursive: true }); } catch { /* bez dozvole */ } }
+    for (const f of store.data.settings.folders) { try { fs.mkdirSync(f, { recursive: true }); } catch { /* no permission */ } }
     library.watch();
     library.scan().catch(console.error);
   }
   json(res, 200, { ...out, state: store.publicState() });
 });
 
-// Čuva pesmu sa legalnog izvora (gde licenca dozvoljava) u lokalnu biblioteku.
+// Saves a track from a legal source (where the license allows it) to the local library.
 route('POST', /^\/api\/download$/, async (req, res) => {
   const { track } = await body(req);
-  if (!track?.download) return json(res, 400, { error: 'Ova pjesma nema dozvolu za preuzimanje' });
+  if (!track?.download) return json(res, 400, { error: "This song isn't licensed for download" });
   let u;
-  try { u = new URL(track.download); } catch { return json(res, 400, { error: 'Neispravna adresa' }); }
-  if (u.protocol !== 'https:' || !DOWNLOAD_HOSTS.test(u.hostname)) return json(res, 400, { error: 'Nepoznat izvor' });
+  try { u = new URL(track.download); } catch { return json(res, 400, { error: 'Invalid address' }); }
+  if (u.protocol !== 'https:' || !DOWNLOAD_HOSTS.test(u.hostname)) return json(res, 400, { error: 'Unknown source' });
   const folder = store.data.settings.folders[0];
   const artist = sanitize(track.albumArtist || track.artist);
-  const album = sanitize(track.album || 'Singlovi');
+  const album = sanitize(track.album || 'Singles');
   const ext = (track.ext && /^\.\w{2,5}$/.test(track.ext)) ? track.ext : '.mp3';
   const num = track.trackNo ? String(track.trackNo).padStart(2, '0') + ' ' : '';
   const dir = path.join(folder, artist, album);
   const file = path.join(dir, sanitize(num + track.title, 120) + ext);
   if (fs.existsSync(file)) return json(res, 200, { ok: true, file, existed: true });
   const r = await fetch(u, { headers: { 'User-Agent': 'Tunes/1.0' }, signal: AbortSignal.timeout(300000) });
-  if (!r.ok || !r.body) return json(res, 502, { error: 'Izvor je vratio ' + r.status });
+  if (!r.ok || !r.body) return json(res, 502, { error: 'Source returned ' + r.status });
   await fsp.mkdir(dir, { recursive: true });
   const tmp = file + '.part';
   await pipeline(Readable.fromWeb(r.body), fs.createWriteStream(tmp));
@@ -325,7 +325,7 @@ route('POST', /^\/api\/download$/, async (req, res) => {
   library.scan().catch(console.error);
 });
 
-// Rezervna kopija svih podataka (omiljene, plejliste, istorija).
+// Backup of all data (favorites, playlists, history).
 route('GET', /^\/api\/export$/, (req, res) => {
   const { settings, ...rest } = store.data;
   res.writeHead(200, {
@@ -335,9 +335,9 @@ route('GET', /^\/api\/export$/, (req, res) => {
   res.end(JSON.stringify(rest, null, 2));
 });
 
-// ------------------------------------------------------------ slušanje na mobitelu
-// Telefon dobija poseban priključak (PORT + 1) dostupan u kućnoj mreži.
-// Link u QR kodu nosi tajni ključ; bez njega niko drugi u mreži ne može ući.
+// ------------------------------------------------------------ listening on a phone
+// The phone gets its own port (PORT + 1), reachable on the home network.
+// The QR code link carries a secret key; without it nobody else on the network can get in.
 const PHONE_PORT = PORT + 1;
 let lanServer = null;
 
@@ -350,12 +350,12 @@ function lanAddresses() {
   const list = Object.entries(os.networkInterfaces())
     .flatMap(([name, ifs]) => (ifs || []).map((i) => ({ ...i, name })))
     .filter((i) => i.family === 'IPv4' && !i.internal && !i.address.startsWith('169.254.') && !isTailscaleIp(i.address));
-  // Wi-Fi (en0) prvi, pa ostali.
+  // Wi-Fi (en0) first, then the rest.
   list.sort((a, b) => (a.name === 'en0' ? -1 : 0) - (b.name === 'en0' ? -1 : 0));
   return list.map((i) => i.address);
 }
 
-// Tailscale: privatna mreža između tvojih uređaja, radi i van kuće.
+// Tailscale: a private network between your devices that also works away from home.
 const TAILSCALE_CLI = ['/Applications/Tailscale.app/Contents/MacOS/Tailscale', 'tailscale'];
 function tailscaleInfo() {
   return new Promise((resolve) => {
@@ -411,7 +411,16 @@ function startPhone() {
       }
       if (!token || cookie !== token) {
         res.writeHead(401, { 'Content-Type': 'text/html; charset=utf-8' })
-          .end('<meta name="viewport" content="width=device-width"><body style="font:17px system-ui;background:#000;color:#eee;padding:24px">Skeniraj QR kod u Tunes na računaru (dugme „Slušaj na mobitelu”).</body>');
+          .end('<meta name="viewport" content="width=device-width"><body style="font:17px system-ui;background:#000;color:#eee;padding:24px">Scan the QR code in Tunes on your computer (the “Listen on phone” button).</body>');
+        return;
+      }
+      // Manifest for "Add to Home Screen": the icon opens the link with the key, because
+      // a home screen app (iPhone) does not share cookies with Safari.
+      if (url.pathname === '/manifest.webmanifest') {
+        const m = JSON.parse(fs.readFileSync(path.join(PUBLIC, 'manifest.webmanifest'), 'utf8'));
+        m.start_url = `/?k=${token}`;
+        m.id = '/';
+        res.writeHead(200, { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'no-store' }).end(JSON.stringify(m));
         return;
       }
       handle(req, res, { lan: true });
@@ -427,15 +436,21 @@ function stopPhone() {
 
 route('GET', /^\/api\/phone$/, async (req, res) => json(res, 200, await phoneState()));
 
+// Links the phone can open (only available to a device that already has the key).
+route('GET', /^\/api\/phone\/links$/, async (req, res) => {
+  const st = await phoneState();
+  json(res, 200, { wifi: st.wifi.url, tailscale: st.tailscale.url, tailscaleRunning: st.tailscale.running });
+});
+
 route('POST', /^\/api\/phone$/, async (req, res) => {
   const { enabled } = await body(req);
   const s = store.data.settings;
   if (enabled) {
     s.phone = { enabled: true, token: s.phone?.token || crypto.randomBytes(12).toString('base64url') };
     try { await startPhone(); }
-    catch (e) { s.phone.enabled = false; store.save(); return json(res, 500, { error: `Ne mogu otvoriti priključak ${PHONE_PORT}: ${e.code || e.message}` }); }
+    catch (e) { s.phone.enabled = false; store.save(); return json(res, 500, { error: `Cannot open port ${PHONE_PORT}: ${e.code || e.message}` }); }
   } else {
-    // Novi ključ pri isključivanju: stari link sa telefona prestaje raditi.
+    // New key on disable, so the old link on the phone stops working.
     s.phone = { enabled: false, token: crypto.randomBytes(12).toString('base64url') };
     stopPhone();
   }
@@ -443,16 +458,16 @@ route('POST', /^\/api\/phone$/, async (req, res) => {
   json(res, 200, await phoneState());
 });
 
-// ------------------------------------------------------------ nastavak slušanja na drugom uređaju
-// Uređaj koji svira javlja šta svira i na kojoj je minuti. Drugi uređaj može
-// preuzeti: nastavlja od iste sekunde, a prvi se pauzira.
+// ------------------------------------------------------------ continue listening on another device
+// The playing device reports what is playing and at what position. Another device can
+// take over: it continues from the same second and the first one pauses.
 let session = null;
 
 route('GET', /^\/api\/session$/, (req, res) => json(res, 200, { session }));
 
 route('POST', /^\/api\/session$/, async (req, res) => {
   const b = await body(req);
-  if (!b.deviceId || !b.track?.id) return json(res, 400, { error: 'Nedostaje pjesma' });
+  if (!b.deviceId || !b.track?.id) return json(res, 400, { error: 'Song is missing' });
   const changed = !session || session.deviceId !== b.deviceId || session.track.id !== b.track.id || session.playing !== Boolean(b.playing);
   session = {
     deviceId: String(b.deviceId).slice(0, 64),
@@ -466,7 +481,7 @@ route('POST', /^\/api\/session$/, async (req, res) => {
     at: Date.now(),
   };
   json(res, 200, { ok: true });
-  // Ostale uređaje obavještavamo samo kad se nešto bitno promijeni (ili svakih 15 s).
+  // Other devices are only notified when something important changes (or every 15 s).
   if (changed || !session.lastBroadcast || Date.now() - session.lastBroadcast > 15000) {
     session.lastBroadcast = Date.now();
     const { queue, ...summary } = session;
@@ -482,23 +497,23 @@ route('POST', /^\/api\/session\/takeover$/, async (req, res) => {
 
 // ------------------------------------------------------------ server
 async function handle(req, res, { lan = false } = {}) {
-  if (!hostAllowed(req)) { res.writeHead(403).end('Zabranjen host'); return; }
+  if (!hostAllowed(req)) { res.writeHead(403).end('Host not allowed'); return; }
   const url = new URL(req.url, 'http://x');
   const p = decodeURIComponent(url.pathname);
 
   try {
-    if (lan && p.startsWith('/api/phone')) return json(res, 403, { error: 'Pristup mobitelu se uključuje sa računara' });
+    if (lan && p === '/api/phone') return json(res, 403, { error: 'Phone access is turned on from the computer' });
     if (p.startsWith('/api/')) {
-      // Izmene prihvatamo samo kao JSON: tuđi sajtovi ne mogu da ih pošalju bez dozvole.
+      // Changes are only accepted as JSON, which other sites cannot send without permission (CORS).
       if (!['GET', 'HEAD'].includes(req.method) && !(req.headers['content-type'] || '').startsWith('application/json')) {
-        return json(res, 415, { error: 'Očekujem JSON' });
+        return json(res, 415, { error: 'Expected JSON' });
       }
       const method = req.method === 'HEAD' ? 'GET' : req.method;
       for (const r of routes) {
         const m = r.method === method && r.pattern.exec(p);
         if (m) return await r.handler(req, res, m, url.searchParams);
       }
-      return json(res, 404, { error: 'Nepoznata ruta' });
+      return json(res, 404, { error: 'Unknown route' });
     }
 
     if (p.startsWith('/fonts/')) {
@@ -520,15 +535,15 @@ const server = http.createServer((req, res) => handle(req, res));
 
 server.listen(PORT, HOST, () => {
   const local = `http://localhost:${PORT}`;
-  console.log(`\n  Tunes radi na ${local}`);
+  console.log(`\n  Tunes is running at ${local}`);
   if (HOST === '0.0.0.0') {
     const ips = Object.values(os.networkInterfaces()).flat().filter((i) => i && i.family === 'IPv4' && !i.internal);
-    for (const i of ips) console.log(`  Sa telefona:  http://${i.address}:${PORT}`);
+    for (const i of ips) console.log(`  From a phone: http://${i.address}:${PORT}`);
   }
-  console.log(`  Biblioteka:   ${store.data.settings.folders.join(', ')}\n`);
+  console.log(`  Library:      ${store.data.settings.folders.join(', ')}\n`);
   if (store.data.settings.phone?.enabled) {
-    startPhone().then(() => console.log(`  Mobitel:      uključen (port ${PHONE_PORT})\n`))
-      .catch((e) => console.warn('Mobitel: ne mogu otvoriti port', PHONE_PORT, e.code));
+    startPhone().then(() => console.log(`  Phone access: on (port ${PHONE_PORT})\n`))
+      .catch((e) => console.warn('Phone access: cannot open port', PHONE_PORT, e.code));
   }
   library.scan().catch(console.error).finally(() => library.watch());
 });

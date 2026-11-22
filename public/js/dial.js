@@ -1,5 +1,5 @@
-// Skala risivera: spektar zvuka uživo, podeoci vremena i kazaljka.
-// Isti crtač se koristi u traci na dnu i na ekranu "Sada svira".
+// Receiver dial: live audio spectrum, time ticks and the needle.
+// The same renderer is used in the bottom bar and on the "Now Playing" screen.
 import { player } from './player.js';
 
 const AMBER = [255, 181, 71];
@@ -30,10 +30,17 @@ export class Dial {
     this.hoverX = null;
     this.font = getComputedStyle(document.documentElement).getPropertyValue('--font').trim() || 'sans-serif';
     this.resize = this.resize.bind(this);
-    new ResizeObserver(this.resize).observe(canvas);
+    this.ro = new ResizeObserver(this.resize);
+    this.ro.observe(canvas);
     this.resize();
     dials.add(this);
     if (!raf) raf = requestAnimationFrame(loop);
+  }
+
+  // Stop drawing (used when the dial is rebuilt, e.g. after a language change).
+  destroy() {
+    dials.delete(this);
+    this.ro.disconnect();
   }
 
   resize() {
@@ -61,7 +68,7 @@ export class Dial {
     const pad = this.big ? 18 : 12;
     const x0 = pad, x1 = w - pad, span = x1 - x0;
 
-    // ---- spektar
+    // ---- spectrum
     const gap = this.big ? 3 : 2;
     const bw = this.big ? 5 : 3;
     const n = Math.max(8, Math.min(256, Math.floor(span / (bw + gap))));
@@ -76,7 +83,7 @@ export class Dial {
         let v = 0;
         for (let b = prevBin; b <= bin; b++) v = Math.max(v, freq[b]);
         prevBin = bin + 1;
-        // Viši tonovi imaju manje energije: blago ih podižemo da skala izgleda ravnomerno.
+        // Higher frequencies carry less energy, so they get a slight boost to keep the dial looking even.
         const tilt = 1 + (i / n) * 0.35;
         const target = Math.min(1, Math.pow(v / 255, 1.5) * tilt);
         this.bars[i] = target > this.bars[i] ? target : this.bars[i] * 0.9;
@@ -102,7 +109,7 @@ export class Dial {
     g.fill(dim);
     g.restore();
 
-    // ---- podeoci i oznake
+    // ---- ticks and labels
     g.strokeStyle = `rgba(${AMBER},0.55)`;
     g.fillStyle = `rgba(${AMBER},0.7)`;
     g.lineWidth = 1;
@@ -111,7 +118,7 @@ export class Dial {
     const tickY = baseY + 3;
     g.beginPath();
     if (live) {
-      // Radio: FM skala 87.5 – 108 MHz, kao na pravom risiveru.
+      // Radio: FM scale 87.5 – 108 MHz, like on a real receiver.
       for (let mhz = 88; mhz <= 108; mhz += 0.5) {
         const x = x0 + span * ((mhz - 87.5) / 20.5);
         const major = mhz % 2 === 0;
@@ -143,7 +150,7 @@ export class Dial {
       g.stroke();
     }
 
-    // ---- pozicija pod mišem
+    // ---- position under the mouse
     if (this.hoverX !== null && !live && dur > 0) {
       g.strokeStyle = 'rgba(236,230,214,0.45)';
       g.setLineDash([2, 3]);
@@ -154,7 +161,7 @@ export class Dial {
       g.setLineDash([]);
     }
 
-    // ---- kazaljka
+    // ---- needle
     if (t) {
       const nx = Math.round(needleX) + 0.5;
       g.save();
@@ -170,7 +177,7 @@ export class Dial {
     }
   }
 
-  // Pretvara poziciju miša u vreme pesme.
+  // Converts the mouse position to a time in the track.
   timeAt(clientX) {
     const r = this.c.getBoundingClientRect();
     const pad = this.big ? 18 : 12;
@@ -195,7 +202,7 @@ function label(s) {
   return `${m}:${String(r).padStart(2, '0')}`;
 }
 
-// Svaka stanica dobija svoju "frekvenciju" na skali.
+// Each station gets its own "frequency" on the dial.
 function stationPos(t) {
   let x = 0;
   for (const ch of t?.id || '') x = (x * 31 + ch.charCodeAt(0)) >>> 0;

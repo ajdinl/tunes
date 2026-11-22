@@ -33,12 +33,14 @@ Da izgleda kao prava aplikacija: u Safari-ju odaberi **File → Add to Dock**, a
 
 ## Gdje je šta
 
-- Muzika: `~/Music/Biblioteka` (u Postavkama možeš dodati još foldera). Nove pjesme se pojave same.
+- Muzika: `~/Music/Tunes` (u Postavkama možeš dodati još foldera). Nove pjesme se pojave same.
 - Podaci (omiljene, plejliste, historija): `data/db.json`. Rezervna kopija: Postavke → Preuzmi kopiju.
 
 ## Mogućnosti
 
-- Jezik: bosanski ili engleski (Postavke)
+- Jezik: engleski ili bosanski (Postavke), mijenja se bez prekidanja muzike
+- Na telefonu: **Dodaj na početni ekran** (iPhone i Android), uz uputstvo i za Tailscale verziju
+- Offline buffer: trenutna i sljedeće pjesme se skidaju na telefon, pa muzika svira i kad nestane interneta
 - Nastavak slušanja na drugom uređaju od iste sekunde (laptop → mobitel i obrnuto)
 - Slušanje na mobitelu kod kuće (Wi-Fi) i van kuće (Tailscale), preko QR koda
 - Tema: crna ili noćni indigo (Postavke)

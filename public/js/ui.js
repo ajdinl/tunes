@@ -1,4 +1,4 @@
-// Male pomoćne funkcije za pravljenje interfejsa bez frameworka.
+// Small helpers for building the UI without a framework.
 import { tr, plural, locale } from './i18n.js';
 
 export { tr, plural };
@@ -32,7 +32,7 @@ function append(el, children) {
   }
 }
 
-// ---------------------------------------------------------------- ikone
+// ---------------------------------------------------------------- icons
 const P = {
   play: '<path d="M7 4.5v15l12.5-7.5z" fill="currentColor" stroke="none"/>',
   pause: '<path d="M7 4.5h3.5v15H7zM13.5 4.5H17v15h-3.5z" fill="currentColor" stroke="none"/>',
@@ -87,7 +87,7 @@ export function iconBtn(name, label, onClick, { size = 20, ...extra } = {}) {
   return h('button.ibtn', { type: 'button', title: label, 'aria-label': label, onclick: onClick, ...extra }, icon(name, size));
 }
 
-// ---------------------------------------------------------------- formatiranje
+// ---------------------------------------------------------------- formatting
 export function fmtTime(s) {
   if (!Number.isFinite(s) || s < 0) return '–:––';
   s = Math.floor(s);
@@ -110,13 +110,13 @@ export function relDay(ts) {
   const d = new Date(ts);
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const diff = Math.round((today - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
-  if (diff === 0) return tr('Danas');
-  if (diff === 1) return tr('Jučer');
+  if (diff === 0) return tr('Today');
+  if (diff === 1) return tr('Yesterday');
   if (diff < 7) return d.toLocaleDateString(locale(), { weekday: 'long' }).replace(/^./, (c) => c.toUpperCase());
   return d.toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: d.getFullYear() === today.getFullYear() ? undefined : 'numeric' });
 }
 
-// Set ili miks: dugi snimci (20+ min) ili naslovi tipa "DJ set", "mixtape", "Boiler Room".
+// Set or mix: long recordings (20+ min) or titles like "DJ set", "mixtape", "Boiler Room".
 const SET_WORDS = /\b(dj|live|full|mix|guest)[\s-]?set\b|\bset\s?#?\d|\bmixtape\b|\bmegamix\b|\bboiler room\b|\bessential mix\b|\bb2b\b|\bpodcast\b|\bepisode\b|\bradio show\b|\bcontinuous mix\b/i;
 const TRACK_MIX = /\b(original|extended|radio|club|dub|vip|instrumental|edit|re|remix)[\s-]?mix\b/i;
 export function isSet(x) {
@@ -128,7 +128,7 @@ export function isSet(x) {
 }
 
 export const SOURCES = {
-  local: { name: tr('Na računaru'), short: tr('Lokalno') },
+  local: { name: 'On this computer', short: 'Local' },
   audius: { name: 'Audius', short: 'Audius' },
   archive: { name: 'Internet Archive', short: 'Archive' },
   radio: { name: 'Radio', short: 'Radio' },
@@ -137,7 +137,7 @@ export const SOURCES = {
 
 export function sourceTag(src) {
   const s = SOURCES[src] || { short: src };
-  return h('span.src', { class: 'src--' + src, title: s.name }, s.short);
+  return h('span.src', { class: 'src--' + src, title: tr(s.name) }, tr(s.short));
 }
 
 export function norm(s) {
@@ -159,7 +159,7 @@ export function shuffleArray(a) {
   return arr;
 }
 
-// ---------------------------------------------------------------- omot
+// ---------------------------------------------------------------- cover
 export function cover(src, label = '', cls = '') {
   const box = h('div.cv', { class: cls });
   const initial = (label || '?').trim().charAt(0).toUpperCase();
@@ -172,7 +172,7 @@ export function cover(src, label = '', cls = '') {
   return box;
 }
 
-// ---------------------------------------------------------------- obaveštenja
+// ---------------------------------------------------------------- toasts
 export function toast(msg, { action, onAction, error = false, timeout = 3500 } = {}) {
   const box = document.getElementById('toasts');
   const t = h('div.toast', { class: error ? 'toast--error' : '', role: error ? 'alert' : 'status' }, h('span', {}, msg));
@@ -181,7 +181,7 @@ export function toast(msg, { action, onAction, error = false, timeout = 3500 } =
   setTimeout(() => { t.classList.add('is-out'); setTimeout(() => t.remove(), 250); }, timeout);
 }
 
-// ---------------------------------------------------------------- kontekstni meni
+// ---------------------------------------------------------------- context menu
 let menuEl = null;
 export function closeMenu() {
   if (menuEl) { menuEl.remove(); menuEl = null; }
@@ -225,8 +225,8 @@ document.addEventListener('pointerdown', (e) => { if (menuEl && !menuEl.contains
 window.addEventListener('blur', closeMenu);
 window.addEventListener('resize', closeMenu);
 
-// ---------------------------------------------------------------- dijalog za unos
-export function ask(title, { value = '', placeholder = '', confirm = tr('Sačuvaj'), danger = false, input = true } = {}) {
+// ---------------------------------------------------------------- input dialog
+export function ask(title, { value = '', placeholder = '', confirm = tr('Save'), danger = false, input = true } = {}) {
   return new Promise((resolve) => {
     const field = input ? h('input.field', { type: 'text', value, placeholder, 'aria-label': title }) : null;
     const dlg = h('dialog.dlg', {},
@@ -234,7 +234,7 @@ export function ask(title, { value = '', placeholder = '', confirm = tr('Sačuva
         h('h2.dlg__title', {}, title),
         field,
         h('div.dlg__actions', {},
-          h('button.btn.btn--ghost', { type: 'button', onclick: () => dlg.close('') }, tr('Otkaži')),
+          h('button.btn.btn--ghost', { type: 'button', onclick: () => dlg.close('') }, tr('Cancel')),
           h('button.btn', { class: danger ? 'btn--danger' : 'btn--primary', value: 'ok' }, confirm))));
     dlg.addEventListener('close', () => {
       const ok = dlg.returnValue === 'ok';

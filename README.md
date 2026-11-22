@@ -2,7 +2,7 @@
 
 **A self-hosted music player with no subscription.** It combines the music on your computer with free, legal sources in one interface: independent artists, live concert archives, internet radio and synced lyrics.
 
-The interface is available in Bosnian and English.
+The interface is in English and Bosnian (it picks Bosnian automatically for bs/hr/sr browsers, and you can switch any time without stopping the music).
 
 [Bosanski README](README.bs.md)
 
@@ -46,7 +46,9 @@ Self-hosted players like Navidrome or Jellyfin are great for your own files, but
 - **Away from home through [Tailscale](https://tailscale.com):** a second QR code that works anywhere your phone has internet
 - **Continue on another device:** start a set on your laptop, tap *Continue here* on your phone and it picks up at the same second while the laptop pauses
 - Media keys and Control Center on macOS, installable as an app (PWA), keyboard shortcuts
-- Bosnian and English UI, black and "night indigo" themes
+- English and Bosnian UI, black and "night indigo" themes
+- **Add to Home Screen** on iPhone and Android, with a guide that also sets up the Tailscale version
+- **Offline buffer:** the current and next songs are downloaded to the phone, so music keeps playing if the connection drops
 
 | Now playing with synced lyrics | Equalizer |
 |---|---|
@@ -69,13 +71,13 @@ npm start
 
 Then open <http://localhost:4545>. On macOS you can also double-click `start.command`.
 
-Put your music in `~/Music/Biblioteka`, or add other folders under **Settings**.
+Put your music in `~/Music/Tunes`, or add other folders under **Settings**.
 
 ### On your phone
 
 Click **Listen on phone** in the left menu and scan the QR code with your phone camera. The phone must be on the same Wi-Fi network. Turning access off invalidates the old link.
 
-To listen away from home, install [Tailscale](https://tailscale.com/download) on the computer and the phone (same account) and use the **Away from home (Tailscale)** tab. The computer has to stay on.
+On the phone, **Add to Home Screen** in the menu explains how to install Tunes as an app. To listen away from home, install [Tailscale](https://tailscale.com/download) on the computer and the phone (same account) and use the **Away from home (Tailscale)** tab. The computer has to stay on.
 
 When something is playing on one device, the other one shows a **Continue here** bar. Tap it to pick up the same song at the same second.
 

@@ -1,30 +1,41 @@
-// Jezik interfejsa: bosanski (osnovni) ili engleski.
-// Tekstovi u kodu su na bosanskom; t() ih prevodi kad je odabran engleski.
-import { EN } from './i18n-en.js';
+// Interface language: English (default) or Bosnian.
+// Strings in the code are English; tr() translates them when Bosnian is selected.
+import { BS } from './i18n-bs.js';
 
-const KEY = 'sl.lang';
+const KEY = 'tunes.lang';
 
-export const lang = (() => {
-  try { return JSON.parse(localStorage.getItem(KEY)) === 'en' ? 'en' : 'bs'; } catch { return 'bs'; }
-})();
+function detect() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY));
+    if (saved === 'en' || saved === 'bs') return saved;
+  } catch { /* no saved choice */ }
+  // First visit: Bosnian for bs/hr/sr/sh browsers, English for everyone else.
+  return /^(bs|hr|sr|sh)\b/i.test(navigator.language || '') ? 'bs' : 'en';
+}
 
-document.documentElement.lang = lang === 'en' ? 'en' : 'bs';
+export let lang = detect();
 
+document.documentElement.lang = lang;
+
+// Switches language in place; the app re-renders and playback keeps going.
 export function setLang(l) {
-  try { localStorage.setItem(KEY, JSON.stringify(l)); } catch { /* */ }
-  location.reload();
+  if (l === lang) return;
+  lang = l;
+  try { localStorage.setItem(KEY, JSON.stringify(l)); } catch { /* storage full or blocked */ }
+  document.documentElement.lang = l;
+  window.dispatchEvent(new CustomEvent('langchange', { detail: l }));
 }
 
 export function tr(text, vars) {
-  let out = lang === 'en' && Object.hasOwn(EN, text) ? EN[text] : text;
+  let out = lang === 'bs' && Object.hasOwn(BS, text) ? BS[text] : text;
   if (vars) out = out.replace(/\{(\w+)\}/g, (m, k) => (vars[k] ?? m));
   return out;
 }
 
-// Ako browser nema bosanski format, hrvatski ima ista pravila (24.007, 22. novembra).
+// If the browser has no Bosnian number/date format, Croatian uses the same rules.
 export const locale = () => (lang === 'en' ? 'en-GB' : ['bs-BA', 'hr-HR']);
 
-// Množina: bosanski ima tri oblika (1 pjesma, 2 pjesme, 5 pjesama), engleski dva.
+// Plurals: Bosnian has three forms (1 pjesma, 2 pjesme, 5 pjesama), English two.
 export function plural(n, bs, en) {
   const num = n.toLocaleString(locale());
   if (lang === 'en') return `${num} ${n === 1 ? en[0] : en[1]}`;

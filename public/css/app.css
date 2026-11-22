@@ -1,4 +1,4 @@
-/* Tunes: noćni indigo risiver sa osvetljenom ćilibarnom skalom. */
+/* Tunes: a night-indigo receiver with a backlit amber dial. */
 
 :root {
   --font: 'Bricolage Grotesque Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -36,8 +36,8 @@
   color-scheme: dark;
 }
 
-/* Crna tema: prava crna pozadina (štedi bateriju na OLED ekranima). */
-:root[data-theme='crna'] {
+/* Black theme: true black background (saves battery on OLED screens). */
+:root[data-theme='black'] {
   --bg: #000000;
   --bg-2: #0e0e10;
   --bg-3: #1a1a1d;
@@ -85,7 +85,7 @@ code, kbd {
 .pad { padding: 4px 0 12px; }
 .ic { display: inline-flex; flex: none; }
 
-/* ------------------------------------------------------------ raspored */
+/* ------------------------------------------------------------ layout */
 .app {
   display: grid;
   grid-template-columns: var(--side) minmax(0, 1fr) auto;
@@ -98,7 +98,7 @@ code, kbd {
 .panel { grid-column: 3; grid-row: 1; }
 .deck { grid-column: 1 / -1; grid-row: 2; }
 
-/* ------------------------------------------------------------ bočni meni */
+/* ------------------------------------------------------------ sidebar */
 .side {
   display: flex;
   flex-direction: column;
@@ -146,7 +146,7 @@ code, kbd {
 .nav__hint { margin: 6px 10px; color: var(--faint); font-size: 13px; }
 .nav--foot { border-top: 1px solid var(--line); padding-top: 10px; }
 
-/* ------------------------------------------------------------ dugmad i polja */
+/* ------------------------------------------------------------ buttons and inputs */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -280,7 +280,7 @@ label.btn { cursor: pointer; }
 .switch[aria-checked='true'] { background: var(--amber); }
 .switch[aria-checked='true'] .switch__knob { transform: translateX(18px); background: var(--amber-ink); }
 
-/* ------------------------------------------------------------ prikazi */
+/* ------------------------------------------------------------ views */
 .view { padding: 8px 40px 64px; max-width: 1480px; }
 .view--narrow { max-width: 820px; }
 .hd { display: flex; align-items: flex-end; gap: 28px; padding: 40px 0 28px; }
@@ -333,7 +333,7 @@ label.btn { cursor: pointer; }
 .err { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px; border-left: 3px solid var(--danger); background: rgba(255, 138, 122, 0.08); border-radius: 0 var(--r) var(--r) 0; }
 .err p { margin: 0; }
 
-/* ------------------------------------------------------------ omoti */
+/* ------------------------------------------------------------ covers */
 .cv { position: relative; aspect-ratio: 1; overflow: hidden; border-radius: var(--r-sm); background: var(--bg-3); }
 .cv img { width: 100%; height: 100%; object-fit: cover; }
 .cv--empty {
@@ -355,7 +355,7 @@ label.btn { cursor: pointer; }
 .cv--collage { display: grid; grid-template-columns: 1fr 1fr; }
 .cv--collage img { aspect-ratio: 1; }
 
-/* ------------------------------------------------------------ lista pesama */
+/* ------------------------------------------------------------ track list */
 .tl { --cols: 44px 40px minmax(0, 1.5fr) minmax(0, 1fr) 84px 34px 52px 34px; }
 .tl--noalbum { --cols: 44px 40px minmax(0, 1fr) 84px 34px 52px 34px; }
 .tl--nocover { --cols: 44px minmax(0, 1.5fr) minmax(0, 1fr) 84px 34px 52px 34px; }
@@ -436,7 +436,7 @@ body.is-playing .tr.is-playing .tr__num::before { animation: bars 0.9s ease-in-o
 .src--radio { --c: var(--c-radio); }
 .src--jamendo { --c: var(--c-jamendo); }
 
-/* ------------------------------------------------------------ mreža */
+/* ------------------------------------------------------------ grid */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 24px 20px; }
 .tile { position: relative; display: flex; flex-direction: column; min-width: 0; }
 .tile__link { display: block; border-radius: var(--r); }
@@ -455,7 +455,7 @@ body.is-playing .tr.is-playing .tr__num::before { animation: bars 0.9s ease-in-o
 .tile__title:hover { text-decoration: underline; }
 .tile__sub { color: var(--muted); font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tile { container-type: inline-size; }
-/* Dugme Play leži u donjem desnom uglu omota (omot je kvadrat širine kartice). */
+/* The Play button sits in the bottom-right corner of the cover (the cover is a square as wide as the card). */
 .tile__play {
   position: absolute;
   top: calc(100cqi - 54px);
@@ -493,7 +493,7 @@ body.is-playing .tr.is-playing .tr__num::before { animation: bars 0.9s ease-in-o
 .station__save:hover { color: var(--text); background: var(--bg-3); }
 .station__save.is-on { color: var(--amber); }
 
-/* ------------------------------------------------------------ pretraga */
+/* ------------------------------------------------------------ search */
 .searchbar {
   position: sticky;
   top: 0;
@@ -524,7 +524,7 @@ body.is-playing .tr.is-playing .tr__num::before { animation: bars 0.9s ease-in-o
 .hints { padding-top: 16px; }
 .hints .muted { margin: 0 0 10px; }
 
-/* ------------------------------------------------------------ istorija */
+/* ------------------------------------------------------------ history */
 .rank { list-style: none; margin: 0; padding: 0; max-width: 640px; }
 .rank__item { display: grid; grid-template-columns: minmax(120px, 220px) 1fr 70px; align-items: center; gap: 14px; padding: 6px 0; }
 .rank__name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
@@ -533,7 +533,7 @@ a.rank__name:hover { text-decoration: underline; }
 .rank__bar::after { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--w); background: var(--amber); border-radius: 3px; }
 .rank__n { color: var(--muted); font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
 
-/* ------------------------------------------------------------ podešavanja */
+/* ------------------------------------------------------------ settings */
 .form { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
 .form > p { margin: 0; max-width: 68ch; }
 .form > p code { white-space: nowrap; }
@@ -570,7 +570,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .missing li { display: flex; gap: 12px; padding: 4px 0; border-bottom: 1px solid var(--bg-3); }
 .missing li span { flex: 1; color: var(--text); }
 
-/* ------------------------------------------------------------ player traka */
+/* ------------------------------------------------------------ player bar */
 .deck {
   display: grid;
   grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) minmax(220px, 300px);
@@ -621,7 +621,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .deck__time { min-width: 52px; flex: none; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .deck__time--end { text-align: left; }
 
-/* Skala: topao ćilibar iza stakla, kao na starom risiveru. */
+/* Dial: warm amber behind glass, like on an old receiver. */
 .dial {
   position: relative;
   flex: 1;
@@ -681,7 +681,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .vol::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 50%; background: var(--text); }
 .vol:hover::-webkit-slider-runnable-track { background: linear-gradient(90deg, var(--amber) var(--v), var(--bg-4) var(--v)); }
 
-/* ------------------------------------------------------------ bočni panel */
+/* ------------------------------------------------------------ side panel */
 .panel {
   width: var(--panel);
   display: flex;
@@ -711,7 +711,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .qr .ibtn { width: 30px; height: 30px; opacity: 0; }
 .qr:hover .ibtn, .qr:focus-within .ibtn { opacity: 1; }
 
-/* ------------------------------------------------------------ tekst pesme */
+/* ------------------------------------------------------------ lyrics */
 .lyr { flex: 1; overflow-y: auto; padding: 16px 18px 40vh; scrollbar-width: thin; }
 .lyr__msg { color: var(--muted); }
 .lyr__line {
@@ -737,7 +737,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .lyr--big .lyr__line { font-size: clamp(22px, 2.4vw, 34px); font-weight: 720; font-stretch: 80%; letter-spacing: -0.01em; padding: 8px 0; }
 .lyr--big .lyr__plain { font-size: 20px; }
 
-/* ------------------------------------------------------------ sada svira */
+/* ------------------------------------------------------------ now playing */
 .now {
   position: fixed;
   inset: 0;
@@ -775,7 +775,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .deck__ctrls--big { gap: 14px; }
 .play--big { width: 60px; height: 60px; }
 
-/* ------------------------------------------------------------ ekvalizer */
+/* ------------------------------------------------------------ equalizer */
 .eq {
   position: fixed;
   right: 16px;
@@ -821,7 +821,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .eq__range:disabled { cursor: default; }
 .eq__note { margin: 10px 0 0; color: var(--muted); font-size: 13px; }
 
-/* ------------------------------------------------------------ meni, obaveštenja, dijalog */
+/* ------------------------------------------------------------ menu, toasts, dialog */
 .menu {
   position: fixed;
   z-index: 60;
@@ -887,6 +887,9 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
   .handoff__cv { width: 38px; }
   .handoff .btn { padding: 0 12px; }
 }
+.install__h { margin: 6px 0 0; font-size: 16px; font-stretch: 88%; }
+.install__ts { display: flex; flex-direction: column; gap: 10px; }
+.install__ts .btn { align-self: flex-start; }
 .phone__tabs { align-self: stretch; border-bottom: 1px solid var(--line); }
 .toasts { position: fixed; left: 50%; bottom: 118px; z-index: 70; display: flex; flex-direction: column; align-items: center; gap: 8px; transform: translateX(-50%); pointer-events: none; }
 .toast {
@@ -914,7 +917,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .dlg__title { margin: 0; font-size: 20px; font-stretch: 88%; }
 .dlg__actions { display: flex; justify-content: flex-end; gap: 8px; }
 
-/* ------------------------------------------------------------ manji ekrani */
+/* ------------------------------------------------------------ smaller screens */
 @media (max-width: 1240px) {
   .deck { grid-template-columns: minmax(180px, 240px) minmax(0, 1fr) auto; gap: 16px; }
   .vol { width: 70px; }

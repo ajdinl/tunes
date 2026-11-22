@@ -1,47 +1,63 @@
 <!doctype html>
-<html lang="sr-Latn">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Tunes</title>
-  <meta name="description" content="Lični muzički player: tvoja biblioteka, internet radio, Audius i Internet Archive na jednom mestu.">
+  <meta name="description" content="Self-hosted music player: your library, internet radio, Audius and Internet Archive in one place.">
   <meta name="theme-color" content="#000000">
   <script>
-    // Tema se postavlja pre crtanja stranice, da ne bi bljesnula pogrešna boja.
+    // Runs before the page paints, so the right theme shows without a flash.
     (function () {
-      var t = 'crna';
-      try { t = JSON.parse(localStorage.getItem('sl.theme')) || 'crna'; } catch (e) {}
+      try {
+        // Move settings from the old "sl." prefix (Slušaonica) to "tunes.".
+        for (var i = localStorage.length - 1; i >= 0; i--) {
+          var k = localStorage.key(i);
+          if (k && k.indexOf('sl.') === 0) {
+            var nk = 'tunes.' + k.slice(3);
+            if (localStorage.getItem(nk) === null) localStorage.setItem(nk, localStorage.getItem(k));
+            localStorage.removeItem(k);
+          }
+        }
+      } catch (e) {}
+      var t = 'black';
+      try { t = JSON.parse(localStorage.getItem('tunes.theme')) || 'black'; } catch (e) {}
+      if (t === 'crna') t = 'black';
       document.documentElement.dataset.theme = t;
-      document.querySelector('meta[name=theme-color]').content = t === 'crna' ? '#000000' : '#1c1f3a';
+      document.querySelector('meta[name=theme-color]').content = t === 'black' ? '#000000' : '#1c1f3a';
     })();
   </script>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/icon-512.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Tunes">
   <link rel="stylesheet" href="/fonts/standard.css">
   <link rel="stylesheet" href="/css/app.css">
   <script type="module" src="/js/app.js"></script>
 </head>
 <body>
-  <a class="skip" href="#main">Preskoči na sadržaj</a>
+  <a class="skip" href="#main">Skip to content</a>
   <div class="app" id="app">
     <div class="topbar">
-      <button class="ibtn" type="button" id="navToggle" aria-label="Meni" aria-expanded="false" aria-controls="side"></button>
+      <button class="ibtn" type="button" id="navToggle" aria-label="Menu" aria-expanded="false" aria-controls="side"></button>
       <span class="brand brand--small">Tunes</span>
-      <a class="ibtn" href="#/pretraga" id="topSearch" aria-label="Pretraga"></a>
+      <a class="ibtn" href="#/search" id="topSearch" aria-label="Search"></a>
     </div>
 
-    <nav class="side" id="side" aria-label="Glavni meni"></nav>
+    <nav class="side" id="side" aria-label="Main menu"></nav>
 
     <main class="main" id="main" tabindex="-1"></main>
 
-    <aside class="panel" id="panel" aria-label="Bočni panel" hidden></aside>
+    <aside class="panel" id="panel" aria-label="Side panel" hidden></aside>
 
     <footer class="deck" id="deck" aria-label="Player"></footer>
   </div>
 
-  <div class="now" id="now" role="dialog" aria-modal="true" aria-label="Sada svira" hidden></div>
-  <div class="eq" id="eq" role="dialog" aria-label="Ekvalizer" hidden></div>
+  <div class="now" id="now" role="dialog" aria-modal="true" aria-label="Now playing" hidden></div>
+  <div class="eq" id="eq" role="dialog" aria-label="Equalizer" hidden></div>
   <div class="toasts" id="toasts" aria-live="polite"></div>
 </body>
 </html>

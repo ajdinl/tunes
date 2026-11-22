@@ -1,4 +1,4 @@
-// Pokretanje aplikacije: navigacija, player traka, paneli, prečice.
+// App startup: navigation, player bar, panels, shortcuts.
 import { h, icon, iconBtn, cover, fmtTime, toast, openMenu, ask, songs, sourceTag, norm, tr } from './ui.js';
 import { api } from './store.js';
 import { store } from './store.js';
@@ -11,24 +11,34 @@ import { trackMenu, toggleFav, go, artistHref } from './components.js';
 const $ = (id) => document.getElementById(id);
 const main = $('main');
 
-// ============================================================ ruter
+// ============================================================ router
 const ROUTES = {
-  '': V.home, pretraga: V.search, otkrij: V.discover, radio: V.radioView,
-  izvodjaci: V.artists, izvodjac: V.artist, albumi: V.albums, album: V.album,
-  pesme: V.tracksView, omiljene: V.favorites, istorija: V.historyView,
-  plejlista: V.playlistView, pametna: V.smartView, archive: V.archiveView, podesavanja: V.settingsView,
+  '': V.home, search: V.search, discover: V.discover, radio: V.radioView,
+  artists: V.artists, artist: V.artist, albums: V.albums, album: V.album,
+  songs: V.tracksView, favorites: V.favorites, history: V.historyView,
+  playlist: V.playlistView, smart: V.smartView, archive: V.archiveView, settings: V.settingsView,
   audius: V.audiusArtist,
 };
-// Koji prikazi se osvežavaju kad se promene podaci.
+// Which views re-render when the data changes.
 const DEPS = {
-  library: ['', 'izvodjaci', 'izvodjac', 'albumi', 'album', 'pesme', 'pametna', 'podesavanja'],
-  favorites: ['omiljene', 'izvodjaci', 'izvodjac', 'albumi', 'album', 'pesme'],
-  playlists: ['plejlista'],
-  history: ['istorija'],
+  library: ['', 'artists', 'artist', 'albums', 'album', 'songs', 'smart', 'settings'],
+  favorites: ['favorites', 'artists', 'artist', 'albums', 'album', 'songs'],
+  playlists: ['playlist'],
+  history: ['history'],
   stations: [''],
 };
 
+// Old Bosnian routes from earlier versions keep working.
+const LEGACY_ROUTES = {
+  pretraga: 'search', otkrij: 'discover', izvodjaci: 'artists', izvodjac: 'artist', albumi: 'albums',
+  pesme: 'songs', omiljene: 'favorites', istorija: 'history', plejlista: 'playlist', pametna: 'smart', podesavanja: 'settings',
+};
+
 function parseHash() {
+  const legacy = /^#\/([a-z]+)/.exec(location.hash);
+  if (legacy && LEGACY_ROUTES[legacy[1]]) {
+    history.replaceState(null, '', '#/' + LEGACY_ROUTES[legacy[1]] + location.hash.slice(legacy[0].length));
+  }
   const raw = location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = raw.split('?');
   const [name, ...rest] = path.split('/');
@@ -44,12 +54,12 @@ function render({ keepScroll = false } = {}) {
   currentRoute = r;
   let el;
   try { el = view(r.params, r.arg); }
-  catch (e) { console.error(e); el = h('div.view', {}, h('div.err', {}, h('p', {}, tr('Ovaj ekran se nije uspio učitati: ') + e.message))); }
+  catch (e) { console.error(e); el = h('div.view', {}, h('div.err', {}, h('p', {}, tr('This screen failed to load: ') + e.message))); }
   main.replaceChildren(el);
   if (keepScroll && sameRoute) main.scrollTop = scroll;
   else {
     main.scrollTop = 0;
-    if (r.name !== 'pretraga') main.querySelector('h1')?.setAttribute('tabindex', '-1');
+    if (r.name !== 'search') main.querySelector('h1')?.setAttribute('tabindex', '-1');
   }
   markPlaying();
   updateNav();
@@ -58,11 +68,11 @@ function render({ keepScroll = false } = {}) {
 }
 
 window.addEventListener('hashchange', () => {
-  // Pretraga sama menja adresu dok kucaš, pa je ne crtamo ponovo.
+  // Search updates the URL itself while you type, so it is not re-rendered.
   const r = parseHash();
-  if (currentRoute?.name === 'pretraga' && r.name === 'pretraga' && document.activeElement?.type === 'search') return;
+  if (currentRoute?.name === 'search' && r.name === 'search' && document.activeElement?.type === 'search') return;
   render();
-  if (r.name !== 'pretraga') main.querySelector('h1')?.focus({ preventScroll: true });
+  if (r.name !== 'search') main.querySelector('h1')?.focus({ preventScroll: true });
 });
 
 for (const [evt, names] of Object.entries(DEPS)) {
@@ -72,23 +82,23 @@ for (const [evt, names] of Object.entries(DEPS)) {
   });
 }
 
-// ============================================================ bočni meni
+// ============================================================ sidebar
 const NAV = [
-  { href: '#/', name: '', label: tr('Početna'), icon: 'home' },
-  { href: '#/pretraga', name: 'pretraga', label: tr('Pretraga'), icon: 'search' },
-  { href: '#/otkrij', name: 'otkrij', label: tr('Otkrij'), icon: 'compass' },
+  { href: '#/', name: '', label: 'Home', icon: 'home' },
+  { href: '#/search', name: 'search', label: 'Search', icon: 'search' },
+  { href: '#/discover', name: 'discover', label: 'Discover', icon: 'compass' },
   { href: '#/radio', name: 'radio', label: 'Radio', icon: 'radio' },
 ];
 const NAV_LIB = [
-  { href: '#/izvodjaci', name: 'izvodjaci', alt: ['izvodjac'], label: tr('Izvođači'), icon: 'artist' },
-  { href: '#/albumi', name: 'albumi', alt: ['album'], label: tr('Albumi'), icon: 'album' },
-  { href: '#/pesme', name: 'pesme', label: tr('Pjesme'), icon: 'song' },
-  { href: '#/omiljene', name: 'omiljene', label: tr('Omiljene'), icon: 'heart' },
-  { href: '#/istorija', name: 'istorija', label: tr('Historija'), icon: 'history' },
+  { href: '#/artists', name: 'artists', alt: ['artist'], label: 'Artists', icon: 'artist' },
+  { href: '#/albums', name: 'albums', alt: ['album'], label: 'Albums', icon: 'album' },
+  { href: '#/songs', name: 'songs', label: 'Songs', icon: 'song' },
+  { href: '#/favorites', name: 'favorites', label: 'Favorites', icon: 'heart' },
+  { href: '#/history', name: 'history', label: 'History', icon: 'history' },
 ];
 
 function navLink(n) {
-  return h('a.nav__link', { href: n.href, dataset: { route: n.name, alt: (n.alt || []).join(',') } }, icon(n.icon, 19), h('span', {}, n.label));
+  return h('a.nav__link', { href: n.href, dataset: { route: n.name, alt: (n.alt || []).join(',') } }, icon(n.icon, 19), h('span', {}, tr(n.label)));
 }
 
 function renderNav() {
@@ -96,26 +106,28 @@ function renderNav() {
   side.replaceChildren(
     h('a.brand', { href: '#/' }, h('span.brand__mark', { 'aria-hidden': 'true' }), 'Tunes'),
     h('div.nav', {}, NAV.map(navLink)),
-    h('div.nav', {}, h('p.nav__label', {}, tr('Kolekcija')), NAV_LIB.map(navLink)),
+    h('div.nav', {}, h('p.nav__label', {}, tr('Collection')), NAV_LIB.map(navLink)),
     h('div.nav.nav--lists', {},
       h('div.nav__head', {},
-        h('p.nav__label', {}, tr('Plejliste')),
-        iconBtn('plus', tr('Nova plejlista'), async () => {
-          const name = await ask(tr('Nova plejlista'), { placeholder: tr('Naziv plejliste'), confirm: tr('Napravi') });
+        h('p.nav__label', {}, tr('Playlists')),
+        iconBtn('plus', tr('New playlist'), async () => {
+          const name = await ask(tr('New playlist'), { placeholder: tr('Playlist name'), confirm: tr('Create') });
           if (!name) return;
           const p = await store.createPlaylist(name);
-          go('#/plejlista/' + p.id);
+          go('#/playlist/' + p.id);
         }, { size: 17 })),
       store.playlists.length
         ? h('div.nav__scroll', {}, store.playlists.map((p) => h('a.nav__link.nav__link--pl', {
-          href: '#/plejlista/' + p.id, dataset: { route: 'plejlista', arg: p.id },
+          href: '#/playlist/' + p.id, dataset: { route: 'playlist', arg: p.id },
           ondragover: (e) => e.preventDefault(),
         }, h('span', {}, p.name), h('span.nav__count', {}, String(p.tracks.length)))))
-        : h('p.nav__hint', {}, tr('Napravi prvu plejlistu dugmetom +'))),
+        : h('p.nav__hint', {}, tr('Create your first playlist with the + button'))),
     h('div.nav.nav--foot', {},
       IS_LOCAL ? h('button.nav__link.nav__phone', { type: 'button', onclick: openPhone, class: store.settings.phoneOn ? 'is-live' : '' },
-        icon('phone', 19), h('span', {}, tr('Slušaj na mobitelu')), store.settings.phoneOn ? h('span.nav__dot', { title: tr('Uključeno') }) : null) : null,
-      navLink({ href: '#/podesavanja', name: 'podesavanja', label: tr('Postavke'), icon: 'settings' })));
+        icon('phone', 19), h('span', {}, tr('Listen on phone')), store.settings.phoneOn ? h('span.nav__dot', { title: tr('On') }) : null) : null,
+      !IS_LOCAL && !IS_STANDALONE ? h('button.nav__link.nav__phone', { type: 'button', onclick: openInstall },
+        icon('plus', 19), h('span', {}, tr('Add to Home Screen'))) : null,
+      navLink({ href: '#/settings', name: 'settings', label: tr('Settings'), icon: 'settings' })));
   updateNav();
 }
 
@@ -129,34 +141,34 @@ function updateNav() {
   }
 }
 
-// ============================================================ player traka
+// ============================================================ player bar
 const deck = $('deck');
 const els = {};
 
 function buildDeck() {
-  els.cover = h('button.deck__cv', { type: 'button', 'aria-label': tr('Otvori „Sada svira”'), onclick: () => openNow() });
+  els.cover = h('button.deck__cv', { type: 'button', 'aria-label': tr('Open “Now playing”'), onclick: () => openNow() });
   els.title = h('a.deck__title', { href: '#/' });
   els.artist = h('span.deck__artist');
-  els.fav = h('button.ibtn.deck__fav', { type: 'button', 'aria-label': tr('Dodaj u omiljene'), onclick: () => player.track && toggleFav(player.track) });
-  els.shuffle = iconBtn('shuffle', tr('Nasumično (S)'), () => player.toggleShuffle());
-  els.prev = iconBtn('prev', tr('Prethodna (Shift + ←)'), () => player.prev());
-  els.play = h('button.play', { type: 'button', 'aria-label': tr('Pusti (razmak)'), onclick: () => player.toggle() });
-  els.next = iconBtn('next', tr('Sljedeća (Shift + →)'), () => player.next());
-  els.repeat = iconBtn('repeat', tr('Ponavljanje (R)'), () => player.cycleRepeat());
+  els.fav = h('button.ibtn.deck__fav', { type: 'button', 'aria-label': tr('Add to favorites'), onclick: () => player.track && toggleFav(player.track) });
+  els.shuffle = iconBtn('shuffle', tr('Shuffle (S)'), () => player.toggleShuffle());
+  els.prev = iconBtn('prev', tr('Previous (Shift + ←)'), () => player.prev());
+  els.play = h('button.play', { type: 'button', 'aria-label': tr('Play (space)'), onclick: () => player.toggle() });
+  els.next = iconBtn('next', tr('Next (Shift + →)'), () => player.next());
+  els.repeat = iconBtn('repeat', tr('Repeat (R)'), () => player.cycleRepeat());
   els.t0 = h('span.deck__time');
   els.t1 = h('span.deck__time.deck__time--end');
   els.canvas = h('canvas.dial__cv', { 'aria-hidden': 'true' });
   els.tip = h('span.dial__tip', { hidden: true });
-  els.dialBox = h('div.dial', { role: 'slider', tabindex: '0', 'aria-label': tr('Pozicija u pjesmi'), 'aria-valuemin': '0' }, els.canvas, els.tip);
-  els.lyrics = iconBtn('lyrics', tr('Tekst pjesme (T)'), () => togglePanel('tekst'));
-  els.queue = iconBtn('queue', tr('Red za puštanje (Q)'), () => togglePanel('red'));
-  els.eq = iconBtn('eq', tr('Ekvalizer (E)'), () => toggleEq());
-  els.sleep = iconBtn('moon', tr('Tajmer za spavanje'), (e) => sleepMenu(e.currentTarget));
-  els.mute = iconBtn('volume', tr('Utišaj (M)'), () => player.toggleMute());
-  els.vol = h('input.vol', { type: 'range', min: '0', max: '1', step: '0.01', value: String(player.volume), 'aria-label': tr('Jačina zvuka') });
+  els.dialBox = h('div.dial', { role: 'slider', tabindex: '0', 'aria-label': tr('Position in song'), 'aria-valuemin': '0' }, els.canvas, els.tip);
+  els.lyrics = iconBtn('lyrics', tr('Lyrics (T)'), () => togglePanel('lyrics'));
+  els.queue = iconBtn('queue', tr('Play queue (Q)'), () => togglePanel('queue'));
+  els.eq = iconBtn('eq', tr('Equalizer (E)'), () => toggleEq());
+  els.sleep = iconBtn('moon', tr('Sleep timer'), (e) => sleepMenu(e.currentTarget));
+  els.mute = iconBtn('volume', tr('Mute (M)'), () => player.toggleMute());
+  els.vol = h('input.vol', { type: 'range', min: '0', max: '1', step: '0.01', value: String(player.volume), 'aria-label': tr('Volume') });
   els.vol.addEventListener('input', () => player.setVolume(Number(els.vol.value)));
   els.vol.addEventListener('wheel', (e) => { e.preventDefault(); player.setVolume(player.volume - Math.sign(e.deltaY) * 0.05); }, { passive: false });
-  els.full = iconBtn('expand', tr('Cijeli ekran (F)'), () => openNow());
+  els.full = iconBtn('expand', tr('Full screen (F)'), () => openNow());
 
   deck.replaceChildren(
     h('div.deck__now', {}, els.cover, h('div.deck__meta', {}, els.title, els.artist), els.fav),
@@ -165,6 +177,7 @@ function buildDeck() {
       h('div.deck__dial', {}, els.t0, els.dialBox, els.t1)),
     h('div.deck__tools', {}, els.lyrics, els.queue, els.eq, els.sleep, h('div.volbox', {}, els.mute, els.vol), els.full));
 
+  els.dial?.destroy();
   els.dial = new Dial(els.canvas);
   bindDial(els.dialBox, els.dial, els.tip);
 }
@@ -200,14 +213,14 @@ function updateTrack() {
   const t = player.track;
   els.cover.replaceChildren(cover(t?.cover, t?.title || '♪'));
   if (!t) {
-    els.title.textContent = tr('Ništa ne svira');
+    els.title.textContent = tr('Nothing playing');
     els.title.removeAttribute('href');
-    els.artist.textContent = tr('Odaberi pjesmu, album ili stanicu');
+    els.artist.textContent = tr('Pick a song, album or station');
     document.title = 'Tunes';
   } else {
     els.title.textContent = t.title;
     els.title.href = player.context?.href || '#/';
-    els.title.title = player.context ? tr('Pušteno iz: ') + player.context.label : '';
+    els.title.title = player.context ? tr('Playing from: ') + player.context.label : '';
     els.artist.replaceChildren(sourceTag(t.source), ' ', t.live ? (player.icyTitle || t.artist) : t.artist || '');
     document.title = `${player.icyTitle || t.title} · Tunes`;
   }
@@ -223,18 +236,18 @@ function updateFav() {
   els.fav.replaceChildren(icon(on ? 'heartFill' : 'heart', 19));
   els.fav.classList.toggle('is-on', on);
   els.fav.setAttribute('aria-pressed', String(on));
-  els.fav.setAttribute('aria-label', on ? 'Ukloni iz omiljenih (L)' : tr('Dodaj u omiljene (L)'));
+  els.fav.setAttribute('aria-label', on ? tr('Remove from favorites (L)') : tr('Add to favorites (L)'));
   els.fav.disabled = !t;
 }
 
 function updateState() {
   const playing = player.playing;
   els.play.replaceChildren(icon(playing ? 'pause' : 'play', 22));
-  els.play.setAttribute('aria-label', playing ? 'Pauziraj (razmak)' : tr('Pusti (razmak)'));
+  els.play.setAttribute('aria-label', playing ? tr('Pause (space)') : tr('Play (space)'));
   els.play.classList.toggle('is-loading', player.loading);
   document.body.classList.toggle('is-playing', playing);
   const nowPlay = document.querySelector('.now .play');
-  if (nowPlay) { nowPlay.replaceChildren(icon(playing ? 'pause' : 'play', 28)); nowPlay.setAttribute('aria-label', playing ? 'Pauziraj' : tr('Pusti')); }
+  if (nowPlay) { nowPlay.replaceChildren(icon(playing ? 'pause' : 'play', 28)); nowPlay.setAttribute('aria-label', playing ? tr('Pause') : tr('Play')); }
 }
 
 function updateMode() {
@@ -242,16 +255,16 @@ function updateMode() {
   els.shuffle.setAttribute('aria-pressed', String(player.shuffle));
   els.repeat.replaceChildren(icon(player.repeat === 'one' ? 'repeat1' : 'repeat', 20));
   els.repeat.classList.toggle('is-on', player.repeat !== 'off');
-  els.repeat.setAttribute('aria-label', { off: tr('Ponavljanje isključeno (R)'), all: tr('Ponavlja se cijeli red (R)'), one: tr('Ponavlja se ova pjesma (R)') }[player.repeat]);
+  els.repeat.setAttribute('aria-label', { off: tr('Repeat off (R)'), all: tr('Repeating the queue (R)'), one: tr('Repeating this song (R)') }[player.repeat]);
   els.repeat.title = els.repeat.getAttribute('aria-label');
 }
 
 function updateTime() {
   const t = player.track;
   if (t?.live) {
-    els.t0.textContent = tr('uživo');
+    els.t0.textContent = tr('live');
     els.t1.textContent = stationFreq(t) + ' MHz';
-    els.dialBox.setAttribute('aria-valuetext', tr('Uživo'));
+    els.dialBox.setAttribute('aria-valuetext', tr('Live'));
     return;
   }
   const d = player.duration;
@@ -259,7 +272,7 @@ function updateTime() {
   els.t1.textContent = fmtTime(d);
   els.dialBox.setAttribute('aria-valuemax', String(Math.round(d || 0)));
   els.dialBox.setAttribute('aria-valuenow', String(Math.round(player.time)));
-  els.dialBox.setAttribute('aria-valuetext', tr('{a} od {b}', { a: fmtTime(player.time), b: fmtTime(d) }));
+  els.dialBox.setAttribute('aria-valuetext', tr('{a} of {b}', { a: fmtTime(player.time), b: fmtTime(d) }));
   const nt = document.querySelectorAll('.now [data-time]');
   if (nt.length) { nt[0].textContent = fmtTime(player.time); nt[1].textContent = fmtTime(d); }
 }
@@ -289,12 +302,12 @@ function updateHearts({ detail }) {
 
 function sleepMenu(btn) {
   const b = btn.getBoundingClientRect();
-  const opts = [15, 30, 45, 60, 90].map((m) => ({ label: tr('Za {m} minuta', { m }), action: () => { player.setSleep(m); toast(tr('Muzika staje za {m} minuta', { m })); } }));
+  const opts = [15, 30, 45, 60, 90].map((m) => ({ label: tr('In {m} minutes', { m }), action: () => { player.setSleep(m); toast(tr('Music stops in {m} minutes', { m })); } }));
   openMenu(b.left - 120, b.top - 260, [
     ...opts,
-    { label: tr('Na kraju ove pjesme'), action: () => { player.setSleep('end'); toast(tr('Muzika staje na kraju ove pjesme')); } },
+    { label: tr('At the end of this song'), action: () => { player.setSleep('end'); toast(tr('Music stops at the end of this song')); } },
     player.sleep ? '-' : null,
-    player.sleep ? { label: tr('Isključi tajmer'), action: () => { player.clearSleep(); toast(tr('Tajmer je isključen')); } } : null,
+    player.sleep ? { label: tr('Turn off timer'), action: () => { player.clearSleep(); toast(tr('Timer off')); } } : null,
   ]);
 }
 
@@ -303,17 +316,17 @@ function updateSleep() {
   clearInterval(updateSleep.iv);
   const label = () => {
     const s = player.sleep;
-    if (!s) { els.sleep.title = tr('Tajmer za spavanje'); els.sleep.removeAttribute('data-badge'); return; }
-    if (s.mode === 'end') { els.sleep.title = tr('Staje na kraju pjesme'); els.sleep.dataset.badge = '♪'; return; }
+    if (!s) { els.sleep.title = tr('Sleep timer'); els.sleep.removeAttribute('data-badge'); return; }
+    if (s.mode === 'end') { els.sleep.title = tr('Stops at the end of the song'); els.sleep.dataset.badge = '♪'; return; }
     const min = Math.max(0, Math.ceil((s.until - Date.now()) / 60000));
-    els.sleep.title = tr('Staje za {m} min', { m: min });
+    els.sleep.title = tr('Stops in {m} min', { m: min });
     els.sleep.dataset.badge = String(min);
   };
   label();
   if (player.sleep?.until) updateSleep.iv = setInterval(label, 15000);
 }
 
-// ============================================================ bočni panel (red / tekst)
+// ============================================================ side panel (queue / lyrics)
 const panel = $('panel');
 let panelTab = null;
 let lyricsEl = null;
@@ -321,18 +334,18 @@ let lyricsEl = null;
 function togglePanel(tab) {
   if (panelTab === tab) { panelTab = null; panel.hidden = true; document.body.classList.remove('has-panel'); }
   else { panelTab = tab; panel.hidden = false; document.body.classList.add('has-panel'); renderPanel(); }
-  els.queue.classList.toggle('is-on', panelTab === 'red');
-  els.lyrics.classList.toggle('is-on', panelTab === 'tekst');
+  els.queue.classList.toggle('is-on', panelTab === 'queue');
+  els.lyrics.classList.toggle('is-on', panelTab === 'lyrics');
 }
 
 function renderPanel() {
   if (!panelTab) return;
   const head = h('div.panel__head', {},
     h('div.tabs.tabs--small', { role: 'tablist' },
-      h('button.tab', { type: 'button', role: 'tab', 'aria-selected': String(panelTab === 'red'), class: panelTab === 'red' ? 'is-on' : '', onclick: () => { panelTab = 'red'; renderPanel(); togglePanelBtns(); } }, tr('Red')),
-      h('button.tab', { type: 'button', role: 'tab', 'aria-selected': String(panelTab === 'tekst'), class: panelTab === 'tekst' ? 'is-on' : '', onclick: () => { panelTab = 'tekst'; renderPanel(); togglePanelBtns(); } }, tr('Tekst'))),
-    iconBtn('close', tr('Zatvori panel'), () => togglePanel(panelTab), { size: 18 }));
-  if (panelTab === 'tekst') {
+      h('button.tab', { type: 'button', role: 'tab', 'aria-selected': String(panelTab === 'queue'), class: panelTab === 'queue' ? 'is-on' : '', onclick: () => { panelTab = 'queue'; renderPanel(); togglePanelBtns(); } }, tr('Queue')),
+      h('button.tab', { type: 'button', role: 'tab', 'aria-selected': String(panelTab === 'lyrics'), class: panelTab === 'lyrics' ? 'is-on' : '', onclick: () => { panelTab = 'lyrics'; renderPanel(); togglePanelBtns(); } }, tr('Lyrics'))),
+    iconBtn('close', tr('Close panel'), () => togglePanel(panelTab), { size: 18 }));
+  if (panelTab === 'lyrics') {
     lyricsEl ||= lyricsView();
     panel.replaceChildren(head, lyricsEl);
     return;
@@ -340,20 +353,20 @@ function renderPanel() {
   const q = player.queue;
   const i = player.index;
   const body = h('div.queue');
-  if (!q.length) body.append(h('p.empty', {}, tr('Red je prazan. Pusti album, plejlistu ili stanicu.')));
+  if (!q.length) body.append(h('p.empty', {}, tr('The queue is empty. Play an album, playlist or station.')));
   else {
     const cur = q[i];
-    body.append(h('p.queue__label', {}, tr('Sada svira')), queueRow(cur, i, true));
+    body.append(h('p.queue__label', {}, tr('Now playing')), queueRow(cur, i, true));
     const upcoming = q.slice(i + 1);
     body.append(h('div.queue__bar', {},
-      h('p.queue__label', {}, upcoming.length ? tr('Sljedeće ({n})', { n: songs(upcoming.length) }) : tr('Nema više pjesama u redu')),
-      upcoming.length ? h('button.link', { type: 'button', onclick: () => player.clearUpcoming() }, tr('Očisti')) : null));
-    if (player.context) body.append(h('p.queue__ctx', {}, tr('Iz: '), h('a', { href: player.context.href }, player.context.label)));
+      h('p.queue__label', {}, upcoming.length ? tr('Up next ({n})', { n: songs(upcoming.length) }) : tr('No more songs in the queue')),
+      upcoming.length ? h('button.link', { type: 'button', onclick: () => player.clearUpcoming() }, tr('Clear')) : null));
+    if (player.context) body.append(h('p.queue__ctx', {}, tr('From: '), h('a', { href: player.context.href }, player.context.label)));
     const list = h('ol.queue__list');
     upcoming.slice(0, 300).forEach((t, k) => list.append(queueRow(t, i + 1 + k, false)));
     body.append(list);
     if (i > 0) {
-      body.append(h('details.queue__prev', {}, h('summary', {}, tr('Već pušteno ({n})', { n: i })),
+      body.append(h('details.queue__prev', {}, h('summary', {}, tr('Already played ({n})', { n: i })),
         h('ol.queue__list', {}, q.slice(Math.max(0, i - 50), i).map((t, k) => queueRow(t, Math.max(0, i - 50) + k, false)))));
     }
   }
@@ -361,8 +374,8 @@ function renderPanel() {
 }
 
 function togglePanelBtns() {
-  els.queue.classList.toggle('is-on', panelTab === 'red');
-  els.lyrics.classList.toggle('is-on', panelTab === 'tekst');
+  els.queue.classList.toggle('is-on', panelTab === 'queue');
+  els.lyrics.classList.toggle('is-on', panelTab === 'lyrics');
 }
 
 function queueRow(t, idx, current) {
@@ -371,9 +384,9 @@ function queueRow(t, idx, current) {
     oncontextmenu: (e) => { e.preventDefault(); openMenu(e.clientX, e.clientY, trackMenu(t)); },
   },
   cover(t.cover, t.title, 'qr__cv'),
-  h('button.qr__main', { type: 'button', onclick: () => player.jump(idx), 'aria-label': tr('Pusti ') + t.title },
+  h('button.qr__main', { type: 'button', onclick: () => player.jump(idx), 'aria-label': tr('Play ') + t.title },
     h('span.qr__title', {}, t.title), h('span.qr__artist', {}, t.artist || '')),
-  current ? null : iconBtn('close', tr('Ukloni iz reda'), () => player.removeAt(idx), { size: 16 }));
+  current ? null : iconBtn('close', tr('Remove from queue'), () => player.removeAt(idx), { size: 16 }));
   if (!current) {
     li.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/x-q', String(idx)); li.classList.add('is-drag'); });
     li.addEventListener('dragend', () => li.classList.remove('is-drag'));
@@ -388,7 +401,7 @@ function queueRow(t, idx, current) {
   return li;
 }
 
-// ============================================================ ekvalizer
+// ============================================================ equalizer
 const eqBox = $('eq');
 function toggleEq(force) {
   const open = force ?? eqBox.hidden;
@@ -410,30 +423,30 @@ function renderEq() {
       gains[i] = Number(input.value);
       val.textContent = fmtDb(gains[i]);
       input.setAttribute('aria-valuetext', fmtDb(gains[i]) + ' dB');
-      player.setEq({ gains, preset: tr('Prilagođeno') });
+      player.setEq({ gains, preset: tr('Custom') });
       eqBox.querySelectorAll('.eq__presets .chip').forEach((c) => { c.classList.remove('is-on'); c.setAttribute('aria-pressed', 'false'); });
     });
     return h('div.eq__band', {}, val, input, h('span.eq__f', {}, fmtFreq(f)));
   });
   const onOff = h('button.switch', {
-    type: 'button', role: 'switch', 'aria-checked': String(eq.enabled), 'aria-label': tr('Ekvalizer uključen'),
+    type: 'button', role: 'switch', 'aria-checked': String(eq.enabled), 'aria-label': tr('Equalizer on'),
     onclick: () => { player.setEq({ enabled: !player.eq.enabled }); renderEq(); els.eq.classList.add('is-on'); },
   }, h('span.switch__knob'));
   eqBox.replaceChildren(
-    h('div.eq__head', {}, h('h2.eq__title', {}, tr('Ekvalizer')), onOff, iconBtn('close', tr('Zatvori ekvalizer'), () => toggleEq(false), { size: 18 })),
-    h('div.eq__presets.chips', { role: 'group', 'aria-label': tr('Postavke zvuka') }, Object.keys(EQ_PRESETS).map((name) =>
+    h('div.eq__head', {}, h('h2.eq__title', {}, tr('Equalizer')), onOff, iconBtn('close', tr('Close equalizer'), () => toggleEq(false), { size: 18 })),
+    h('div.eq__presets.chips', { role: 'group', 'aria-label': tr('Sound presets') }, Object.keys(EQ_PRESETS).map((name) =>
       h('button.chip', {
         type: 'button', disabled: !eq.enabled, class: eq.preset === name ? 'is-on' : '', 'aria-pressed': String(eq.preset === name),
         onclick: () => { player.setEq({ preset: name, gains: EQ_PRESETS[name].slice() }); renderEq(); },
       }, tr(name)))),
     h('div.eq__bands', { class: eq.enabled ? '' : 'is-off' }, sliders),
-    ...(player.mobile ? [h('p.eq__note', {}, tr('Na mobitelu je ekvalizer isključen da bi muzika svirala i kad zaključaš ekran.'))]
-      : !player.analysing && player.track?.live ? [h('p.eq__note', {}, tr('Ova stanica se pušta direktno, pa ekvalizer na nju ne djeluje.'))] : []));
+    ...(player.mobile ? [h('p.eq__note', {}, tr('On phones the equalizer is off so music keeps playing when the screen is locked.'))]
+      : !player.analysing && player.track?.live ? [h('p.eq__note', {}, tr('This station plays directly, so the equalizer doesn\'t affect it.'))] : []));
 }
 const fmtDb = (v) => (v > 0 ? '+' : '') + (v || 0);
 const fmtFreq = (f) => (f >= 1000 ? f / 1000 + 'k' : String(f));
 
-// ============================================================ "Sada svira" ceo ekran
+// ============================================================ "Now Playing" full screen
 const now = $('now');
 let nowDial = null;
 let nowLyrics = null;
@@ -460,14 +473,14 @@ function renderNow() {
   if (!t) { closeNow(); return; }
   const canvas = h('canvas.dial__cv', { 'aria-hidden': 'true' });
   const tip = h('span.dial__tip', { hidden: true });
-  const dialBox = h('div.dial.dial--big', { role: 'slider', tabindex: '0', 'aria-label': tr('Pozicija u pjesmi'), class: t.live ? 'is-live' : '' }, canvas, tip);
+  const dialBox = h('div.dial.dial--big', { role: 'slider', tabindex: '0', 'aria-label': tr('Position in song'), class: t.live ? 'is-live' : '' }, canvas, tip);
   nowLyrics ||= lyricsView({ big: true });
   const artistLink = !t.live && store.index.artistMap.has(norm(t.albumArtist || t.artist));
   now.replaceChildren(
     h('div.now__bg', { style: t.cover ? { backgroundImage: `url("${t.cover}")` } : {} }),
     h('div.now__top', {},
-      player.context ? h('p.now__ctx', {}, tr('Pušteno iz: '), h('a', { href: player.context.href, onclick: closeNow }, player.context.label)) : h('span'),
-      iconBtn('collapse', tr('Zatvori (Esc)'), closeNow, { class: 'ibtn now__close' })),
+      player.context ? h('p.now__ctx', {}, tr('Playing from: '), h('a', { href: player.context.href, onclick: closeNow }, player.context.label)) : h('span'),
+      iconBtn('collapse', tr('Close (Esc)'), closeNow, { class: 'ibtn now__close' })),
     h('div.now__body', {},
       h('div.now__art', {},
         cover(t.cover, t.title, 'now__cv'),
@@ -478,14 +491,15 @@ function renderNow() {
             t.album && !t.live ? h('span.now__album', {}, t.album) : null))),
       h('div.now__lyrics', {}, nowLyrics)),
     h('div.now__deck', {},
-      h('div.deck__dial', {}, h('span.deck__time', { dataset: { time: '0' } }, t.live ? 'uživo' : fmtTime(player.time)), dialBox,
+      h('div.deck__dial', {}, h('span.deck__time', { dataset: { time: '0' } }, t.live ? tr('live') : fmtTime(player.time)), dialBox,
         h('span.deck__time.deck__time--end', { dataset: { time: '1' } }, t.live ? stationFreq(t) + ' MHz' : fmtTime(player.duration))),
       h('div.deck__ctrls.deck__ctrls--big', {},
-        iconBtn('shuffle', tr('Nasumično'), () => player.toggleShuffle(), { class: 'ibtn' + (player.shuffle ? ' is-on' : '') }),
-        iconBtn('prev', tr('Prethodna'), () => player.prev(), { size: 24 }),
-        h('button.play.play--big', { type: 'button', 'aria-label': player.playing ? 'Pauziraj' : tr('Pusti'), onclick: () => player.toggle() }, icon(player.playing ? 'pause' : 'play', 28)),
-        iconBtn('next', tr('Sljedeća'), () => player.next(), { size: 24 }),
-        h('button.ibtn', { type: 'button', class: store.isFav(t.id) ? 'is-on' : '', 'aria-label': tr('Omiljena'), onclick: async () => { await toggleFav(t); renderNow(); } }, icon(store.isFav(t.id) ? 'heartFill' : 'heart', 22)))));
+        iconBtn('shuffle', tr('Shuffle'), () => player.toggleShuffle(), { class: 'ibtn' + (player.shuffle ? ' is-on' : '') }),
+        iconBtn('prev', tr('Previous'), () => player.prev(), { size: 24 }),
+        h('button.play.play--big', { type: 'button', 'aria-label': player.playing ? tr('Pause') : tr('Play'), onclick: () => player.toggle() }, icon(player.playing ? 'pause' : 'play', 28)),
+        iconBtn('next', tr('Next'), () => player.next(), { size: 24 }),
+        h('button.ibtn', { type: 'button', class: store.isFav(t.id) ? 'is-on' : '', 'aria-label': tr('Favorite'), onclick: async () => { await toggleFav(t); renderNow(); } }, icon(store.isFav(t.id) ? 'heartFill' : 'heart', 22)))));
+  nowDial?.destroy();
   nowDial = new Dial(canvas, { big: true });
   bindDial(dialBox, nowDial, tip);
 }
@@ -499,58 +513,58 @@ now.addEventListener('keydown', (e) => {
   }
 });
 
-// ============================================================ slušanje na mobitelu
+// ============================================================ listening on a phone
 const IS_LOCAL = ['localhost', '127.0.0.1', '[::1]', '::1'].includes(location.hostname);
 
 async function openPhone() {
   const body = h('div.dlg__body');
-  const dlg = h('dialog.dlg.dlg--phone', { 'aria-label': tr('Slušaj na mobitelu') }, body);
+  const dlg = h('dialog.dlg.dlg--phone', { 'aria-label': tr('Listen on phone') }, body);
   dlg.addEventListener('close', () => dlg.remove());
   document.body.append(dlg);
   dlg.showModal();
   let tab = 'wifi';
 
-  const head = () => h('div.dlg__head', {}, h('h2.dlg__title', {}, tr('Slušaj na mobitelu')),
-    iconBtn('close', tr('Zatvori'), () => dlg.close(), { size: 18 }));
+  const head = () => h('div.dlg__head', {}, h('h2.dlg__title', {}, tr('Listen on phone')),
+    iconBtn('close', tr('Close'), () => dlg.close(), { size: 18 }));
   const render = (st, err) => {
     store.settings.phoneOn = st.enabled;
     renderNav();
     const parts = [head()];
     if (err) parts.push(h('p.err', {}, err));
     if (!st.enabled) {
-      parts.push(h('p.muted', {}, tr('Pristup sa telefona je isključen. Kad ga uključiš, muzika, plejliste i omiljene su iste kao na računaru.')),
-        h('div.dlg__actions', {}, h('button.btn.btn--primary', { type: 'button', onclick: () => toggle(true) }, icon('phone', 16), tr('Uključi'))));
+      parts.push(h('p.muted', {}, tr('Phone access is off. Once you turn it on, your music, playlists and favorites are the same as on this computer.')),
+        h('div.dlg__actions', {}, h('button.btn.btn--primary', { type: 'button', onclick: () => toggle(true) }, icon('phone', 16), tr('Turn on'))));
       body.replaceChildren(...parts);
       return;
     }
     parts.push(h('div.tabs.tabs--small.phone__tabs', { role: 'tablist' },
-      [['wifi', tr('Kod kuće (Wi-Fi)')], ['tailscale', tr('Van kuće (Tailscale)')]].map(([k, label]) =>
+      [['wifi', tr('At home (Wi-Fi)')], ['tailscale', tr('Away from home (Tailscale)')]].map(([k, label]) =>
         h('button.tab', { type: 'button', role: 'tab', 'aria-selected': String(tab === k), class: tab === k ? 'is-on' : '', onclick: () => { tab = k; render(st); } }, label))));
     const cur = tab === 'wifi' ? st.wifi : st.tailscale;
     if (cur.qr) {
-      parts.push(h('div.phone__qr', { html: cur.qr, role: 'img', 'aria-label': tr('QR kod za otvaranje na telefonu') }));
+      parts.push(h('div.phone__qr', { html: cur.qr, role: 'img', 'aria-label': tr('QR code to open on your phone') }));
       parts.push(tab === 'wifi'
         ? h('ol.phone__steps', {},
-          h('li', {}, tr('Otvori kameru na telefonu i usmjeri je na kod.')),
-          h('li', {}, tr('Dodirni link koji se pojavi. Tunes se otvara u browseru.')),
-          h('li', {}, tr('Telefon mora biti na istoj Wi-Fi mreži kao ovaj računar.')))
+          h('li', {}, tr('Open the camera on your phone and point it at the code.')),
+          h('li', {}, tr('Tap the link that appears. Tunes opens in the browser.')),
+          h('li', {}, tr('The phone must be on the same Wi-Fi network as this computer.')))
         : h('ol.phone__steps', {},
-          h('li', {}, tr('Na telefonu uključi Tailscale aplikaciju, prijavljenu na isti nalog kao ovaj računar.')),
-          h('li', {}, tr('Skeniraj kod kamerom i dodirni link.')),
-          h('li', {}, tr('Radi bilo gdje: kod kuće, na poslu ili na mobilnim podacima. Računar mora ostati upaljen.'))));
+          h('li', {}, tr('On your phone, turn on the Tailscale app, signed in to the same account as this computer.')),
+          h('li', {}, tr('Scan the code with your camera and tap the link.')),
+          h('li', {}, tr('Works anywhere: at home, at work or on mobile data. The computer has to stay on.'))));
       parts.push(h('p.phone__url', {}, cur.url));
     } else if (tab === 'tailscale') {
-      parts.push(h('p', {}, st.tailscale.running ? tr('Tailscale radi, ali računar još nema adresu u mreži. Pokušaj ponovo za par sekundi.')
-        : tr('Tailscale nije pokrenut na ovom računaru. Pokreni Tailscale aplikaciju (ikonica gore u traci menija) pa pokušaj ponovo.')),
-      h('p.muted', {}, tr('Tailscale je besplatan za lične uređaje: '), h('a', { href: 'https://tailscale.com/download', target: '_blank', rel: 'noopener' }, 'tailscale.com/download')));
+      parts.push(h('p', {}, st.tailscale.running ? tr('Tailscale is running, but this computer doesn\'t have an address yet. Try again in a few seconds.')
+        : tr('Tailscale isn\'t running on this computer. Start the Tailscale app (icon in the menu bar) and try again.')),
+      h('p.muted', {}, tr('Tailscale is free for personal devices: '), h('a', { href: 'https://tailscale.com/download', target: '_blank', rel: 'noopener' }, 'tailscale.com/download')));
     } else {
-      parts.push(h('p', {}, tr('Računar nije spojen ni na jednu mrežu. Spoji se na Wi-Fi pa pokušaj ponovo.')));
+      parts.push(h('p', {}, tr('This computer isn\'t connected to a network. Connect to Wi-Fi and try again.')));
     }
-    parts.push(h('p.muted.phone__note', {}, tr('Ako macOS pita da li „node” smije primati veze, klikni Allow.')),
+    parts.push(h('p.muted.phone__note', {}, tr('If macOS asks whether “node” may accept connections, click Allow.')),
       h('div.dlg__actions', {},
-        h('button.btn.btn--ghost', { type: 'button', onclick: () => toggle(false) }, tr('Isključi pristup')),
-        h('button.btn', { type: 'button', onclick: () => api('/api/phone').then((x) => render(x)) }, icon('refresh', 16), tr('Osvježi')),
-        h('button.btn.btn--primary', { type: 'button', onclick: () => dlg.close() }, tr('Gotovo'))));
+        h('button.btn.btn--ghost', { type: 'button', onclick: () => toggle(false) }, tr('Turn off access')),
+        h('button.btn', { type: 'button', onclick: () => api('/api/phone').then((x) => render(x)) }, icon('refresh', 16), tr('Refresh')),
+        h('button.btn.btn--primary', { type: 'button', onclick: () => dlg.close() }, tr('Done'))));
     body.replaceChildren(...parts);
   };
   const toggle = async (on) => {
@@ -558,36 +572,96 @@ async function openPhone() {
     try {
       const st = await api('/api/phone', { method: 'POST', body: { enabled: on } });
       render(st);
-      if (!on) toast(tr('Pristup sa telefona je isključen. Stari link više ne radi.'));
+      if (!on) toast(tr('Phone access is off. The old link no longer works.'));
     } catch (e) { render({ enabled: false }, e.message); }
   };
   body.append(head(), loading());
   try {
     const st = await api('/api/phone');
-    // Jedan klik: ako je isključeno, odmah uključi i pokaži QR kod.
+    // One click: if it is off, turn it on and show the QR code right away.
     if (!st.enabled) await toggle(true); else render(st);
   } catch (e) { render({ enabled: false }, e.message); }
 }
 document.addEventListener('open-phone', openPhone);
 
-function loading() {
-  return h('p.loading', { role: 'status' }, h('span.loading__dot'), tr('Učitavam…'));
+// ============================================================ add to Home Screen (phone)
+const IS_STANDALONE = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+const ON_TAILSCALE = location.hostname.endsWith('.ts.net') || /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(location.hostname);
+let installPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; });
+
+async function openInstall() {
+  const body = h('div.dlg__body');
+  const dlg = h('dialog.dlg.dlg--phone', { 'aria-label': tr('Add to Home Screen') }, body);
+  dlg.addEventListener('close', () => dlg.remove());
+  document.body.append(dlg);
+  dlg.showModal();
+  const head = h('div.dlg__head', {}, h('h2.dlg__title', {}, tr('Add to Home Screen')),
+    iconBtn('close', tr('Close'), () => dlg.close(), { size: 18 }));
+  const steps = IS_IOS
+    ? h('ol.phone__steps', {},
+      h('li', {}, tr('Open this page in Safari.')),
+      h('li', {}, tr('Tap the Share button (the square with an arrow pointing up).')),
+      h('li', {}, tr('Choose “Add to Home Screen”, then “Add”.')))
+    : installPrompt
+      ? h('div.dlg__actions', {}, h('button.btn.btn--primary', { type: 'button', onclick: async () => { installPrompt.prompt(); await installPrompt.userChoice; installPrompt = null; dlg.close(); } }, icon('plus', 16), tr('Install app')))
+      : h('ol.phone__steps', {},
+        h('li', {}, tr('Open this page in Chrome.')),
+        h('li', {}, tr('Tap the ⋮ menu in the top right.')),
+        h('li', {}, tr('Choose “Add to Home screen” or “Install app”.')));
+  const ts = h('div.install__ts', {}, h('p.loading', {}, h('span.loading__dot'), tr('Loading…')));
+  body.append(head,
+    h('p.muted', {}, tr('Tunes will open like a real app, full screen and with its own icon.')),
+    steps,
+    h('h3.install__h', {}, tr('Listening away from home (Tailscale)')),
+    ts);
+  const tsSteps = (link) => h('div', {},
+    h('ol.phone__steps', {},
+      h('li', {}, tr('Install Tailscale on your phone: '),
+        h('a', { href: IS_IOS ? 'https://apps.apple.com/app/tailscale/id1470499037' : 'https://play.google.com/store/apps/details?id=com.tailscale.ipn', target: '_blank', rel: 'noopener' }, IS_IOS ? 'App Store' : 'Google Play'),
+        tr(', and sign in with the same account as on your computer.')),
+      h('li', {}, tr('Open the Tailscale version with the button below.')),
+      h('li', {}, tr('Add that one to your Home Screen. It works both at home and away.'))),
+    link ? h('a.btn.btn--primary', { href: link }, icon('external', 16), tr('Open Tailscale version')) : null);
+  if (ON_TAILSCALE) {
+    ts.replaceChildren(h('p', {}, tr('This version runs over Tailscale, so it works both at home and away. Add this one to your Home Screen.')));
+    return;
+  }
+  try {
+    const links = await api('/api/phone/links');
+    if (links.tailscale) ts.replaceChildren(tsSteps(links.tailscale));
+    else ts.replaceChildren(h('p.muted', {}, tr('Tailscale isn\'t running on the computer. Start it there, then open this window again.')), tsSteps(null));
+  } catch { ts.replaceChildren(tsSteps(null)); }
 }
 
-// ============================================================ nastavak na drugom uređaju
+// First visit on a phone: a short reminder that Tunes can be added to the Home Screen.
+function maybeShowInstallHint() {
+  if (IS_LOCAL || IS_STANDALONE) return;
+  try { if (localStorage.getItem('tunes.installHint')) return; localStorage.setItem('tunes.installHint', '1'); } catch { return; }
+  setTimeout(() => toast(tr('Add Tunes to your Home Screen so it opens like an app.'), { action: tr('How?'), onAction: openInstall, timeout: 9000 }), 1500);
+}
+
+function loading() {
+  return h('p.loading', { role: 'status' }, h('span.loading__dot'), tr('Loading…'));
+}
+
+// ============================================================ continue on another device
 const DEVICE_ID = (() => {
   let id = null;
-  try { id = localStorage.getItem('sl.device'); } catch { /* */ }
+  try { id = localStorage.getItem('tunes.device'); } catch { /* */ }
   if (!id) {
     id = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    try { localStorage.setItem('sl.device', id); } catch { /* */ }
+    try { localStorage.setItem('tunes.device', id); } catch { /* */ }
   }
   return id;
 })();
-const DEVICE_NAME = player.mobile ? tr('Mobitel') : tr('Računar');
-let activeHere = false;   // da li je na ovom uređaju puštano u ovoj sesiji
+// Send the device type; the device that displays it translates the name.
+const DEVICE_KIND = player.mobile ? 'mobile' : 'computer';
+const deviceName = (kind) => (kind === 'mobile' ? tr('Phone') : tr('Computer'));
+let activeHere = false;   // whether something was played on this device this session
 let lastReport = 0;
-let remote = null;        // šta svira na drugom uređaju
+let remote = null;        // what is playing on another device
 let dismissedFor = null;
 
 function reportSession(force = false) {
@@ -598,12 +672,12 @@ function reportSession(force = false) {
   lastReport = now;
   const start = Math.max(0, player.index - 20);
   api('/api/session', { method: 'POST', body: {
-    deviceId: DEVICE_ID, device: DEVICE_NAME, track: t, time: player.track.live ? 0 : player.time,
+    deviceId: DEVICE_ID, device: DEVICE_KIND, track: t, time: player.track.live ? 0 : player.time,
     playing: player.playing, index: player.index - start, queue: player.queue.slice(start, start + 500), context: player.context,
   } }).catch(() => {});
 }
 
-const handoff = h('div.handoff', { hidden: true, role: 'region', 'aria-label': tr('Nastavi slušanje') });
+const handoff = h('div.handoff', { hidden: true, role: 'region' });
 document.body.append(handoff);
 
 function remoteTime() {
@@ -619,14 +693,15 @@ function renderHandoff() {
     && !(player.playing && player.track?.id === r.track.id);
   handoff.hidden = !show;
   if (!show) return;
-  const when = r.track.live ? tr('uživo') : fmtTime(remoteTime());
+  handoff.setAttribute('aria-label', tr('Continue listening'));
+  const when = r.track.live ? tr('live') : fmtTime(remoteTime());
   handoff.replaceChildren(
     cover(r.track.cover, r.track.title, 'handoff__cv'),
     h('div.handoff__text', {},
-      h('span.handoff__label', {}, r.playing ? tr('Svira na uređaju: {d}', { d: r.device }) : tr('Pauzirano na uređaju: {d}', { d: r.device })),
+      h('span.handoff__label', {}, r.playing ? tr('Playing on: {d}', { d: deviceName(r.device) }) : tr('Paused on: {d}', { d: deviceName(r.device) })),
       h('span.handoff__title', {}, h('span.handoff__name', {}, r.track.title), h('span.handoff__time', {}, when))),
-    h('button.btn.btn--primary', { type: 'button', onclick: takeOver }, icon('play', 16), tr('Nastavi ovdje')),
-    iconBtn('close', tr('Sakrij'), () => { dismissedFor = r.track.id + r.deviceId; renderHandoff(); }, { size: 18 }));
+    h('button.btn.btn--primary', { type: 'button', onclick: takeOver }, icon('play', 16), tr('Continue here')),
+    iconBtn('close', tr('Hide'), () => { dismissedFor = r.track.id + r.deviceId; renderHandoff(); }, { size: 18 }));
 }
 
 async function takeOver() {
@@ -637,9 +712,9 @@ async function takeOver() {
     const time = remoteTime();
     player.resumeAt(session.queue, session.index, time, session.context);
     activeHere = true;
-    api('/api/session/takeover', { method: 'POST', body: { deviceId: DEVICE_ID, device: DEVICE_NAME } }).catch(() => {});
+    api('/api/session/takeover', { method: 'POST', body: { deviceId: DEVICE_ID, device: DEVICE_KIND } }).catch(() => {});
     handoff.hidden = true;
-    toast(session.track.live ? tr('Nastavljeno ovdje') : tr('Nastavljeno ovdje od {t}', { t: fmtTime(time) }));
+    toast(session.track.live ? tr('Continued here') : tr('Continued here from {t}', { t: fmtTime(time) }));
   } catch (e) { toast(e.message, { error: true }); }
 }
 
@@ -653,7 +728,7 @@ player.addEventListener('time', () => reportSession(false));
 setInterval(() => { if (!handoff.hidden) renderHandoff(); }, 1000);
 new ResizeObserver(() => document.documentElement.style.setProperty('--deck-h', deck.offsetHeight + 'px')).observe(deck);
 
-// ============================================================ prečice
+// ============================================================ shortcuts
 document.addEventListener('keydown', (e) => {
   const tag = e.target.tagName;
   const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable;
@@ -665,7 +740,7 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if (typing || e.metaKey || e.ctrlKey || e.altKey) {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); go('#/pretraga'); }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); go('#/search'); }
     return;
   }
   if (e.target.closest?.('.dial') && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) return;
@@ -680,16 +755,16 @@ document.addEventListener('keydown', (e) => {
     l: () => player.track && toggleFav(player.track),
     s: () => player.toggleShuffle(),
     r: () => player.cycleRepeat(),
-    q: () => togglePanel('red'),
-    t: () => togglePanel('tekst'),
+    q: () => togglePanel('queue'),
+    t: () => togglePanel('lyrics'),
     e: () => toggleEq(),
     f: () => (now.hidden ? openNow() : closeNow()),
-    '/': () => go('#/pretraga'),
+    '/': () => go('#/search'),
   }[k.length === 1 ? k.toLowerCase() : k];
   if (handled && handled() !== false) e.preventDefault();
 });
 
-// ============================================================ događaji
+// ============================================================ events
 player.addEventListener('track', () => { updateTrack(); renderPanel(); renderNow(); });
 player.addEventListener('state', updateState);
 player.addEventListener('time', updateTime);
@@ -707,7 +782,7 @@ function connectEvents() {
   es.addEventListener('library', async (e) => {
     await store.reloadLibrary();
     const d = JSON.parse(e.data);
-    if (d.changed) toast(tr('Biblioteka je osvježena: {n}', { n: songs(d.count) }));
+    if (d.changed) toast(tr('Library updated: {n}', { n: songs(d.count) }));
   });
   es.addEventListener('icy', (e) => { const d = JSON.parse(e.data); player.setIcy(d.sid, d.title); });
   es.addEventListener('session', (e) => { remote = JSON.parse(e.data); renderHandoff(); });
@@ -716,12 +791,12 @@ function connectEvents() {
     if (d.deviceId === DEVICE_ID) return;
     if (player.playing) {
       player.pause();
-      toast(tr('Muzika se nastavlja na uređaju: {d}', { d: d.device }));
+      toast(tr('Music continues on: {d}', { d: deviceName(d.device) }));
     }
   });
 }
 
-// Mobilni meni
+// Mobile menu
 $('navToggle').append(icon('menu', 22));
 $('topSearch').append(icon('search', 20));
 $('navToggle').addEventListener('click', () => {
@@ -730,25 +805,47 @@ $('navToggle').addEventListener('click', () => {
   $('navToggle').setAttribute('aria-expanded', String(open));
 });
 
+// ============================================================ language
+function applyStaticTexts() {
+  document.querySelector('.skip').textContent = tr('Skip to content');
+  $('navToggle').setAttribute('aria-label', tr('Menu'));
+  $('topSearch').setAttribute('aria-label', tr('Search'));
+  $('side').setAttribute('aria-label', tr('Main menu'));
+  $('panel').setAttribute('aria-label', tr('Side panel'));
+  $('deck').setAttribute('aria-label', tr('Player'));
+  $('now').setAttribute('aria-label', tr('Now playing'));
+  $('eq').setAttribute('aria-label', tr('Equalizer'));
+}
+
+// Re-render everything in the new language. The audio element is untouched,
+// so whatever is playing keeps playing.
+window.addEventListener('langchange', () => {
+  applyStaticTexts();
+  buildDeck();
+  updateTrack(); updateState(); updateMode(); updateVolume(); updateSleep();
+  renderNav();
+  render({ keepScroll: true });
+  lyricsEl = null;
+  nowLyrics = null;
+  renderPanel();
+  togglePanelBtns();
+  renderNow();
+  if (!eqBox.hidden) renderEq();
+  renderHandoff();
+});
+
 // ============================================================ start
 async function boot() {
-  // Tekstovi iz index.html
-  document.querySelector('.skip').textContent = tr('Preskoči na sadržaj');
-  $('navToggle').setAttribute('aria-label', tr('Meni'));
-  $('topSearch').setAttribute('aria-label', tr('Pretraga'));
-  $('side').setAttribute('aria-label', tr('Glavni meni'));
-  $('panel').setAttribute('aria-label', tr('Bočni panel'));
-  $('deck').setAttribute('aria-label', tr('Player'));
-  $('now').setAttribute('aria-label', tr('Sada svira'));
-  $('eq').setAttribute('aria-label', tr('Ekvalizer'));
+  applyStaticTexts();
   buildDeck();
   updateTrack(); updateState(); updateMode(); updateVolume(); updateSleep();
   try { await store.load(); }
-  catch (e) { toast(tr('Server ne odgovara. Da li je Tunes pokrenuta?'), { error: true, timeout: 10000 }); }
+  catch (e) { toast(tr('The server isn\'t responding. Is Tunes running?'), { error: true, timeout: 10000 }); }
   renderNav();
   render();
   updateTrack();
   connectEvents();
+  maybeShowInstallHint();
   api('/api/session').then(({ session }) => { remote = session; renderHandoff(); }).catch(() => {});
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 }

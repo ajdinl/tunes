@@ -1,5 +1,5 @@
-// Service worker: omogućava instalaciju kao aplikacije (Dock / početni ekran).
-// Interfejs se uvek uzima sveži sa servera; keš služi samo kad server ne odgovara.
+// Service worker: makes the app installable (Dock / Home Screen).
+// The UI is always fetched fresh from the server; the cache is only used when the server does not respond.
 const CACHE = 'tunes-v1';
 
 self.addEventListener('install', () => self.skipWaiting());

@@ -1,5 +1,5 @@
-// Stanje aplikacije u browseru: biblioteka, omiljene, plejliste, istorija.
-// Server je izvor istine; ovde držimo kopiju i javljamo promene preko događaja.
+// App state in the browser: library, favorites, playlists, history.
+// The server is the source of truth; this keeps a copy and announces changes via events.
 import { norm, shuffleArray, tr } from './ui.js';
 
 export async function api(path, { method = 'GET', body } = {}) {
@@ -9,7 +9,7 @@ export async function api(path, { method = 'GET', body } = {}) {
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error ? tr(data.error) : tr('Greška {n}', { n: res.status }));
+  if (!res.ok) throw new Error(data.error ? tr(data.error) : tr('Error {n}', { n: res.status }));
   return data;
 }
 
@@ -60,8 +60,8 @@ class Store extends EventTarget {
     this.applyLibrary(await api('/api/library'));
   }
 
-  // Kolekcija = lokalni fajlovi + omiljene pesme sa interneta.
-  // Po njoj se prave izvođači, albumi i pametne plejliste.
+  // Collection = local files + favorite tracks from the internet.
+  // Artists, albums and smart playlists are built from it.
   get collection() {
     if (!this._collection) {
       const map = new Map(this.library.map((t) => [t.id, t]));
@@ -76,12 +76,12 @@ class Store extends EventTarget {
       const artists = new Map();
       const albums = new Map();
       for (const t of this.collection) {
-        const an = t.albumArtist || t.artist || tr('Nepoznat izvođač');
+        const an = t.albumArtist || t.artist || tr('Unknown artist');
         const ak = norm(an);
         if (!artists.has(ak)) artists.set(ak, { key: ak, name: an, tracks: [], albums: new Set(), cover: null });
         const a = artists.get(ak);
         a.tracks.push(t);
-        // Pesma se pojavljuje i kod izvođača koji nije glavni na albumu.
+        // A track also shows up under artists who are not the album artist.
         if (t.artist && norm(t.artist) !== ak) {
           const k2 = norm(t.artist);
           if (!artists.has(k2)) artists.set(k2, { key: k2, name: t.artist, tracks: [], albums: new Set(), cover: null });
@@ -175,7 +175,7 @@ class Store extends EventTarget {
     return r;
   }
 
-  // ------------------------------------------------------------ pretraga lokalno
+  // ------------------------------------------------------------ local search
   searchLocal(q) {
     const terms = norm(q).split(' ').filter(Boolean);
     if (!terms.length) return { tracks: [], artists: [], albums: [] };
@@ -186,7 +186,7 @@ class Store extends EventTarget {
     return { tracks, artists, albums };
   }
 
-  // ------------------------------------------------------------ pametne plejliste
+  // ------------------------------------------------------------ smart playlists
   smart(key) {
     const now = Date.now();
     const day = 864e5;
@@ -195,23 +195,23 @@ class Store extends EventTarget {
     const known = new Map([...historyTracks, ...this.collection.map((t) => [t.id, t])]);
     const favs = Object.values(this.favorites).map((f) => known.get(f.track.id) || f.track).filter((t) => !t.live);
     switch (key) {
-      case 'miks': {
-        // Nasumično, ali omiljene i često slušane pesme imaju veću šansu.
+      case 'mix': {
+        // Random, but favorites and frequently played tracks are more likely.
         const pool = this.collection.map((t) => ({
           t, w: Math.random() ** (1 / (1 + (this.isFav(t.id) ? 3 : 0) + Math.min(this.playCounts[t.id] || 0, 10) * 0.3)),
         }));
         return pool.sort((a, b) => b.w - a.w).slice(0, 60).map((x) => x.t);
       }
-      case 'najslusanije':
+      case 'most-played':
         return [...known.values()].filter((t) => (this.playCounts[t.id] || 0) > 0 && !t.live)
           .sort((a, b) => (this.playCounts[b.id] || 0) - (this.playCounts[a.id] || 0)).slice(0, 50);
-      case 'zaboravljene':
+      case 'forgotten':
         return shuffleArray(favs.filter((t) => !this.lastPlayed[t.id] || now - this.lastPlayed[t.id] > 30 * day)).slice(0, 50);
-      case 'novo':
+      case 'recent':
         return this.library.slice().sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0)).slice(0, 50);
-      case 'neslusano':
+      case 'unplayed':
         return shuffleArray(this.library.filter((t) => !this.playCounts[t.id])).slice(0, 100);
-      case 'sa-interneta':
+      case 'online':
         return favs.filter((t) => t.source !== 'local');
       default:
         return [];
@@ -220,12 +220,12 @@ class Store extends EventTarget {
 }
 
 export const SMART = [
-  { key: 'miks', name: tr('Moj miks'), desc: tr('Nasumično iz kolekcije, češće omiljene i slušane') },
-  { key: 'najslusanije', name: tr('Najslušanije'), desc: tr('Pjesme koje najčešće puštaš') },
-  { key: 'zaboravljene', name: tr('Zaboravljene omiljene'), desc: tr('Omiljene koje nisu puštene više od mjesec dana') },
-  { key: 'novo', name: tr('Nedavno dodano'), desc: tr('Posljednje pjesme stigle na računar') },
-  { key: 'neslusano', name: tr('Još nepušteno'), desc: tr('Pjesme sa računara koje još nisu puštene') },
-  { key: 'sa-interneta', name: tr('Otkriveno na internetu'), desc: tr('Omiljene sa Audius-a, Archive-a i Jamendo-a') },
+  { key: 'mix', name: 'My mix', desc: 'Random picks from your collection, favorites more often' },
+  { key: 'most-played', name: 'Most played', desc: 'Songs you play the most' },
+  { key: 'forgotten', name: 'Forgotten favorites', desc: 'Favorites not played in over a month' },
+  { key: 'recent', name: 'Recently added', desc: 'Latest songs added to this computer' },
+  { key: 'unplayed', name: 'Never played', desc: 'Songs on this computer you haven\'t played yet' },
+  { key: 'online', name: 'Discovered online', desc: 'Favorites from Audius, Archive and Jamendo' },
 ];
 
 export const store = new Store();

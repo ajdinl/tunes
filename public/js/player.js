@@ -1,29 +1,33 @@
-// Player: red za puštanje, nasumično/ponavljanje, ekvalizer, analizator
-// spektra, istorija, Media Session (tasteri na tastaturi i kontrolni centar).
+// Player: play queue, shuffle/repeat, equalizer, spectrum analyser,
+// history, Media Session (media keys and Control Center), offline buffer.
 import { store, api } from './store.js';
-import { shuffleArray, tr } from './ui.js';
+import { shuffleArray, toast, tr } from './ui.js';
+import { offline } from './offline.js';
+
+const STALL_MS = 8000; // stalled this long while offline: switch to the downloaded copy
+const STALL_ONLINE_MS = 15000; // same, when the browser still claims to be online
 
 export const EQ_FREQS = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 export const EQ_PRESETS = {
-  Ravno: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  Bas: [6, 5, 4, 2, 0, 0, 0, 0, 0, 0],
-  Vokal: [-2, -1, 0, 2, 4, 4, 3, 1, 0, -1],
-  Rok: [4, 3, 1, -1, -2, 0, 2, 3, 4, 4],
-  Elektronika: [5, 4, 1, 0, -2, 1, 0, 1, 4, 5],
-  Akustika: [3, 2, 1, 1, 2, 2, 3, 2, 2, 1],
-  'Tiho noću': [-3, -2, 0, 1, 2, 2, 1, 0, -2, -4],
+  Flat: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  Bass: [6, 5, 4, 2, 0, 0, 0, 0, 0, 0],
+  Vocal: [-2, -1, 0, 2, 4, 4, 3, 1, 0, -1],
+  Rock: [4, 3, 1, -1, -2, 0, 2, 3, 4, 4],
+  Electronic: [5, 4, 1, 0, -2, 1, 0, 1, 4, 5],
+  Acoustic: [3, 2, 1, 1, 2, 2, 3, 2, 2, 1],
+  'Quiet night': [-3, -2, 0, 1, 2, 2, 1, 0, -2, -4],
 };
 
 const LS = {
-  get(k, d) { try { const v = localStorage.getItem('sl.' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
-  set(k, v) { try { localStorage.setItem('sl.' + k, JSON.stringify(v)); } catch { /* pun disk */ } },
+  get(k, d) { try { const v = localStorage.getItem('tunes.' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('tunes.' + k, JSON.stringify(v)); } catch { /* storage full */ } },
 };
 
 class Player extends EventTarget {
   constructor() {
     super();
-    this.fx = new Audio();     // ide kroz ekvalizer i analizator
-    this.plain = new Audio();  // rezerva za stanice koje ne rade preko proxy-ja
+    this.fx = new Audio();     // goes through the equalizer and analyser
+    this.plain = new Audio();  // fallback for stations that don't work through the proxy
     this.fx.preload = 'metadata';
     this.el = this.fx;
     this.queue = [];
@@ -40,7 +44,10 @@ class Player extends EventTarget {
     this.ctx = null;
     this.filters = [];
     this.analyser = null;
-    this.eq = LS.get('eq', { enabled: false, preset: 'Ravno', gains: EQ_PRESETS.Ravno.slice() });
+    this.eq = LS.get('eq', { enabled: false, preset: 'Flat', gains: EQ_PRESETS.Flat.slice() });
+    this.loadSeq = 0;          // bumped on every load(), guards async source switches
+    this.offlineSrc = false;   // fx is playing a downloaded copy (blob URL)
+    this.stallTimer = 0;
 
     for (const el of [this.fx, this.plain]) {
       el.volume = this.volume;
@@ -53,6 +60,11 @@ class Player extends EventTarget {
       el.addEventListener('ended', () => this.onEnded(el));
       el.addEventListener('error', () => this.onError(el));
     }
+    // Offline buffer: keep the current and next songs downloaded.
+    for (const type of ['track', 'queue']) this.addEventListener(type, () => this.schedulePrefetch());
+    this.fx.addEventListener('playing', () => this.schedulePrefetch());
+    for (const type of ['waiting', 'stalled']) this.fx.addEventListener(type, () => this.armStall());
+    for (const type of ['playing', 'timeupdate', 'pause', 'emptied']) this.fx.addEventListener(type, () => this.clearStall());
     this.setupMediaSession();
     this.restore();
   }
@@ -70,7 +82,7 @@ class Player extends EventTarget {
   }
 
   // ------------------------------------------------------------ Web Audio
-  // Na telefonima zvuk ne ide kroz Web Audio: iOS i Android ga gase kad se ekran zaključa.
+  // On phones audio skips Web Audio: iOS and Android silence it when the screen locks.
   get mobile() { return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent); }
 
   ensureGraph() {
@@ -112,10 +124,10 @@ class Player extends EventTarget {
     });
   }
 
-  // Da li trenutni zvuk prolazi kroz analizator (radio rezerva ne prolazi).
+  // Whether the current audio goes through the analyser (the radio fallback doesn't).
   get analysing() { return Boolean(this.analyser) && this.el === this.fx; }
 
-  // ------------------------------------------------------------ red za puštanje
+  // ------------------------------------------------------------ play queue
   playList(tracks, start = 0, { shuffle = this.shuffle, context = null } = {}) {
     if (!tracks.length) return;
     let list = tracks.slice();
@@ -132,7 +144,7 @@ class Player extends EventTarget {
     this.emit('queue');
   }
 
-  // Nastavak sa drugog uređaja: isti red, ista pjesma, ista sekunda.
+  // Continue from another device: same queue, same song, same second.
   resumeAt(queue, index, time, context) {
     if (!queue?.length) return;
     this.queue = queue.slice();
@@ -211,7 +223,7 @@ class Player extends EventTarget {
     this.emit('mode');
   }
 
-  // ------------------------------------------------------------ puštanje
+  // ------------------------------------------------------------ playback
   load(i, autoplay) {
     this.index = i;
     const t = this.track;
@@ -224,17 +236,26 @@ class Player extends EventTarget {
     this.plain.pause();
     this.plain.removeAttribute('src');
     this.el = this.fx;
-    this.fx.src = t.stream;
-    if (this.pendingSeek && !t.live) {
-      const at = this.pendingSeek;
-      this.fx.addEventListener('loadedmetadata', () => { this.fx.currentTime = at; this.lastT = at; this.emit('time'); }, { once: true });
-    }
+    this.clearStall();
+    const seq = ++this.loadSeq;
+    const at = this.pendingSeek && !t.live ? this.pendingSeek : 0;
     this.pendingSeek = 0;
-    if (autoplay) {
-      this.ensureGraph();
-      this.fx.play().catch((e) => { if (e.name !== 'AbortError') this.emit('error', tr('Puštanje je blokirano: klikni Play.')); });
-      if (!t.live) api('/api/nowplaying', { method: 'POST', body: { track: t } }).catch(() => {});
+    const start = (src, isCopy) => {
+      this.offlineSrc = isCopy;
+      this.fx.src = src;
+      if (at) this.fx.addEventListener('loadedmetadata', () => { this.fx.currentTime = at; this.lastT = at; this.emit('time'); }, { once: true });
+      if (autoplay) this.fx.play().catch((e) => { if (e.name !== 'AbortError') this.emit('error', tr('Playback was blocked: press Play.')); });
+    };
+    if (autoplay) this.ensureGraph();
+    // Play the downloaded copy when there is one. Songs in the prefetch window already
+    // have an object URL; others need a quick IndexedDB read first.
+    const copy = t.live ? null : offline.url(t.id);
+    if (copy || t.live || !offline.isCached(t.id)) start(copy || t.stream, Boolean(copy));
+    else {
+      this.fx.pause();
+      offline.get(t.id).then((url) => { if (seq === this.loadSeq) start(url || t.stream, Boolean(url)); });
     }
+    if (autoplay && !t.live) api('/api/nowplaying', { method: 'POST', body: { track: t } }).catch(() => {});
     this.updateMediaSession();
     this.emit('track', t);
     this.emit('state');
@@ -243,13 +264,13 @@ class Player extends EventTarget {
 
   toggle() {
     if (!this.track) {
-      const pool = store.smart('miks');
-      if (pool.length) this.playList(pool, 0, { context: { label: 'Moj miks', href: '#/pametna/miks' } });
+      const pool = store.smart('mix');
+      if (pool.length) this.playList(pool, 0, { context: { label: tr('My mix'), href: '#/smart/mix' } });
       return;
     }
     if (this.el.paused) {
       this.ensureGraph();
-      // Radio posle pauze kreće ispočetka, da ne svira zastareli bafer.
+      // After a pause radio restarts, so it doesn't play a stale buffer.
       if (this.track.live && this.el === this.fx) this.fx.src = this.track.stream;
       this.el.play().catch(() => {});
     } else this.el.pause();
@@ -301,7 +322,7 @@ class Player extends EventTarget {
     this.emit('volume');
   }
 
-  // ------------------------------------------------------------ događaji
+  // ------------------------------------------------------------ events
   onTime(el) {
     if (el !== this.el) return;
     const t = el.currentTime;
@@ -309,7 +330,7 @@ class Player extends EventTarget {
     if (d > 0 && d < 2 && !el.paused) this.listened += d;
     this.lastT = t;
     const track = this.track;
-    // Pravilo kao kod ListenBrainz-a: pola pesme ili 4 minuta.
+    // Same rule as ListenBrainz: half the song or 4 minutes.
     if (track && !this.logged) {
       const dur = this.duration;
       const enough = track.live ? this.listened >= 30 : (dur > 30 && this.listened >= Math.min(dur / 2, 240));
@@ -332,7 +353,22 @@ class Player extends EventTarget {
     if (el !== this.el || !el.getAttribute('src')) return;
     const t = this.track;
     if (!t) return;
-    // Neke radio stanice ne rade preko proxy-ja: puštamo ih direktno (bez ekvalizera).
+    if (el === this.fx && !t.live) {
+      // The downloaded copy itself is broken: drop it and stream instead.
+      if (this.offlineSrc) {
+        this.offlineSrc = false;
+        offline.remove(t.id);
+        this.switchSrc(t.stream);
+        return;
+      }
+      // The stream failed (usually the network): continue from the downloaded copy.
+      if (offline.isCached(t.id)) {
+        const seq = this.loadSeq;
+        this.useOfflineCopy().then((ok) => { if (!ok && seq === this.loadSeq) this.failTrack(t); });
+        return;
+      }
+    }
+    // Some radio stations don't work through the proxy: play them directly (no equalizer).
     if (t.live && !this.triedDirect) {
       this.triedDirect = true;
       const direct = new URL(t.stream, location.href).searchParams.get('u');
@@ -346,13 +382,68 @@ class Player extends EventTarget {
         return;
       }
     }
+    this.failTrack(t);
+  }
+
+  failTrack(t) {
     this.errors++;
-    this.emit('error', t.live ? tr('Stanica „{title}” trenutno ne emituje.', { title: t.title }) : tr('„{title}” ne može da se pusti.', { title: t.title }));
+    this.emit('error', t.live ? tr('Station “{title}” isn\'t broadcasting right now.', { title: t.title }) : tr('“{title}” can\'t be played.', { title: t.title }));
     if (!t.live && this.errors < 3 && this.index < this.queue.length - 1) setTimeout(() => this.next(true), 1200);
     this.emit('state');
   }
 
-  // ------------------------------------------------------------ tajmer za spavanje
+  // ------------------------------------------------------------ offline buffer
+  schedulePrefetch() {
+    clearTimeout(this.prefetchTimer);
+    // Short delay so the stream that just started gets the bandwidth first.
+    this.prefetchTimer = setTimeout(() => offline.prefetch(this.queue, this.index), 1500);
+  }
+
+  // Switch to the downloaded copy after 8 s of stalling while the browser reports
+  // offline, or after 15 s even when it says "online": phones on mobile data often
+  // stay "online" while the connection to the home computer is gone.
+  armStall(elapsed = 0) {
+    if ((this.stallTimer && !elapsed) || this.el !== this.fx || this.offlineSrc) return;
+    const wait = elapsed ? STALL_ONLINE_MS - elapsed : STALL_MS;
+    this.stallTimer = setTimeout(() => {
+      this.stallTimer = 0;
+      const t = this.track;
+      if (!t || t.live || this.el !== this.fx || this.offlineSrc) return;
+      if (this.fx.paused || this.fx.readyState >= 3 || !offline.isCached(t.id)) return;
+      if (navigator.onLine === false || elapsed) { this.useOfflineCopy(); return; }
+      this.armStall(STALL_MS);
+    }, wait);
+  }
+
+  clearStall() {
+    clearTimeout(this.stallTimer);
+    this.stallTimer = 0;
+  }
+
+  // Loads src into fx and resumes at the last known position.
+  switchSrc(src) {
+    const at = this.fx.currentTime || this.lastT || 0;
+    this.fx.src = src;
+    if (at) this.fx.addEventListener('loadedmetadata', () => { this.fx.currentTime = at; this.lastT = at; this.emit('time'); }, { once: true });
+    this.fx.play().catch(() => {});
+    this.emit('state');
+  }
+
+  // Switches the current song to its downloaded copy. Resolves false if there is none.
+  async useOfflineCopy() {
+    const t = this.track;
+    const seq = this.loadSeq;
+    if (!t || this.offlineSrc) return false;
+    const url = await offline.get(t.id);
+    if (!url || seq !== this.loadSeq || this.el !== this.fx || this.offlineSrc) return false;
+    this.clearStall();
+    this.offlineSrc = true;
+    this.switchSrc(url);
+    toast(tr('Connection lost: playing the downloaded copy'));
+    return true;
+  }
+
+  // ------------------------------------------------------------ sleep timer
   setSleep(minutes) {
     if (!minutes) return this.clearSleep();
     this.sleep = minutes === 'end' ? { mode: 'end' } : { mode: 'time', until: Date.now() + minutes * 60000, minutes };
@@ -383,7 +474,7 @@ class Player extends EventTarget {
   setupMediaSession() {
     const ms = navigator.mediaSession;
     if (!ms) return;
-    const set = (a, f) => { try { ms.setActionHandler(a, f); } catch { /* nepodržano */ } };
+    const set = (a, f) => { try { ms.setActionHandler(a, f); } catch { /* unsupported */ } };
     set('play', () => this.play());
     set('pause', () => this.pause());
     set('nexttrack', () => this.next());
@@ -420,7 +511,7 @@ class Player extends EventTarget {
     this.emit('icy', title);
   }
 
-  // ------------------------------------------------------------ čuvanje reda
+  // ------------------------------------------------------------ saving the queue
   persist() {
     LS.set('queue', { queue: this.queue.slice(0, 2000), index: this.index, time: this.track?.live ? 0 : this.time, context: this.context });
   }
@@ -433,7 +524,7 @@ class Player extends EventTarget {
     this.context = s.context;
     const t = this.track;
     if (!t) return;
-    // Radio se ne učitava unapred: toggle() ga pokreće tek na Play.
+    // Radio isn't preloaded: toggle() starts it only on Play.
     if (!t.live) this.fx.src = t.stream;
     if (s.time && !t.live) {
       this.fx.addEventListener('loadedmetadata', () => { this.fx.currentTime = s.time; this.lastT = s.time; this.emit('time'); }, { once: true });

@@ -1,5 +1,5 @@
-// Tekstovi pesama sa LRCLIB-a. Sinhronizovani tekst prati pesmu red po red,
-// a klik na red premotava na to mesto.
+// Lyrics from LRCLIB. Synced lyrics follow the track line by line,
+// and clicking a line seeks to that point.
 import { h, tr } from './ui.js';
 import { api } from './store.js';
 import { player } from './player.js';
@@ -26,7 +26,7 @@ export async function getLyrics(t) {
   return out;
 }
 
-// Pravi prikaz teksta koji se sam osvežava kad se promeni pesma.
+// Builds a lyrics view that refreshes itself when the track changes.
 export function lyricsView({ big = false } = {}) {
   const root = h('div.lyr', { class: big ? 'lyr--big' : '' });
   let lines = [];
@@ -43,16 +43,16 @@ export function lyricsView({ big = false } = {}) {
     const my = ++token;
     lines = []; nodes = []; current = -1;
     root.replaceChildren();
-    if (!t) { root.append(h('p.lyr__msg', {}, tr('Pusti pjesmu i ovdje će se pojaviti njen tekst.'))); return; }
-    if (t.live) { root.append(h('p.lyr__msg', {}, tr('Radio stanice nemaju tekstove. Naziv pjesme koja ide uživo vidiš na skali.'))); return; }
-    root.append(h('p.lyr__msg', {}, tr('Tražim tekst…')));
+    if (!t) { root.append(h('p.lyr__msg', {}, tr('Play a song and its lyrics will appear here.'))); return; }
+    if (t.live) { root.append(h('p.lyr__msg', {}, tr('Radio stations have no lyrics. The song playing live is shown on the dial.'))); return; }
+    root.append(h('p.lyr__msg', {}, tr('Looking for lyrics…')));
     let data = null;
     try { data = await getLyrics(t); } catch { data = undefined; }
     if (my !== token) return;
     root.replaceChildren();
-    if (data === undefined) { root.append(h('p.lyr__msg', {}, tr('LRCLIB trenutno ne odgovara. Pokušaj ponovo za par minuta.'))); return; }
-    if (!data) { root.append(h('p.lyr__msg', {}, tr('Nema teksta za „{title}” u bazi LRCLIB.', { title: t.title }))); return; }
-    if (data.instrumental) { root.append(h('p.lyr__msg', {}, tr('Instrumental: ova pjesma nema tekst.'))); return; }
+    if (data === undefined) { root.append(h('p.lyr__msg', {}, tr('LRCLIB isn\'t responding. Try again in a few minutes.'))); return; }
+    if (!data) { root.append(h('p.lyr__msg', {}, tr('No lyrics for “{title}” in LRCLIB.', { title: t.title }))); return; }
+    if (data.instrumental) { root.append(h('p.lyr__msg', {}, tr('Instrumental: this song has no lyrics.'))); return; }
     if (data.synced?.length) {
       lines = data.synced;
       nodes = lines.map((l) => h('button.lyr__line', { type: 'button', onclick: () => { player.seek(l.t); userScrollUntil = 0; } }, l.text || '♪'));

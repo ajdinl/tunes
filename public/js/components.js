@@ -1,27 +1,27 @@
-// Delovi interfejsa koji se ponavljaju: lista pesama, mreža omota, zaglavlje,
-// meni za pesmu.
+// Reusable UI pieces: track list, cover grid, page header,
+// track menu.
 import { h, icon, iconBtn, cover, fmtTime, fmtDuration, songs, sourceTag, toast, openMenu, ask, norm, tr } from './ui.js';
 import { store, api } from './store.js';
 import { player } from './player.js';
 
 export const go = (hash) => { location.hash = hash; };
-export const artistHref = (name) => '#/izvodjac/' + encodeURIComponent(norm(name));
+export const artistHref = (name) => '#/artist/' + encodeURIComponent(norm(name));
 export const albumHref = (key) => '#/album/' + encodeURIComponent(key);
 
-// ------------------------------------------------------------ meni za pesmu
+// ------------------------------------------------------------ track menu
 export function trackMenu(track, { playlist, index, list } = {}) {
   const items = [];
   if (!track.live) {
-    items.push({ label: tr('Pusti sljedeće'), icon: 'next', action: () => { player.playNext(track); toast(tr('„{title}” ide sljedeća', { title: track.title })); } });
-    items.push({ label: tr('Dodaj u red'), icon: 'queue', action: () => { player.addToQueue(track); toast(tr('Dodano u red')); } });
+    items.push({ label: tr('Play next'), icon: 'next', action: () => { player.playNext(track); toast(tr('“{title}” plays next', { title: track.title })); } });
+    items.push({ label: tr('Add to queue'), icon: 'queue', action: () => { player.addToQueue(track); toast(tr('Added to queue')); } });
     items.push({
-      label: tr('Dodaj u plejlistu'),
+      label: tr('Add to playlist'),
       items: [
-        { label: tr('Nova plejlista…'), icon: 'plus', action: async () => {
-          const name = await ask(tr('Nova plejlista'), { placeholder: tr('Naziv plejliste'), confirm: tr('Napravi') });
+        { label: tr('New playlist…'), icon: 'plus', action: async () => {
+          const name = await ask(tr('New playlist'), { placeholder: tr('Playlist name'), confirm: tr('Create') });
           if (!name) return;
           const p = await store.createPlaylist(name, [track]);
-          toast(tr('Napravljena plejlista „{name}”', { name: p.name }), { action: tr('Otvori'), onAction: () => go('#/plejlista/' + p.id) });
+          toast(tr('Created playlist “{name}”', { name: p.name }), { action: tr('Open'), onAction: () => go('#/playlist/' + p.id) });
         } },
         store.playlists.length ? '-' : null,
         ...store.playlists.map((p) => ({ label: p.name, action: () => addToPlaylist(p, [track]) })),
@@ -30,30 +30,30 @@ export function trackMenu(track, { playlist, index, list } = {}) {
     items.push('-');
   }
   items.push({
-    label: store.isFav(track.id) ? 'Ukloni iz omiljenih' : tr('Dodaj u omiljene'),
+    label: store.isFav(track.id) ? tr('Remove from favorites') : tr('Add to favorites'),
     icon: store.isFav(track.id) ? 'heartFill' : 'heart',
     action: () => toggleFav(track),
   });
   if (track.live) {
-    items.push({ label: store.isStation(track.id) ? 'Ukloni iz mojih stanica' : tr('Sačuvaj stanicu'), icon: 'radio', action: () => store.toggleStation(track) });
+    items.push({ label: store.isStation(track.id) ? tr('Remove from my stations') : tr('Save station'), icon: 'radio', action: () => store.toggleStation(track) });
   } else {
-    if (track.artist) items.push({ label: tr('Idi na izvođača'), icon: 'artist', action: () => openArtist(track) });
-    if (track.album) items.push({ label: tr('Idi na album'), icon: 'album', action: () => openAlbum(track) });
+    if (track.artist) items.push({ label: tr('Go to artist'), icon: 'artist', action: () => openArtist(track) });
+    if (track.album) items.push({ label: tr('Go to album'), icon: 'album', action: () => openAlbum(track) });
   }
-  if (track.download) items.push({ label: tr('Sačuvaj na računar'), icon: 'download', action: () => saveToLibrary([track]) });
-  if (track.link) items.push({ label: tr('Otvori na sajtu izvora'), icon: 'external', action: () => window.open(track.link, '_blank', 'noopener') });
+  if (track.download) items.push({ label: tr('Save to computer'), icon: 'download', action: () => saveToLibrary([track]) });
+  if (track.link) items.push({ label: tr('Open on source website'), icon: 'external', action: () => window.open(track.link, '_blank', 'noopener') });
   if (playlist) {
     items.push('-');
-    items.push({ label: tr('Ukloni iz ove plejliste'), icon: 'trash', action: async () => {
+    items.push({ label: tr('Remove from this playlist'), icon: 'trash', action: async () => {
       const tracks = playlist.tracks.slice();
       tracks.splice(index, 1);
       await store.updatePlaylist(playlist.id, { tracks });
-      toast(tr('Uklonjeno iz plejliste'));
+      toast(tr('Removed from playlist'));
     } });
   }
   if (list && !playlist && list.length > 1 && !track.live) {
     items.push('-');
-    items.push({ label: tr('Dodaj cijelu listu u plejlistu…'), icon: 'plus', action: () => addAllToPlaylist(list) });
+    items.push({ label: tr('Add whole list to playlist…'), icon: 'plus', action: () => addAllToPlaylist(list) });
   }
   return items;
 }
@@ -61,26 +61,26 @@ export function trackMenu(track, { playlist, index, list } = {}) {
 export async function toggleFav(track) {
   try {
     const fav = await store.toggleFav(track);
-    toast(fav ? tr('„{title}” je u omiljenim', { title: track.title }) : tr('Uklonjeno iz omiljenih'));
+    toast(fav ? tr('“{title}” added to favorites', { title: track.title }) : tr('Removed from favorites'));
   } catch (e) { toast(e.message, { error: true }); }
 }
 
 export async function addToPlaylist(p, tracks) {
   const have = new Set(p.tracks.map((t) => t.id));
   const fresh = tracks.filter((t) => !have.has(t.id) && !t.live);
-  if (!fresh.length) { toast(tr('Već je u plejlisti „{name}”', { name: p.name })); return; }
+  if (!fresh.length) { toast(tr('Already in playlist “{name}”', { name: p.name })); return; }
   await store.updatePlaylist(p.id, { add: fresh });
-  toast(fresh.length === 1 ? tr('Dodano u „{name}”', { name: p.name }) : tr('{n} dodano u „{name}”', { n: songs(fresh.length), name: p.name }));
+  toast(fresh.length === 1 ? tr('Added to “{name}”', { name: p.name }) : tr('{n} added to “{name}”', { n: songs(fresh.length), name: p.name }));
 }
 
 export async function addAllToPlaylist(tracks) {
   const options = store.playlists.map((p) => p.name).join(', ');
-  const name = await ask(tr('Dodaj u plejlistu'), { placeholder: options ? tr('Postojeća ({list}) ili nova', { list: options }) : tr('Naziv nove plejliste'), confirm: tr('Dodaj') });
+  const name = await ask(tr('Add to playlist'), { placeholder: options ? tr('Existing ({list}) or new', { list: options }) : tr('New playlist name'), confirm: tr('Add') });
   if (!name) return;
   const existing = store.playlists.find((p) => p.name.toLowerCase() === name.toLowerCase());
   if (existing) return addToPlaylist(existing, tracks);
   const p = await store.createPlaylist(name, tracks.filter((t) => !t.live));
-  toast(tr('Napravljena plejlista „{name}”', { name: p.name }), { action: tr('Otvori'), onAction: () => go('#/plejlista/' + p.id) });
+  toast(tr('Created playlist “{name}”', { name: p.name }), { action: tr('Open'), onAction: () => go('#/playlist/' + p.id) });
 }
 
 function openArtist(track) {
@@ -91,31 +91,31 @@ function openArtist(track) {
   const key = norm(track.albumArtist || track.artist);
   if (store.index.artistMap.has(key)) go(artistHref(track.albumArtist || track.artist));
   else if (store.index.artistMap.has(norm(track.artist))) go(artistHref(track.artist));
-  else go('#/pretraga?q=' + encodeURIComponent(track.artist));
+  else go('#/search?q=' + encodeURIComponent(track.artist));
 }
 
 function openAlbum(track) {
   if (track.source === 'archive') { go('#/archive/' + encodeURIComponent(track.id.slice(3).split('/')[0])); return; }
-  const key = norm(track.albumArtist || track.artist || tr('Nepoznat izvođač')) + '|' + norm(track.album);
+  const key = norm(track.albumArtist || track.artist || tr('Unknown artist')) + '|' + norm(track.album);
   if (store.index.albumMap.has(key)) go(albumHref(key));
-  else go('#/pretraga?q=' + encodeURIComponent(track.album));
+  else go('#/search?q=' + encodeURIComponent(track.album));
 }
 
 export async function saveToLibrary(tracks) {
   const list = tracks.filter((t) => t.download);
-  if (!list.length) { toast(tr('Izvor ne dozvoljava preuzimanje ovih pjesama'), { error: true }); return; }
-  toast(list.length === 1 ? tr('Čuvam „{title}” na računar…', { title: list[0].title }) : tr('Čuvam {n} na računar…', { n: songs(list.length) }));
+  if (!list.length) { toast(tr('The source doesn\'t allow downloading these songs'), { error: true }); return; }
+  toast(list.length === 1 ? tr('Saving “{title}” to your computer…', { title: list[0].title }) : tr('Saving {n} to your computer…', { n: songs(list.length) }));
   let ok = 0;
   for (const t of list) {
     try { await api('/api/download', { method: 'POST', body: { track: t } }); ok++; }
     catch (e) { toast(`„${t.title}”: ${e.message}`, { error: true }); }
   }
-  if (ok) toast(ok === 1 ? 'Sačuvano u biblioteku' : tr('{n} sačuvano u biblioteku', { n: songs(ok) }), { action: tr('Pogledaj'), onAction: () => go('#/pesme') });
+  if (ok) toast(ok === 1 ? tr('Saved to library') : tr('{n} saved to library', { n: songs(ok) }), { action: tr('View'), onAction: () => go('#/songs') });
 }
 
-// ------------------------------------------------------------ lista pesama
-// Velike liste se crtaju u delovima dok skroluješ, pa i 20.000 pesama radi glatko.
-export function trackList(tracks, { context = null, numbered = false, album = true, coverArt = true, playlist = null, leading = null, sortable = false, emptyText = tr('Nema pjesama.') } = {}) {
+// ------------------------------------------------------------ track list
+// Large lists render in chunks as you scroll, so even 20,000 tracks stay smooth.
+export function trackList(tracks, { context = null, numbered = false, album = true, coverArt = true, playlist = null, leading = null, sortable = false, emptyText = tr('No songs.') } = {}) {
   if (!tracks.length) return h('p.empty', {}, emptyText);
   const wrap = h('div.tl', { role: 'list', class: [album ? '' : 'tl--noalbum', coverArt ? '' : 'tl--nocover'].join(' ') });
   const CHUNK = 200;
@@ -140,7 +140,7 @@ export function trackList(tracks, { context = null, numbered = false, album = tr
     },
     h('div.tr__lead', {},
       h('span.tr__num', {}, String(lead)),
-      h('button.tr__play', { type: 'button', 'aria-label': tr('Pusti ') + t.title, onclick: (e) => { e.stopPropagation(); play(i); } }, icon('play', 16))),
+      h('button.tr__play', { type: 'button', 'aria-label': tr('Play ') + t.title, onclick: (e) => { e.stopPropagation(); play(i); } }, icon('play', 16))),
     coverArt ? cover(t.cover, t.title, 'tr__cv') : null,
     h('div.tr__main', {},
       h('span.tr__title', {}, t.title),
@@ -148,12 +148,12 @@ export function trackList(tracks, { context = null, numbered = false, album = tr
     album ? h('span.tr__album', {}, t.album || '') : null,
     h('span.tr__src', {}, sourceTag(t.source)),
     h('button.tr__fav', {
-      type: 'button', class: fav ? 'is-on' : '', 'aria-pressed': String(fav), 'aria-label': fav ? 'Ukloni iz omiljenih' : tr('Dodaj u omiljene'),
+      type: 'button', class: fav ? 'is-on' : '', 'aria-pressed': String(fav), 'aria-label': fav ? tr('Remove from favorites') : tr('Add to favorites'),
       onclick: (e) => { e.stopPropagation(); toggleFav(t); },
     }, icon(fav ? 'heartFill' : 'heart', 17)),
-    h('span.tr__dur', {}, t.live ? 'uživo' : fmtTime(t.duration)),
+    h('span.tr__dur', {}, t.live ? tr('live') : fmtTime(t.duration)),
     h('button.tr__more', {
-      type: 'button', 'aria-label': tr('Još opcija'),
+      type: 'button', 'aria-label': tr('More options'),
       onclick: (e) => { e.stopPropagation(); const b = e.currentTarget.getBoundingClientRect(); openMenu(b.left - 180, b.bottom + 4, trackMenu(t, { playlist, index: i, list: tracks })); },
     }, icon('more', 18)));
     if (player.track?.id === t.id) r.classList.add('is-playing');
@@ -193,13 +193,13 @@ export function trackList(tracks, { context = null, numbered = false, album = tr
   return wrap;
 }
 
-// ------------------------------------------------------------ mreža omota
+// ------------------------------------------------------------ cover grid
 export function grid(items, { round = false } = {}) {
   return h('div.grid', { class: round ? 'grid--round' : '' }, items.map((it) =>
     h('div.tile', {},
       h('a.tile__link', { href: it.href, 'aria-label': it.title },
         it.collage ? collage(it.collage, it.title) : cover(it.cover, it.title, 'tile__cv')),
-      it.play ? h('button.tile__play', { type: 'button', 'aria-label': tr('Pusti ') + it.title, onclick: it.play }, icon('play', 18)) : null,
+      it.play ? h('button.tile__play', { type: 'button', 'aria-label': tr('Play ') + it.title, onclick: it.play }, icon('play', 18)) : null,
       h('a.tile__title', { href: it.href, tabindex: '-1' }, it.title),
       it.sub ? h('span.tile__sub', {}, it.sub) : null)));
 }
@@ -210,7 +210,7 @@ export function collage(covers, label) {
   return h('div.cv.cv--collage.tile__cv', {}, list.map((c) => h('img', { src: c, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer', onerror: (e) => { e.target.style.visibility = 'hidden'; } })));
 }
 
-// ------------------------------------------------------------ zaglavlje stranice
+// ------------------------------------------------------------ page header
 export function header({ title, kicker, meta, art, actions = [], big = false }) {
   return h('header.hd', { class: (art ? 'hd--art ' : '') + (big ? 'hd--big' : '') },
     art || null,
@@ -224,8 +224,8 @@ export function header({ title, kicker, meta, art, actions = [], big = false }) 
 export function playButtons(tracks, context) {
   if (!tracks.length) return [];
   return [
-    h('button.btn.btn--primary', { type: 'button', onclick: () => player.playList(tracks, 0, { shuffle: false, context }) }, icon('play', 18), tr('Pusti')),
-    h('button.btn', { type: 'button', onclick: () => player.playList(tracks, -1, { shuffle: true, context }) }, icon('shuffle', 18), tr('Nasumično')),
+    h('button.btn.btn--primary', { type: 'button', onclick: () => player.playList(tracks, 0, { shuffle: false, context }) }, icon('play', 18), tr('Play')),
+    h('button.btn', { type: 'button', onclick: () => player.playList(tracks, -1, { shuffle: true, context }) }, icon('shuffle', 18), tr('Shuffle')),
   ];
 }
 
@@ -253,18 +253,18 @@ export function chips(options, active, onPick, label) {
     box.replaceChildren(...options.map((o) => h('button.chip', {
       type: 'button', 'aria-pressed': String(o.value === cur), class: o.value === cur ? 'is-on' : '',
       onclick: () => { render(o.value); onPick(o.value); },
-    }, o.label)));
+    }, tr(o.label))));
   };
   render(active);
   return box;
 }
 
-export function loading(text = tr('Učitavam…')) {
+export function loading(text = tr('Loading…')) {
   return h('p.loading', { role: 'status' }, h('span.loading__dot'), text);
 }
 
 export function errorBox(msg, retry) {
-  return h('div.err', { role: 'alert' }, h('p', {}, msg), retry ? h('button.btn', { type: 'button', onclick: retry }, icon('refresh', 16), tr('Pokušaj ponovo')) : null);
+  return h('div.err', { role: 'alert' }, h('p', {}, msg), retry ? h('button.btn', { type: 'button', onclick: retry }, icon('refresh', 16), tr('Try again')) : null);
 }
 
 export { iconBtn };
