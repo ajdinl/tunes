@@ -183,7 +183,10 @@ function buildDeck() {
 }
 
 function bindDial(box, dial, tip) {
+  // Mouse: press and drag seeks right away. Touch: a tap or a sideways drag seeks, but a
+  // vertical swipe (closing the app from the iPhone home bar, scrolling) is ignored.
   let dragging = false;
+  let touch = null; // { x, y } where a touch started, until we know which way it goes
   const show = (e) => {
     if (!player.track || player.track.live) return;
     dial.hoverX = dial.xAt(e.clientX);
@@ -191,16 +194,36 @@ function bindDial(box, dial, tip) {
     tip.textContent = fmtTime(dial.timeAt(e.clientX));
     tip.style.left = dial.hoverX + 'px';
   };
-  box.addEventListener('pointermove', (e) => { show(e); if (dragging) player.seek(dial.timeAt(e.clientX)); });
-  box.addEventListener('pointerleave', () => { if (!dragging) { dial.hoverX = null; tip.hidden = true; } });
+  const hide = () => { dial.hoverX = null; tip.hidden = true; };
+  box.addEventListener('pointermove', (e) => {
+    if (touch && !dragging) {
+      const dx = Math.abs(e.clientX - touch.x);
+      const dy = Math.abs(e.clientY - touch.y);
+      if (dy > 10 && dy > dx) { touch = null; hide(); return; }
+      if (dx > 8) dragging = true; else return;
+    }
+    if (e.pointerType !== 'mouse' && !dragging) return;
+    show(e);
+    if (dragging) player.seek(dial.timeAt(e.clientX));
+  });
+  box.addEventListener('pointerleave', () => { if (!dragging) hide(); });
   box.addEventListener('pointerdown', (e) => {
     if (!player.track || player.track.live) return;
-    dragging = true;
     box.setPointerCapture(e.pointerId);
-    player.seek(dial.timeAt(e.clientX));
+    if (e.pointerType === 'mouse') {
+      dragging = true;
+      player.seek(dial.timeAt(e.clientX));
+    } else {
+      touch = { x: e.clientX, y: e.clientY };
+    }
   });
-  box.addEventListener('pointerup', () => { dragging = false; });
-  box.addEventListener('pointercancel', () => { dragging = false; dial.hoverX = null; tip.hidden = true; });
+  box.addEventListener('pointerup', (e) => {
+    if (touch && !dragging) player.seek(dial.timeAt(e.clientX)); // a plain tap
+    if (e.pointerType !== 'mouse') hide();
+    dragging = false;
+    touch = null;
+  });
+  box.addEventListener('pointercancel', () => { dragging = false; touch = null; hide(); });
   box.addEventListener('keydown', (e) => {
     const step = e.shiftKey ? 30 : 5;
     if (e.key === 'ArrowRight') { player.seek(player.time + step); e.preventDefault(); e.stopPropagation(); }
@@ -587,18 +610,6 @@ document.addEventListener('open-phone', openPhone);
 // ============================================================ add to Home Screen (phone)
 const IS_STANDALONE = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-// Home screen app on iPhone: the page runs under the status bar. If the browser reports no
-// safe area (older iOS, or before the first layout), reserve the usual status bar height.
-if (IS_STANDALONE && IS_IOS) {
-  const probe = document.createElement('div');
-  probe.style.cssText = 'position:fixed;top:0;visibility:hidden;padding-top:env(safe-area-inset-top)';
-  document.body.append(probe);
-  requestAnimationFrame(() => {
-    if (!parseFloat(getComputedStyle(probe).paddingTop)) document.documentElement.style.setProperty('--safe-top', '47px');
-    probe.remove();
-  });
-}
 const ON_TAILSCALE = location.hostname.endsWith('.ts.net') || /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(location.hostname);
 let installPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; });

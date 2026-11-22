@@ -761,7 +761,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
   pointer-events: none;
 }
 .now > :not(.now__bg) { position: relative; }
-.now__top { display: flex; align-items: center; justify-content: space-between; padding: calc(var(--safe-top, env(safe-area-inset-top)) + 18px) 28px 0; }
+.now__top { display: flex; align-items: center; justify-content: space-between; padding: calc(env(safe-area-inset-top) + 18px) 28px 0; }
 .now__ctx { margin: 0; color: var(--muted); }
 .now__body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; padding: 24px 56px 12px; min-height: 0; }
 .now__art { display: flex; flex-direction: column; justify-content: center; gap: 24px; min-height: 0; }
@@ -929,12 +929,12 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
   .tl--nocover { --cols: 44px minmax(0, 1.5fr) minmax(0, 1fr) 34px 52px 34px; }
   .tl--noalbum.tl--nocover { --cols: 44px minmax(0, 1fr) 34px 52px 34px; }
   .tr__src { display: none; }
-  .panel { position: fixed; right: 0; top: 0; padding-top: var(--safe-top, env(safe-area-inset-top)); bottom: 110px; z-index: 20; box-shadow: -20px 0 50px rgba(4, 5, 16, 0.45); }
+  .panel { position: fixed; right: 0; top: 0; padding-top: env(safe-area-inset-top); bottom: 110px; z-index: 20; box-shadow: -20px 0 50px rgba(4, 5, 16, 0.45); }
 }
 
 @media (max-width: 860px) {
   .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; }
-  .topbar { display: flex; grid-row: 1; align-items: center; justify-content: space-between; min-height: 56px; padding: calc(var(--safe-top, env(safe-area-inset-top)) + 8px) max(8px, env(safe-area-inset-right)) 8px max(8px, env(safe-area-inset-left)); background: var(--bg-2); border-bottom: 1px solid var(--line); }
+  .topbar { display: flex; grid-row: 1; align-items: center; justify-content: space-between; min-height: 56px; padding: calc(env(safe-area-inset-top) + 8px) max(8px, env(safe-area-inset-right)) 8px max(8px, env(safe-area-inset-left)); background: var(--bg-2); border-bottom: 1px solid var(--line); }
   .topbar .ibtn { width: 44px; height: 44px; }
   .brand--small { font-size: 18px; font-weight: 760; font-stretch: 80%; }
   .main { grid-column: 1; grid-row: 2; }
@@ -947,7 +947,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
     transform: translateX(-102%);
     transition: transform 0.2s ease-out;
     box-shadow: 20px 0 50px rgba(4, 5, 16, 0.5);
-    padding-top: calc(var(--safe-top, env(safe-area-inset-top)) + 18px);
+    padding-top: calc(env(safe-area-inset-top) + 18px);
     padding-bottom: max(12px, env(safe-area-inset-bottom));
     padding-left: max(12px, env(safe-area-inset-left));
   }
@@ -967,7 +967,9 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas: 'now tools' 'center center';
     gap: 8px 10px;
-    padding: 8px 10px 10px;
+    padding: 8px 10px;
+    /* Keep the seek dial clear of the iPhone home bar, where the swipe-up gesture starts. */
+    padding-bottom: calc(env(safe-area-inset-bottom) + 12px);
   }
   .deck__now { grid-area: now; }
   .deck__tools { grid-area: tools; }
@@ -976,15 +978,15 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
   .deck__tools .volbox, .deck__tools > .ibtn:nth-child(3), .deck__tools > .ibtn:nth-child(4) { display: none; }
   .deck__time { min-width: 34px; font-size: 11.5px; }
   .dial { height: 46px; }
-  .panel { left: 0; width: auto; bottom: 150px; }
+  .panel { left: 0; width: auto; bottom: calc(150px + env(safe-area-inset-bottom)); }
   .now__body { grid-template-columns: 1fr; padding: 12px 22px; gap: 20px; }
   .now__lyrics { display: none; }
   .now__art { align-items: center; text-align: center; }
   .now__artist { justify-content: center; }
-  .now__deck { padding: 8px 18px 24px; }
+  .now__deck { padding: 8px 18px calc(env(safe-area-inset-bottom) + 24px); }
   .dial--big { height: 80px; }
-  .eq { bottom: 150px; right: 8px; }
-  .toasts { bottom: 160px; }
+  .eq { bottom: calc(150px + env(safe-area-inset-bottom)); right: 8px; }
+  .toasts { bottom: calc(160px + env(safe-area-inset-bottom)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
