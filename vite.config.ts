@@ -34,7 +34,7 @@ function standaloneFiles(base: string): Plugin {
     configResolved(c) { outDir = path.resolve(c.root, c.build.outDir); },
     // Links in index.html to /manifest…, /icons/…, /fonts/… point into the sub-path.
     transformIndexHtml: (html) => html.replace(/(href|src)="\/(manifest\.webmanifest|icons\/|fonts\/)/g, `$1="${base}$2`)
-      .replace(`${base}icons/app.svg`, `${base}icons/dial/icon.svg`).replace(`${base}icons/app-512.png`, `${base}icons/dial/icon-512.png`),
+      .replace(`${base}icons/app.svg`, `${base}icons/bars/icon.svg`).replace(`${base}icons/app-512.png`, `${base}icons/bars/icon-512.png`),
     closeBundle() {
       const out = (p: string) => path.join(outDir, p);
       fs.cpSync(path.join(ROOT, 'public', 'icons'), out('icons'), { recursive: true });
@@ -46,13 +46,15 @@ function standaloneFiles(base: string): Plugin {
       Object.assign(manifest, {
         description: 'Free music on your phone: Audius, Internet Archive and internet radio, with songs saved for offline listening.',
         start_url: base, scope: base, id: base,
-        icons: [
-          { src: 'icons/dial/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'icons/dial/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: 'icons/dial/icon.svg', sizes: 'any', type: 'image/svg+xml' },
-        ],
       });
-      fs.writeFileSync(out('manifest.webmanifest'), JSON.stringify(manifest, null, 2));
+      // One manifest per app icon (Settings → App icon links the chosen one); Spectrum by default.
+      const withIcon = (v: string) => JSON.stringify({ ...manifest, icons: [
+        { src: `icons/${v}/icon-192.png`, sizes: '192x192', type: 'image/png' },
+        { src: `icons/${v}/icon-512.png`, sizes: '512x512', type: 'image/png' },
+        { src: `icons/${v}/icon.svg`, sizes: 'any', type: 'image/svg+xml' },
+      ] }, null, 2);
+      for (const v of fs.readdirSync(out('icons'))) fs.writeFileSync(out(`manifest-${v}.webmanifest`), withIcon(v));
+      fs.writeFileSync(out('manifest.webmanifest'), withIcon('bars'));
       // GitHub Pages can't send headers, so the Content Security Policy is a <meta> tag:
       // scripts only from this site (the inline theme script by hash) and the SoundCloud
       // widget; music, covers and the sources' APIs from any https address.

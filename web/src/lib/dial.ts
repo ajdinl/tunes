@@ -18,11 +18,11 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 //   mirror:  the spectrum mirrored around the middle, like a waveform
 export const DIAL_STYLES = ['dial', 'calm', 'minimal', 'color', 'mirror'] as const;
 export type DialStyle = (typeof DIAL_STYLES)[number];
-// Phones have no spectrum (no Web Audio graph there, see player.ts), so they offer only the
-// styles that don't need it, Minimal by default. Their choice is kept (and synced) apart from
-// the computers' one.
+// Phones have no spectrum (no Web Audio graph there, see player.ts), so they always use
+// Minimal; there is nothing to choose. (dialStylePhone stays in the synced prefs for
+// older clients.)
 const MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || STANDALONE;
-export const PHONE_STYLES: readonly DialStyle[] = ['minimal', 'calm'];
+export const PHONE_STYLES: readonly DialStyle[] = ['minimal'];
 export const DEVICE_STYLES: readonly DialStyle[] = MOBILE ? PHONE_STYLES : DIAL_STYLES;
 export const DIAL_PREF = MOBILE ? 'dialStylePhone' : 'dialStyle';
 export const STYLE_KEY = MOBILE ? 'tunes.dialStylePhone' : 'tunes.dialStyle';

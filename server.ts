@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import QRCode from 'qrcode';
 
-import { Store, cleanTrack, ICONS, tildify } from './lib/store.ts';
+import { Store, cleanTrack, ICONS, DEFAULT_ICON, tildify } from './lib/store.ts';
 import type { PlaylistPatch, SettingsPatch } from './lib/store.ts';
 import { Library, MIME, AUDIO_EXT } from './lib/library.ts';
 import { audius, archive, radio, jamendo, lyrics, listenbrainz, soundcloud } from './lib/sources.ts';
@@ -87,7 +87,7 @@ async function body<T = Record<string, any>>(req: Req): Promise<T> {
   catch { throw httpError('Invalid JSON', 400); }
 }
 
-const iconName = (): string => (ICONS.includes(store.data.settings.icon) ? store.data.settings.icon : ICONS[0]);
+const iconName = (): string => (ICONS.includes(store.data.settings.icon) ? store.data.settings.icon : DEFAULT_ICON);
 
 // The manifest lists the chosen icon; ?v= makes browsers fetch it again after a change.
 function serveManifest(res: Res, startUrl?: string): void {

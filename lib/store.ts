@@ -7,7 +7,7 @@ import os from 'node:os';
 import { DataStore, defaults } from './data.ts';
 import type { Data } from './types.ts';
 
-export { cleanTrack, ICONS, PREF_VALUES } from './data.ts';
+export { cleanTrack, ICONS, DEFAULT_ICON, PREF_VALUES } from './data.ts';
 export type { PlaylistPatch, SettingsPatch } from './data.ts';
 
 // Shows folders inside the home folder as ~/…, so the user name isn't on screen (or in

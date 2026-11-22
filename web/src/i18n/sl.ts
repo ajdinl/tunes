@@ -316,6 +316,7 @@ export const SL = {
  "Phone access is off. The old link no longer works.": "Dostop s telefona je izklopljen. Stara povezava ne deluje več.",
  "Phone access is turned on from the computer": "Dostop s telefona se vklopi na računalniku",
  "Pick a song, album or station": "Izberi pesem, album ali postajo",
+ "Pick it before adding Tunes to your Home Screen. A shortcut already there keeps its old icon until you add it again.": "Izberi jo, preden dodaš Tunes na začetni zaslon. Bližnjica, ki je že tam, obdrži staro ikono, dokler je ne dodaš znova.",
  "Play": "Predvajaj",
  "Play ": "Predvajaj ",
  "Play (space)": "Predvajaj (preslednica)",

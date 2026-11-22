@@ -316,6 +316,7 @@ export const MK = {
  "Phone access is off. The old link no longer works.": "Пристапот од телефон е исклучен. Стариот линк повеќе не работи.",
  "Phone access is turned on from the computer": "Пристапот од телефон се вклучува од компјутерот",
  "Pick a song, album or station": "Избери песна, албум или станица",
+ "Pick it before adding Tunes to your Home Screen. A shortcut already there keeps its old icon until you add it again.": "Избери ја пред да го додадеш Tunes на почетниот екран. Кратенката што веќе е таму ја задржува старата икона додека не ја додадеш повторно.",
  "Play": "Пушти",
  "Play ": "Пушти ",
  "Play (space)": "Пушти (Space)",

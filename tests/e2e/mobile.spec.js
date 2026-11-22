@@ -212,7 +212,7 @@ test('menu handles: drag the line to fold the bottom items, drag the edge to fol
   await expect(page.locator('body')).not.toHaveClass(/side-mini/);
 });
 
-test('phone: Minimal player style by default, only styles without a spectrum, no equalizer', async ({ device, request }) => {
+test('phone: always the Minimal player style, nothing to choose, no equalizer', async ({ device, request }) => {
   const computer = await device();
   await open(computer, '/settings');
   await computer.locator('.dial-opt[data-style="mirror"]').click();
@@ -226,15 +226,11 @@ test('phone: Minimal player style by default, only styles without a spectrum, no
   await expect(phone.locator('.deck [aria-label="Sleep timer"]')).toBeHidden(); // no room on a narrow phone
   await expect(phone.locator('.deck [aria-label="Lyrics (T)"]')).toBeVisible();
   await open(phone, '/settings');
-  await expect(phone.locator('.dial-opt')).toHaveCount(2);
-  await expect(phone.locator('.dial-opt[data-style="minimal"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(phone.locator('.dial-opt')).toHaveCount(0); // no player style picker
   await expect(phone.locator('.ctrls-opt')).toHaveCount(0); // player button layout is for computers
-
-  // The phone's choice is its own: it reaches other phones, not the computer.
-  await phone.locator('.dial-opt[data-style="calm"]').click();
-  await expect.poll(async () => (await (await request.get('/api/state')).json()).settings.prefs).toMatchObject({ dialStyle: 'mirror', dialStylePhone: 'calm' });
+  // Even a phone choice saved by an older version doesn't apply any more.
+  await phone.evaluate(() => localStorage.setItem('tunes.dialStylePhone', JSON.stringify('calm')));
+  await phone.reload();
+  await expect(phone.locator('.deck .dial')).toHaveAttribute('data-style', 'minimal');
   await expect(computer.locator('.deck .dial')).toHaveAttribute('data-style', 'mirror');
-  const phone2 = await device({ mobile: true });
-  await open(phone2, '/');
-  await expect(phone2.locator('.deck .dial')).toHaveAttribute('data-style', 'calm');
 });

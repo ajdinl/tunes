@@ -36,7 +36,7 @@ export function Settings(_: { route: Route }) {
   useStore('library', 'settings');
   const lang = useLang();
   const theme = useTheme();
-  const icon = store.settings.icon || 'dial';
+  const icon = store.settings.icon || 'bars';
 
   // ---- folders (a local copy, refreshed when the library reloads)
   const [folders, setFolders] = useState<string[]>(() => store.folders.slice());
@@ -130,10 +130,10 @@ export function Settings(_: { route: Route }) {
               </button>
             ))}
           </div>
-          <h3 className="form__label">{tr('Player style')}</h3>
-          <DialStylePicker />
+          {/* Phones have only Minimal (no spectrum there), so nothing to choose. */}
+          {DEVICE_STYLES.length > 1 ? <><h3 className="form__label">{tr('Player style')}</h3><DialStylePicker /></> : null}
           {IS_PHONE ? null : <DeckControlsPicker />}
-          {STANDALONE ? null : <AppIconPicker icon={icon} pick={pickIcon} />}
+          <AppIconPicker icon={icon} pick={pickIcon} />
         </div>
       </Section>
 
@@ -342,8 +342,8 @@ function DialPreview({ style }: { style: DialStyle }) {
   return <svg className="theme-opt__icon" width="48" height="22" viewBox="0 0 48 22" aria-hidden="true">{body}</svg>;
 }
 
-// App icon: stored on the server, so the computer and the phone show the same one. (The
-// phone-only version has a fixed home-screen icon, so it doesn't offer this.)
+// App icon: stored on the server, so the computer and the phone show the same one. In the
+// phone-only version it is this phone's choice, used when Tunes is added to the Home Screen.
 function AppIconPicker({ icon, pick }: { icon: string; pick: (value: string) => void }) {
   return (
     <>
@@ -355,7 +355,9 @@ function AppIconPicker({ icon, pick }: { icon: string; pick: (value: string) => 
           </button>
         ))}
       </div>
-      <p className="muted">{tr('The icon changes on all your devices. A shortcut already on a home screen keeps its old icon until you add it again.')}</p>
+      <p className="muted">{STANDALONE
+        ? tr('Pick it before adding Tunes to your Home Screen. A shortcut already there keeps its old icon until you add it again.')
+        : tr('The icon changes on all your devices. A shortcut already on a home screen keeps its old icon until you add it again.')}</p>
     </>
   );
 }

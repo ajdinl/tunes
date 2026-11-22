@@ -6,6 +6,10 @@ import type { Data, Playlist, Prefs, PublicState, Track } from './types.ts';
 
 const HISTORY_LIMIT = 5000;
 
+// App icon variants (folders in public/icons). The choice is stored here, so every device shows the same icon.
+export const ICONS = ['dial', 'night', 'vinyl', 'bars'];
+export const DEFAULT_ICON = 'bars'; // Spectrum
+
 export const defaults = (folders: string[] = []): Data => ({
   version: 1,
   settings: {
@@ -15,7 +19,7 @@ export const defaults = (folders: string[] = []): Data => ({
     eq: { enabled: false, preset: 'Flat', gains: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
     volume: 0.8,
     phone: { enabled: false, token: '' },
-    icon: 'dial',
+    icon: DEFAULT_ICON,
     prefs: {},
   },
   favorites: {},      // id -> { track, at }
@@ -25,9 +29,6 @@ export const defaults = (folders: string[] = []): Data => ({
   lastPlayed: {},     // id -> timestamp
   radioStations: {},  // id -> track (saved stations)
 });
-
-// App icon variants (folders in public/icons). The choice is stored here, so every device shows the same icon.
-export const ICONS = ['dial', 'night', 'vinyl', 'bars'];
 
 // Allowed values of the synced appearance choices (Settings → Language and Appearance).
 export const PREF_VALUES: Record<keyof Prefs, readonly string[]> = {

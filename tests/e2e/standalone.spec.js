@@ -60,7 +60,7 @@ test('opens from the link: English, the music sources, no computer parts', async
   await phone.goto('settings');
   await expect(phone.locator('#main h1')).toHaveText('Settings');
   await expect(phone.locator('#main h2')).toHaveText(['Language', 'Appearance', 'Offline playback', 'Backup']);
-  await expect(phone.locator('.dial-opt')).toHaveCount(2);
+  await expect(phone.locator('.dial-opt')).toHaveCount(0); // phones always use Minimal
   await phone.locator('#navToggle').tap();
   await expect(phone.locator('.nav__phone:not(.nav__install)')).toHaveCount(0); // no "Listen on phone"
   await expect(phone.locator('.nav__install')).toBeVisible(); // but "Add to Home Screen"
@@ -81,7 +81,11 @@ test('plays from the sources directly and keeps favorites, playlists and choices
   await app(phone, async () => { const s = window.__tunes.store; await s.createPlaylist('For the road', [window.__tunes.player.track]); });
   await phone.goto('settings');
   await phone.locator('.theme-opt', { hasText: 'Light' }).click();
-  await phone.locator('.dial-opt[data-style="calm"]').click();
+  // The icon: picked before adding Tunes to the Home Screen (the linked manifest and touch icon follow).
+  await expect(phone.locator('link[rel=manifest]')).toHaveAttribute('href', /manifest(-bars)?\.webmanifest$/);
+  await phone.locator('.theme-opt', { hasText: 'Vinyl' }).click();
+  await expect(phone.locator('link[rel=manifest]')).toHaveAttribute('href', '/tunes/manifest-vinyl.webmanifest');
+  await expect(phone.locator('link[rel=apple-touch-icon]')).toHaveAttribute('href', '/tunes/icons/vinyl/icon-512.png');
   await sleep(600); // written to IndexedDB shortly after a change
 
   await phone.reload();
@@ -92,7 +96,10 @@ test('plays from the sources directly and keeps favorites, playlists and choices
   }));
   expect(kept).toEqual({ favorites: ['audius:D7KyD'], playlists: [['For the road', 1]] });
   await expect(phone.locator('html')).toHaveAttribute('data-theme', 'light');
-  await expect(phone.locator('.deck .dial')).toHaveAttribute('data-style', 'calm');
+  await expect(phone.locator('link[rel=manifest]')).toHaveAttribute('href', '/tunes/manifest-vinyl.webmanifest');
+  const manifest = await (await phone.request.get('manifest-vinyl.webmanifest')).json();
+  expect(manifest.icons[0].src).toBe('icons/vinyl/icon-192.png');
+  expect(manifest.start_url).toBe('/tunes/');
 });
 
 test('radio over https, even for a station listed with http', async ({ phone }) => {

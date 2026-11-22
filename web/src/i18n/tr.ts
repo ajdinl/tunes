@@ -316,6 +316,7 @@ export const TR = {
  "Phone access is off. The old link no longer works.": "Telefon erişimi kapalı. Eski bağlantı artık çalışmıyor.",
  "Phone access is turned on from the computer": "Telefon erişimi bilgisayardan açılır",
  "Pick a song, album or station": "Bir şarkı, albüm veya istasyon seç",
+ "Pick it before adding Tunes to your Home Screen. A shortcut already there keeps its old icon until you add it again.": "Tunes'u Ana Ekran'a eklemeden önce seç. Zaten orada olan bir kısayol, yeniden ekleyene kadar eski simgesini korur.",
  "Play": "Çal",
  "Play ": "Çal: ",
  "Play (space)": "Çal (boşluk)",

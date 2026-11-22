@@ -316,6 +316,7 @@ export const SQ = {
  "Phone access is off. The old link no longer works.": "Qasja nga telefoni është e fikur. Lidhja e vjetër nuk funksionon më.",
  "Phone access is turned on from the computer": "Qasja nga telefoni ndizet nga kompjuteri",
  "Pick a song, album or station": "Zgjidh një këngë, album ose stacion",
+ "Pick it before adding Tunes to your Home Screen. A shortcut already there keeps its old icon until you add it again.": "Zgjidhe para se ta shtosh Tunes në ekranin bazë. Shkurtorja që është tashmë atje e mban ikonën e vjetër derisa ta shtosh sërish.",
  "Play": "Luaj",
  "Play ": "Luaj ",
  "Play (space)": "Luaj (hapësirë)",

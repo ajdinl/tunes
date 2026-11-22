@@ -316,6 +316,7 @@ export const PT = {
  "Phone access is off. The old link no longer works.": "O acesso pelo celular está desligado. O link antigo não funciona mais.",
  "Phone access is turned on from the computer": "O acesso pelo celular é ativado no computador",
  "Pick a song, album or station": "Escolha uma música, álbum ou estação",
+ "Pick it before adding Tunes to your Home Screen. A shortcut already there keeps its old icon until you add it again.": "Escolha antes de adicionar o Tunes à Tela de Início. Um atalho que já esteja lá mantém o ícone antigo até você adicioná-lo de novo.",
  "Play": "Tocar",
  "Play ": "Tocar ",
  "Play (space)": "Tocar (espaço)",

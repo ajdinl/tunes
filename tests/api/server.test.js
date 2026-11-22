@@ -73,7 +73,7 @@ describe('static files and safety', () => {
 describe('state and library', () => {
   it('returns public state without secrets', async () => {
     const { body } = await api.get('/api/state');
-    expect(body.settings).toMatchObject({ icon: 'dial', listenbrainzToken: '', hasListenbrainz: false, phoneOn: false });
+    expect(body.settings).toMatchObject({ icon: 'bars', listenbrainzToken: '', hasListenbrainz: false, phoneOn: false });
     expect(body.settings.phone).toBeUndefined();
     expect(body.settings.folders).toEqual([srv.music]);
     for (const k of ['favorites', 'playlists', 'history', 'playCounts', 'lastPlayed', 'radioStations']) expect(body).toHaveProperty(k);
@@ -250,7 +250,7 @@ describe('app icon', () => {
     const sse = listen(srv.url);
     await sse.ready;
     const before = await api.get('/manifest.webmanifest');
-    expect(before.body.icons[0].src).toBe('/icons/app-192.png?v=dial');
+    expect(before.body.icons[0].src).toBe('/icons/app-192.png?v=bars'); // Spectrum by default
     const r = await api.put('/api/settings', { icon: 'vinyl' });
     expect(r.body.state.settings.icon).toBe('vinyl');
     expect((await sse.next('icon')).data).toEqual({ icon: 'vinyl' });
@@ -264,7 +264,7 @@ describe('app icon', () => {
     expect(svg.headers.get('content-type')).toBe('image/svg+xml');
     await api.put('/api/settings', { icon: 'nope' });
     expect((await api.get('/api/state')).body.settings.icon).toBe('vinyl');
-    await api.put('/api/settings', { icon: 'dial' });
+    await api.put('/api/settings', { icon: 'bars' });
     sse.close();
   });
 });

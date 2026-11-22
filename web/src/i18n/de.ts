@@ -316,6 +316,7 @@ export const DE = {
  "Phone access is off. The old link no longer works.": "Der Handyzugriff ist aus. Der alte Link funktioniert nicht mehr.",
  "Phone access is turned on from the computer": "Der Handyzugriff wird am Computer eingeschaltet",
  "Pick a song, album or station": "Wähle einen Song, ein Album oder einen Sender",
+ "Pick it before adding Tunes to your Home Screen. A shortcut already there keeps its old icon until you add it again.": "Wähle es, bevor du Tunes zum Home-Bildschirm hinzufügst. Eine Verknüpfung, die schon dort ist, behält ihr altes Symbol, bis du sie neu hinzufügst.",
  "Play": "Abspielen",
  "Play ": "Abspielen: ",
  "Play (space)": "Abspielen (Leertaste)",

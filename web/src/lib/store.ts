@@ -19,6 +19,8 @@ export function applyIcon(name: string | undefined): void {
   const svg = STANDALONE ? asset(`icons/${name}/icon.svg`) : '/icons/app.svg' + v;
   document.querySelector('link[rel=icon]')?.setAttribute('href', svg);
   document.querySelector('link[rel=apple-touch-icon]')?.setAttribute('href', STANDALONE ? asset(`icons/${name}/icon-512.png`) : '/icons/app-512.png' + v);
+  // The phone-only version has a manifest per icon; the one linked when Tunes is added counts.
+  if (STANDALONE) document.querySelector('link[rel=manifest]')?.setAttribute('href', asset(`manifest-${name}.webmanifest`));
   document.documentElement.style.setProperty('--app-icon', `url("${svg}")`);
 }
 

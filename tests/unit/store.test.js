@@ -43,7 +43,7 @@ describe('cleanTrack', () => {
 describe('Store', () => {
   it('starts with defaults when there is no file', () => {
     const s = open();
-    expect(s.data.settings.icon).toBe('dial');
+    expect(s.data.settings.icon).toBe('bars'); // Spectrum
     expect(s.data.settings.folders).toEqual([path.join(os.homedir(), 'Music', 'Tunes')]);
     expect(s.data.history).toEqual([]);
   });
