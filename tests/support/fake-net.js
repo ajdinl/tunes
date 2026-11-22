@@ -21,6 +21,8 @@ export const AUDIUS_TRACK = {
   user: { id: 'MWpwWPo', name: 'Kaito', handle: 'kaito' },
 };
 export const AUDIUS_GATED = { ...AUDIUS_TRACK, id: 'G4t3d', title: 'Members Only', is_stream_gated: true };
+// Streams for everyone, downloads only for the artist's followers on Audius.
+export const AUDIUS_FOLLOWERS_DL = { ...AUDIUS_TRACK, id: 'F0LLw', title: 'Tide Tables', is_download_gated: true, download_conditions: { follow_user_id: 1 } };
 export const AUDIUS_USER = {
   id: 'MWpwWPo', name: 'Kaito', handle: 'kaito', follower_count: 1200, track_count: 2, bio: 'Ambient from the coast',
   profile_picture: { '150x150': 'https://creatornode.example/content/u/150x150.jpg' },
@@ -71,10 +73,12 @@ export function answer(url, init) {
   const p = url.pathname;
 
   if (host === 'api.audius.co') {
-    if (p === '/v1/tracks/search' || p === '/v1/tracks/trending') return json({ data: [AUDIUS_TRACK, AUDIUS_GATED] });
+    if (p === '/v1/tracks/search') return json({ data: [AUDIUS_TRACK, AUDIUS_GATED, AUDIUS_FOLLOWERS_DL] });
+    if (p === '/v1/tracks/trending') return json({ data: [AUDIUS_TRACK, AUDIUS_GATED] });
     if (p === '/v1/users/search') return json({ data: [AUDIUS_USER, { ...AUDIUS_USER, id: 'empty', track_count: 0 }] });
     let m;
     if ((m = /^\/v1\/users\/(\w+)\/tracks$/.exec(p))) return json({ data: [AUDIUS_TRACK] });
+    if ((m = /^\/v1\/tracks\/(\w+)\/download$/.exec(p))) return m[1] === AUDIUS_FOLLOWERS_DL.id ? json({ error: 'Forbidden' }, 403) : json({}, 404);
     if ((m = /^\/v1\/users\/(\w+)$/.exec(p))) return m[1] === AUDIUS_USER.id ? json({ data: AUDIUS_USER }) : json({}, 404);
   }
 

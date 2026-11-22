@@ -36,7 +36,7 @@ interface AudiusUserRaw {
 }
 interface AudiusTrackRaw {
   id: string; title: string; duration?: number; genre?: string; release_date?: string; permalink?: string;
-  is_streamable?: boolean; is_stream_gated?: boolean; is_delete?: boolean; is_downloadable?: boolean;
+  is_streamable?: boolean; is_stream_gated?: boolean; is_delete?: boolean; is_downloadable?: boolean; is_download_gated?: boolean;
   artwork?: AudiusArtwork | null; user?: { id?: string; name?: string; handle?: string };
   album_backlink?: { playlist_name?: string } | null;
 }
@@ -81,7 +81,9 @@ function audiusTrack(t: AudiusTrackRaw | null | undefined): Track | null {
     stream: '/api/stream/audius/' + t.id,
     link: t.permalink ? 'https://audius.co' + t.permalink : null,
     artistRef: t.user?.id ? 'audius:' + t.user.id : null,
-    download: t.is_downloadable ? `${AUDIUS}/tracks/${t.id}/download?app_name=${APP}` : null,
+    // Some artists allow downloads only to their followers on Audius (download_conditions):
+    // Tunes has no Audius account, so those count as not downloadable.
+    download: t.is_downloadable && !t.is_download_gated ? `${AUDIUS}/tracks/${t.id}/download?app_name=${APP}` : null,
   };
 }
 

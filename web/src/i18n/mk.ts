@@ -431,6 +431,7 @@ export const MK = {
  "Tap the Share button (the square with an arrow pointing up).": "Допри го копчето „Сподели“ (квадратот со стрелка нагоре).",
  "Tap the link that appears. Tunes opens in the browser.": "Допри го линкот што ќе се појави. Tunes се отвора во прелистувачот.",
  "Tap the ⋮ menu in the top right.": "Допри го менито ⋮ горе десно.",
+ "The artist allows downloading this song only to their followers on the source website": "Изведувачот дозволува преземање на оваа песна само на своите следбеници на страницата на изворот",
  "The icon changes on all your devices. A shortcut already on a home screen keeps its old icon until you add it again.": "Иконата се менува на сите твои уреди. Кратенката што веќе е на почетен екран ја задржува старата икона додека не ја додадеш повторно.",
  "The mini player couldn't open.": "Мини-плеерот не можеше да се отвори.",
  "The phone must be on the same Wi-Fi network as this computer.": "Телефонот мора да е на истата Wi-Fi мрежа како овој компјутер.",

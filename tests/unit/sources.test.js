@@ -68,7 +68,9 @@ describe('parseLength', () => {
 describe('Audius', () => {
   it('maps tracks and skips gated ones', async () => {
     const list = await audius.search('harbor');
-    expect(list).toHaveLength(1);
+    expect(list.map((x) => x.title)).toEqual(['Harbor Lights', 'Tide Tables']);
+    // Downloads only for the artist's Audius followers: not offered.
+    expect(list[1].download).toBeNull();
     const t = list[0];
     expect(t).toMatchObject({
       id: 'audius:D7KyD', source: 'audius', title: 'Harbor Lights', artist: 'Kaito', duration: 245, year: 2023,

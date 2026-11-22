@@ -431,6 +431,7 @@ export const TR = {
  "Tap the Share button (the square with an arrow pointing up).": "Paylaş düğmesine dokun (yukarı oklu kare).",
  "Tap the link that appears. Tunes opens in the browser.": "Görünen bağlantıya dokun. Tunes tarayıcıda açılır.",
  "Tap the ⋮ menu in the top right.": "Sağ üstteki ⋮ menüsüne dokun.",
+ "The artist allows downloading this song only to their followers on the source website": "Sanatçı bu şarkının indirilmesine yalnızca kaynak sitedeki takipçileri için izin veriyor",
  "The icon changes on all your devices. A shortcut already on a home screen keeps its old icon until you add it again.": "Simge tüm cihazlarında değişir. Ana ekranda zaten olan bir kısayol, sen yeniden ekleyene kadar eski simgesini korur.",
  "The mini player couldn't open.": "Mini oynatıcı açılamadı.",
  "The phone must be on the same Wi-Fi network as this computer.": "Telefon bu bilgisayarla aynı Wi-Fi ağında olmalı.",

@@ -915,6 +915,8 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .menu__item--sub::after { content: '›'; margin-left: auto; color: var(--muted); font-size: 18px; }
 .menu--sub { display: none; position: absolute; left: calc(100% - 4px); top: -6px; max-height: 60vh; overflow-y: auto; }
 .menu__item--sub:hover > .menu--sub, .menu__item--sub.is-open > .menu--sub, .menu__item--sub:focus-within > .menu--sub { display: block; }
+.menu--subs-left .menu--sub { left: auto; right: calc(100% - 4px); }
+.menu--subs-below .menu--sub { left: 12px; right: -6px; top: calc(100% - 2px); min-width: 0; }
 
 .handoff {
   position: fixed;

@@ -431,6 +431,7 @@ export const DE = {
  "Tap the Share button (the square with an arrow pointing up).": "Tippe auf die Teilen-Taste (das Quadrat mit dem Pfeil nach oben).",
  "Tap the link that appears. Tunes opens in the browser.": "Tippe auf den angezeigten Link. Tunes öffnet sich im Browser.",
  "Tap the ⋮ menu in the top right.": "Tippe oben rechts auf das ⋮-Menü.",
+ "The artist allows downloading this song only to their followers on the source website": "Der Künstler erlaubt den Download dieses Songs nur seinen Followern auf der Quellseite",
  "The icon changes on all your devices. A shortcut already on a home screen keeps its old icon until you add it again.": "Das Symbol ändert sich auf all deinen Geräten. Eine Verknüpfung, die schon auf einem Home-Bildschirm liegt, behält ihr altes Symbol, bis du sie neu hinzufügst.",
  "The mini player couldn't open.": "Der Mini-Player konnte nicht geöffnet werden.",
  "The phone must be on the same Wi-Fi network as this computer.": "Das Handy muss im selben Wi-Fi-Netzwerk sein wie dieser Computer.",

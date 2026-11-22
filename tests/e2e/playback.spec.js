@@ -385,3 +385,23 @@ test('player buttons: above the dial, beside it in one row, or only on hover', a
   await expect.poll(opacity).toBe('1');
   await expect.poll(height).toBe(before);
 });
+
+test('"Add to playlist" opens where there is room, never off screen', async ({ page, device }) => {
+  const check = async (p, width) => {
+    await open(p, '/songs');
+    const row = p.locator('#main .tr').first();
+    await row.hover().catch(() => {});
+    await row.locator('.tr__more').click();
+    const sub = p.locator('.menu__item--sub', { hasText: 'Add to playlist' });
+    await sub.hover();
+    await sub.click().catch(() => {});
+    const box = await p.locator('.menu--sub').boundingBox();
+    expect(box, 'submenu visible').not.toBeNull();
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(width);
+    await p.keyboard.press('Escape');
+  };
+  await check(page, 1440); // the ⋯ button sits at the right edge
+  const phone = await device({ mobile: true });
+  await check(phone, 390);
+});

@@ -228,6 +228,10 @@ describe('online sources (through the fake internet)', () => {
     expect((await api.post('/api/download', { track: { id: 'x', title: 'x' } })).body.error).toBe("This song isn't licensed for download");
     expect((await api.post('/api/download', { track: { id: 'x', title: 'x', download: 'https://evil.example/a.mp3' } })).body.error).toBe('Unknown source');
     expect((await api.post('/api/download', { track: { id: 'x', title: 'x', download: 'http://archive.org/a.mp3' } })).body.error).toBe('Unknown source');
+    // Saved before Tunes knew about follower-only downloads: a clear answer instead of "403".
+    const r = await api.post('/api/download', { track: { id: 'audius:F0LLw', title: 'Tide Tables', download: 'https://api.audius.co/v1/tracks/F0LLw/download?app_name=Tunes' } });
+    expect(r.status).toBe(403);
+    expect(r.body.error).toBe('The artist allows downloading this song only to their followers on the source website');
   });
 
   it('validates a ListenBrainz token when it is saved', async () => {

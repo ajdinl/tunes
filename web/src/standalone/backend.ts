@@ -13,22 +13,45 @@ import { idbGet, idbSet } from './idb.ts';
 const DATA_KEY = 'data';
 
 // Every change is written right away (several in one go count as one write): a phone may
-// close the app a moment after a tap.
+// close the app a moment after a tap. IndexedDB writes are asynchronous and a closing page
+// can cut one short, so then a copy goes to localStorage (synchronous) and is picked up on
+// the next start.
+const RESCUE_KEY = 'tunes.unsaved';
+
 class BrowserStore extends DataStore {
   private queued = false;
+  private writes = 0;
+  private unsaved = false;
 
   override save(): void {
+    this.unsaved = true;
     if (this.queued) return;
     this.queued = true;
-    queueMicrotask(() => { this.queued = false; void idbSet(DATA_KEY, this.data); });
+    queueMicrotask(() => {
+      this.queued = false;
+      const n = ++this.writes;
+      idbSet(DATA_KEY, this.data).then(() => { if (n === this.writes) this.unsaved = false; }).catch(() => { /* rescued on leave */ });
+    });
+  }
+
+  rescue(): void {
+    if (!this.unsaved) return;
+    try { localStorage.setItem(RESCUE_KEY, JSON.stringify(this.data)); } catch { /* storage full */ }
   }
 }
 
 let store: BrowserStore;
 
 export async function openStore(): Promise<void> {
-  const saved = await idbGet<Partial<Data>>(DATA_KEY).catch(() => null);
+  let saved = await idbGet<Partial<Data>>(DATA_KEY).catch(() => null);
+  let rescued: Partial<Data> | null = null;
+  try { rescued = JSON.parse(localStorage.getItem(RESCUE_KEY) || 'null'); } catch { /* broken copy */ }
+  if (rescued) saved = rescued;
   store = new BrowserStore(saved || null);
+  if (rescued) await idbSet(DATA_KEY, store.data).then(() => localStorage.removeItem(RESCUE_KEY)).catch(() => { /* next time */ });
+  const leave = () => store.rescue();
+  window.addEventListener('pagehide', leave);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') leave(); });
 }
 
 type Body = Record<string, any>;

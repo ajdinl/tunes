@@ -382,6 +382,7 @@ route('POST', /^\/api\/download$/, async (req, res) => {
   const file = path.join(dir, sanitize(num + track.title, 120) + ext);
   if (fs.existsSync(file)) return json(res, 200, { ok: true, file, existed: true });
   const r = await fetch(u, { headers: { 'User-Agent': 'Tunes/1.0' }, signal: AbortSignal.timeout(300000) });
+  if (r.status === 401 || r.status === 403) return json(res, 403, { error: 'The artist allows downloading this song only to their followers on the source website' });
   if (!r.ok || !r.body) return json(res, 502, { error: 'Source returned ' + r.status });
   await fsp.mkdir(dir, { recursive: true });
   const tmp = file + '.part';

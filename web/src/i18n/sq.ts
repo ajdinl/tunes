@@ -431,6 +431,7 @@ export const SQ = {
  "Tap the Share button (the square with an arrow pointing up).": "Prek butonin «Share» (katrori me shigjetë që tregon lart).",
  "Tap the link that appears. Tunes opens in the browser.": "Prek lidhjen që shfaqet. Tunes hapet në shfletues.",
  "Tap the ⋮ menu in the top right.": "Prek menynë ⋮ lart djathtas.",
+ "The artist allows downloading this song only to their followers on the source website": "Artisti e lejon shkarkimin e kësaj kënge vetëm për ndjekësit e tij në faqen e burimit",
  "The icon changes on all your devices. A shortcut already on a home screen keeps its old icon until you add it again.": "Ikona ndryshon në të gjitha pajisjet e tua. Një shkurtore që është tashmë në ekranin bazë e mban ikonën e vjetër derisa ta shtosh sërish.",
  "The mini player couldn't open.": "Mini-luajtësi nuk u hap dot.",
  "The phone must be on the same Wi-Fi network as this computer.": "Telefoni duhet të jetë në të njëjtin rrjet Wi-Fi si ky kompjuter.",

@@ -431,6 +431,7 @@ export const SR = {
  "Tap the Share button (the square with an arrow pointing up).": "Dodirni dugme Deli (kvadrat sa strelicom nagore).",
  "Tap the link that appears. Tunes opens in the browser.": "Dodirni link koji se pojavi. Tunes se otvara u pregledaču.",
  "Tap the ⋮ menu in the top right.": "Dodirni meni ⋮ gore desno.",
+ "The artist allows downloading this song only to their followers on the source website": "Izvođač dozvoljava preuzimanje ove pesme samo svojim pratiocima na sajtu izvora",
  "The icon changes on all your devices. A shortcut already on a home screen keeps its old icon until you add it again.": "Ikonica se menja na svim tvojim uređajima. Prečica koja je već na početnom ekranu zadržava staru ikonicu dok je ponovo ne dodaš.",
  "The mini player couldn't open.": "Mini plejer nije mogao da se otvori.",
  "The phone must be on the same Wi-Fi network as this computer.": "Telefon mora biti na istoj Wi-Fi mreži kao ovaj računar.",

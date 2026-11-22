@@ -431,6 +431,7 @@ export const SL = {
  "Tap the Share button (the square with an arrow pointing up).": "Tapni gumb Deli (kvadrat s puščico navzgor).",
  "Tap the link that appears. Tunes opens in the browser.": "Tapni povezavo, ki se prikaže. Tunes se odpre v brskalniku.",
  "Tap the ⋮ menu in the top right.": "Tapni meni ⋮ zgoraj desno.",
+ "The artist allows downloading this song only to their followers on the source website": "Izvajalec dovoli prenos te skladbe samo svojim sledilcem na spletni strani vira",
  "The icon changes on all your devices. A shortcut already on a home screen keeps its old icon until you add it again.": "Ikona se spremeni na vseh tvojih napravah. Bližnjica, ki je že na začetnem zaslonu, ohrani staro ikono, dokler je znova ne dodaš.",
  "The mini player couldn't open.": "Mini predvajalnika ni bilo mogoče odpreti.",
  "The phone must be on the same Wi-Fi network as this computer.": "Telefon mora biti v istem omrežju Wi-Fi kot ta računalnik.",

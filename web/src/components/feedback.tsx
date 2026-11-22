@@ -25,12 +25,12 @@ export function Toasts() {
 // ---------------------------------------------------------------- context menu
 const visibleItems = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>(':scope .menu__item')].filter((n) => n.offsetParent);
 
-function MenuList({ items, sub = false, onPick, style, rootRef, onKeyDown }: {
-  items: MenuEntry[]; sub?: boolean; onPick: (a: MenuAction) => void;
+function MenuList({ items, sub = false, onPick, style, rootRef, onKeyDown, className }: {
+  items: MenuEntry[]; sub?: boolean; onPick: (a: MenuAction) => void; className?: string;
   style?: CSSProperties; rootRef?: Ref<HTMLDivElement>; onKeyDown?: (e: ReactKeyboardEvent) => void;
 }) {
   return (
-    <div ref={rootRef} className={cx('menu', sub && 'menu--sub')} role="menu" style={style} onKeyDown={onKeyDown}>
+    <div ref={rootRef} className={cx('menu', sub && 'menu--sub', className)} role="menu" style={style} onKeyDown={onKeyDown}>
       {items.filter(Boolean).map((it, k) => {
         if (it === '-') return <div key={k} className="menu__sep" role="separator" />;
         if ((it as SubMenu).items) return <SubItem key={k} item={it as SubMenu} onPick={onPick} />;
@@ -67,12 +67,16 @@ function SubItem({ item, onPick }: { item: SubMenu; onPick: (a: MenuAction) => v
 export function ContextMenu() {
   const state = menu.use();
   const ref = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; subs: 'right' | 'left' | 'below' } | null>(null);
 
   useLayoutEffect(() => {
     if (!state || !ref.current) { setPos(null); return; }
     const r = ref.current.getBoundingClientRect();
-    setPos({ left: Math.min(state.x, innerWidth - r.width - 8), top: Math.min(state.y, innerHeight - r.height - 8) });
+    const left = Math.min(state.x, innerWidth - r.width - 8);
+    // Submenus (Add to playlist) open where there is room: right, left, or below on a phone.
+    const SUB = 300; // the widest a menu gets
+    const subs = innerWidth - (left + r.width) >= SUB ? 'right' : left >= SUB ? 'left' : 'below';
+    setPos({ left, top: Math.min(state.y, innerHeight - r.height - 8), subs });
     visibleItems(ref.current)[0]?.focus();
   }, [state]);
 
@@ -100,7 +104,7 @@ export function ContextMenu() {
     if (e.key === 'Escape') { closeMenu(); restore(); e.stopPropagation(); }
   };
   return (
-    <MenuList items={state.items} rootRef={ref} onKeyDown={onKeyDown}
+    <MenuList items={state.items} rootRef={ref} onKeyDown={onKeyDown} className={pos && pos.subs !== 'right' ? `menu--subs-${pos.subs}` : undefined}
       style={{ left: pos?.left ?? state.x, top: pos?.top ?? state.y, visibility: pos ? 'visible' : 'hidden' }}
       onPick={(a) => { closeMenu(); restore(); a.action(); }} />
   );
