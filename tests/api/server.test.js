@@ -193,6 +193,10 @@ describe('online sources (through the fake internet)', () => {
     expect(body.archive.items[0].identifier).toBe(ARCHIVE_DOC.identifier);
     expect(body.radio.items[0].title).toBe('Coastline FM');
     expect((await api.get('/api/search?q=')).body).toEqual({});
+    // hearthis.at: DJ mixes, in search and as a popular list by genre.
+    const hearthis = (await api.get('/api/search?q=afro&src=hearthis')).body.hearthis.items;
+    expect(hearthis.map((t) => t.title)).toEqual(['Sunset Afro Set', 'Club Night Mix']);
+    expect((await api.get('/api/hearthis/popular?genre=afrohouse')).body[0].source).toBe('hearthis');
   });
 
   it('serves Audius trending and artist pages, Archive items and radio lists', async () => {

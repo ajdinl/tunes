@@ -149,9 +149,9 @@ test('choices made before syncing existed are sent up once', async ({ device, re
     if (sessionStorage.getItem('seeded')) return;
     sessionStorage.setItem('seeded', '1');
     localStorage.setItem('tunes.theme', JSON.stringify('indigo'));
-    localStorage.setItem('tunes.dialStyle', JSON.stringify('calm'));
+    localStorage.setItem('tunes.dialStyle', JSON.stringify('mirror'));
   });
   await open(a, '/');
-  await expect.poll(async () => (await (await request.get('/api/state')).json()).settings.prefs).toEqual({ theme: 'indigo', dialStyle: 'calm' });
+  await expect.poll(async () => (await (await request.get('/api/state')).json()).settings.prefs).toEqual({ theme: 'indigo', dialStyle: 'mirror' });
   await expect(a.locator('html')).toHaveAttribute('data-theme', 'indigo');
 });

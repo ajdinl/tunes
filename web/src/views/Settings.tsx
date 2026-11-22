@@ -314,7 +314,7 @@ export function parseCsv(text: string): string[][] {
 
 // ---- player style (per device): small drawings of each look
 const DIAL_OPTS: { value: DialStyle; label: string }[] = [
-  { value: 'minimal', label: 'Minimal' }, { value: 'calm', label: 'Calm' }, { value: 'dial', label: 'Radio dial' },
+  { value: 'minimal', label: 'Minimal' }, { value: 'dial', label: 'Radio dial' },
   { value: 'mirror', label: 'Mirror' }, { value: 'color', label: 'Colors' },
 ];
 const BARS = [5, 9, 13, 8, 11, 6, 10, 7, 4, 6];
@@ -326,11 +326,6 @@ function DialPreview({ style }: { style: DialStyle }) {
   if (style === 'minimal') {
     body = <><line x1="4" y1="11" x2="44" y2="11" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" strokeLinecap="round" />
       <line x1="4" y1="11" x2="24" y2="11" stroke={amber} strokeWidth="3" strokeLinecap="round" /><circle cx="24" cy="11" r="4" fill="currentColor" /></>;
-  } else if (style === 'calm') {
-    body = <><line x1="4" y1="13" x2="44" y2="13" stroke={amber} strokeOpacity="0.3" strokeWidth="2" />
-      <line x1="4" y1="13" x2="24" y2="13" stroke={amber} strokeWidth="2" />
-      {Array.from({ length: 11 }, (_, i) => <line key={i} x1={4 + i * 4} y1="16" x2={4 + i * 4} y2={i % 2 ? 18 : 20} stroke={amber} strokeOpacity="0.6" />)}
-      <line x1="24" y1="2" x2="24" y2="20" stroke="#ff5e3a" strokeWidth="1.5" /></>;
   } else {
     body = <>{BARS.map((b, i) => {
       const x = 4 + i * 4;
@@ -403,7 +398,7 @@ function DialStylePicker() {
           </button>
         ))}
       </div>
-      <p className="muted">{tr('How the progress bar looks on this device. Calm and Minimal don\'t move with the music.')}</p>
+      <p className="muted">{tr('How the progress bar looks on this device. Minimal doesn\'t move with the music.')}</p>
     </>
   );
 }

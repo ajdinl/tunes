@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { installFakeNet, LRCLIB_SONG, RADIO_STATION, ARCHIVE_DOC } from '../support/fake-net.js';
 import {
   audius, archive, radio, jamendo, soundcloud, lyrics, listenbrainz, sameSong, lyricKey, mainArtist, parseLength,
+  hearthis,
 } from '../../lib/sources.ts';
 
 let uninstall;
@@ -91,6 +92,20 @@ describe('Audius', () => {
     const r = await audius.user('MWpwWPo');
     expect(r.artist.name).toBe('Kaito');
     expect(r.tracks).toHaveLength(1);
+  });
+});
+
+describe('hearthis.at', () => {
+  it('maps mixes; downloads only where the DJ allows them; private ones are skipped', async () => {
+    const list = await hearthis.search('afro house');
+    expect(list.map((t) => t.title)).toEqual(['Sunset Afro Set', 'Club Night Mix']);
+    expect(list[0]).toMatchObject({
+      id: 'hearthis:sunset-set', source: 'hearthis', artist: 'DJ Amara', duration: 3605, year: 2026, genre: 'Afro House',
+      stream: '/api/stream/url?u=' + encodeURIComponent('https://hearthis.app/dj-amara/sunset-set/listen/'),
+      link: 'https://hearthis.at/dj-amara/sunset-set/', download: 'https://hearthis.app/dj-amara/sunset-set/download/',
+    });
+    expect(list[1].download).toBeNull();
+    expect((await hearthis.popular('afrohouse')).length).toBe(2);
   });
 });
 

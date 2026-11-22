@@ -305,6 +305,51 @@ export const jamendo = {
   },
 };
 
+// ---------------------------------------------------------------- hearthis.at
+// DJ mixes and electronic music, uploaded by DJs and producers themselves. No key needed;
+// streams are plain MP3 with CORS, so they work through the proxy and straight from the
+// browser alike. Its terms allow downloading only where the uploader enabled it.
+const HEARTHIS = 'https://api-v2.hearthis.at';
+
+interface HearthisTrackRaw {
+  id: string; title: string; duration?: string; genre?: string; release_date?: string; private?: string;
+  permalink_url?: string; artwork_url?: string; thumb_hires?: string; stream_url?: string;
+  downloadable?: string; download_url?: string; user?: { username?: string };
+}
+
+function hearthisTrack(t: HearthisTrackRaw | null | undefined): Track | null {
+  const stream = webUrl(t?.stream_url);
+  if (!t?.id || !stream || t.private === '1') return null;
+  const year = t.release_date ? Number(t.release_date.slice(0, 4)) : NaN;
+  return {
+    id: 'hearthis:' + t.id,
+    source: 'hearthis',
+    title: t.title,
+    artist: t.user?.username || 'hearthis.at',
+    duration: Number(t.duration) || 0,
+    genre: t.genre || null,
+    year: Number.isFinite(year) ? year : null,
+    cover: webUrl(t.artwork_url || t.thumb_hires),
+    stream: proxied(stream),
+    link: webUrl(t.permalink_url),
+    download: t.downloadable === '1' ? webUrl(t.download_url) : null,
+  };
+}
+
+const hearthisList = (d: unknown): Track[] => (Array.isArray(d) ? d.map(hearthisTrack).filter((t): t is Track => t !== null) : []);
+
+export const hearthis = {
+  // Genres hearthis.at sorts its popular lists by (`category`).
+  GENRES: ['afrohouse', 'amapiano', 'house', 'deephouse', 'techno', 'drumandbass', 'hiphop', 'chillout'],
+  async search(q: string, count = 40): Promise<Track[]> {
+    return hearthisList(await getJSON(`${HEARTHIS}/search/?t=${enc(q)}&page=1&count=${count}`));
+  },
+  async popular(genre = '', count = 40): Promise<Track[]> {
+    const cat = this.GENRES.includes(genre) ? `&category=${genre}` : '';
+    return hearthisList(await getJSON(`${HEARTHIS}/feed/?type=popular${cat}&page=1&count=${count}`));
+  },
+};
+
 // ---------------------------------------------------------------- SoundCloud
 // SoundCloud's API needs a paid key, so pasted links play through the official embedded
 // player (Widget API) in the browser. The server only checks the link and reads the title
@@ -453,7 +498,7 @@ export const listenbrainz = {
     if (track.duration) info.duration_ms = Math.round(track.duration * 1000);
     if (track.link) info.origin_url = track.link;
     if (track.source && track.source !== 'local') {
-      info.music_service_name = ({ audius: 'Audius', archive: 'Internet Archive', jamendo: 'Jamendo', radio: 'Internet radio' } as Record<string, string>)[track.source];
+      info.music_service_name = ({ audius: 'Audius', archive: 'Internet Archive', jamendo: 'Jamendo', hearthis: 'hearthis.at', radio: 'Internet radio' } as Record<string, string>)[track.source];
     }
     const meta: Record<string, unknown> = { artist_name: track.artist, track_name: track.title, additional_info: info };
     if (track.album) meta.release_name = track.album;

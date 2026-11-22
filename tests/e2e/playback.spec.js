@@ -164,7 +164,7 @@ test('player styles: picked in Settings, remembered on this device, seeking stil
   await open(page, '/settings');
   const dial = page.locator('.deck .dial');
   await expect(dial).toHaveAttribute('data-style', 'dial');
-  for (const style of ['calm', 'minimal', 'color', 'mirror']) {
+  for (const style of ['minimal', 'color', 'mirror']) {
     await page.locator(`.dial-opt[data-style="${style}"]`).click();
     await expect(page.locator(`.dial-opt[data-style="${style}"]`)).toHaveAttribute('aria-pressed', 'true');
     await expect(dial).toHaveAttribute('data-style', style);

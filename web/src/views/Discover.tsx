@@ -1,4 +1,4 @@
-// Discover: popular on Audius, Internet Archive collections, Jamendo.
+// Discover: popular on Audius and hearthis.at, Internet Archive collections, Jamendo.
 import { useEffect, useState } from 'react';
 
 import { Header, ChipPicker, Grid, Loading, ErrorBox } from '../components/common.tsx';
@@ -11,6 +11,7 @@ import { byKind, cx } from '../lib/format.ts';
 import { store, useStore, api } from '../lib/store.ts';
 import type { Track } from '../lib/store.ts';
 import type { Route } from '../lib/router.ts';
+import { STANDALONE } from '../lib/env.ts';
 
 const AUDIUS_GENRES = ['', 'Electronic', 'Hip-Hop/Rap', 'Lo-Fi', 'Alternative', 'Rock', 'Pop', 'R&B/Soul', 'Jazz', 'Ambient', 'House', 'Techno', 'Classical', 'Acoustic', 'Experimental'];
 const IA_PRESETS: ChipOption[] = [
@@ -22,10 +23,17 @@ const IA_PRESETS: ChipOption[] = [
   { value: 'blues', label: 'Blues' },
 ];
 const JAMENDO_TAGS = ['', 'pop', 'rock', 'electronic', 'jazz', 'lounge', 'classical', 'hiphop', 'world', 'soundtrack'];
+const HEARTHIS_GENRES: ChipOption[] = [
+  { value: '', label: 'All genres' }, { value: 'afrohouse', label: 'Afro House' }, { value: 'amapiano', label: 'Amapiano' },
+  { value: 'house', label: 'House' }, { value: 'deephouse', label: 'Deep House' }, { value: 'techno', label: 'Techno' },
+  { value: 'drumandbass', label: 'Drum & Bass' }, { value: 'hiphop', label: 'Hip Hop' }, { value: 'chillout', label: 'Chillout' },
+];
+// Jamendo needs a key, which the phone-only version doesn't ask for.
 const TABS = [
   { value: 'audius', label: 'Audius' },
+  { value: 'hearthis', label: 'hearthis.at' },
   { value: 'archive', label: 'Internet Archive' },
-  { value: 'jamendo', label: 'Jamendo' },
+  ...(STANDALONE ? [] : [{ value: 'jamendo', label: 'Jamendo' }]),
 ];
 
 type Load<T> = { state: 'loading' } | { state: 'error'; msg: string } | { state: 'done'; value: T };
@@ -59,6 +67,7 @@ export function Discover({ route }: { route: Route }) {
       </div>
       <div>
         {tab === 'audius' ? <AudiusTab /> : null}
+        {tab === 'hearthis' ? <HearthisTab /> : null}
         {tab === 'archive' ? <ArchiveTab /> : null}
         {tab === 'jamendo' ? <JamendoTab /> : null}
       </div>
@@ -91,6 +100,25 @@ function AudiusTab() {
           <TrackList tracks={res.value.filter(byKind(kind))} context={{ label: 'Audius' + (genre ? ', ' + genre : ''), href: '/discover' }}
             emptyText={kind === 'sets' ? tr('No sets among the popular tracks. Try searching “set” or “mix”.') : tr('No songs.')} />
         ) : null}
+      </div>
+    </>
+  );
+}
+
+function HearthisTab() {
+  const [genre, setGenre] = useState('');
+  const [res, retry] = useFetch<Track[]>('/api/hearthis/popular?genre=' + encodeURIComponent(genre));
+  const label = HEARTHIS_GENRES.find((g) => g.value === genre)?.label;
+  return (
+    <>
+      <p className="muted pad">{tr('DJ mixes and electronic music, shared by the DJs and producers themselves.')}</p>
+      <div className="toolbar">
+        <ChipPicker options={HEARTHIS_GENRES} initial="" onPick={setGenre} label={tr('Genre')} />
+      </div>
+      <div>
+        {res.state === 'loading' ? <Loading /> : null}
+        {res.state === 'error' ? <ErrorBox msg={tr('hearthis.at isn\'t responding: ') + res.msg} retry={retry} /> : null}
+        {res.state === 'done' ? <TrackList tracks={res.value} context={{ label: 'hearthis.at' + (genre ? ', ' + label : ''), href: '/discover?source=hearthis' }} /> : null}
       </div>
     </>
   );

@@ -55,6 +55,7 @@ export const SOURCES: Record<string, { name: string; short: string }> = {
   archive: { name: 'Internet Archive', short: 'Archive' },
   radio: { name: 'Radio', short: 'Radio' },
   jamendo: { name: 'Jamendo', short: 'Jamendo' },
+  hearthis: { name: 'hearthis.at', short: 'hearthis' },
   soundcloud: { name: 'SoundCloud', short: 'SoundCloud' },
 };
 

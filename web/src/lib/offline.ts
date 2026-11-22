@@ -130,6 +130,12 @@ class Offline extends EventTarget {
     return Boolean(t?.id && typeof t.stream === 'string' && t.stream.startsWith('/') && !t.live && !(HOME && t.source === 'local'));
   }
 
+  // Can be kept as a download. hearthis.at allows it only where the uploader enabled downloads
+  // (its terms); everything the buffer may hold otherwise can be kept.
+  pinnable(t: Track | null | undefined): boolean {
+    return this.eligible(t) && !(t!.source === 'hearthis' && !t!.download);
+  }
+
   // True when a downloaded copy exists. Synchronous; false until the index has loaded (await offline.ready).
   isCached(id: string): boolean { return this.index.has(id); }
 
@@ -146,7 +152,7 @@ class Offline extends EventTarget {
   // Keeps these songs on the device until removed. Returns how many can be downloaded.
   async pin(tracks: Track[]): Promise<number> {
     await this.ready;
-    const ok = tracks.filter((t) => this.eligible(t));
+    const ok = tracks.filter((t) => this.pinnable(t));
     if (!this.db) return 0;
     for (const t of ok) {
       const m = this.index.get(t.id);

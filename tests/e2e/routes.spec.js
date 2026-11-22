@@ -5,8 +5,8 @@ import { ARCHIVE_DOC, AUDIUS_USER } from '../support/fake-net.js';
 
 const STATIC_ROUTES = [
   '/', '/search', '/search?q=river', '/search?q=river&type=sets', '/search?q=river&type=artists',
-  '/discover', '/discover?source=archive', '/discover?source=jamendo', '/radio',
-  '/artists', '/albums', '/songs', '/favorites', '/history',
+  '/discover', '/discover?source=hearthis', '/discover?source=archive', '/discover?source=jamendo', '/radio',
+  '/artists', '/albums', '/songs', '/favorites', '/downloads', '/history',
   '/smart/mix', '/smart/most-played', '/smart/forgotten', '/smart/recent', '/smart/unplayed', '/smart/online',
   '/settings', `/audius/${AUDIUS_USER.id}`, `/archive/${ARCHIVE_DOC.identifier}`,
 ];

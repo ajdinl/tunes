@@ -12,11 +12,10 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
 // How the dial looks, chosen per device in Settings → Appearance.
 //   dial:    receiver scale with the live spectrum (default)
-//   calm:    the same scale and needle, no moving spectrum
 //   minimal: a thin progress line with a knob, no scale
 //   color:   the spectrum in a color gradient
 //   mirror:  the spectrum mirrored around the middle, like a waveform
-export const DIAL_STYLES = ['dial', 'calm', 'minimal', 'color', 'mirror'] as const;
+export const DIAL_STYLES = ['dial', 'minimal', 'color', 'mirror'] as const;
 export type DialStyle = (typeof DIAL_STYLES)[number];
 // Phones have no spectrum (no Web Audio graph there, see player.ts), so they always use
 // Minimal; there is nothing to choose. (dialStylePhone stays in the synced prefs for
@@ -134,7 +133,7 @@ export class Dial {
     const bw = this.big ? 5 : 3;
     const n = Math.max(8, Math.min(256, Math.floor(span / (bw + gap))));
     const style = dialStyle;
-    const playing = player.playing && !reduced.matches && style !== 'calm';
+    const playing = player.playing && !reduced.matches;
     if (freq && playing) {
       const nyq = sampleRate / 2;
       const bins = freq.length;
@@ -155,50 +154,34 @@ export class Dial {
     }
     const maxH = baseY - (this.big ? 10 : 6);
     const needleX = live ? x0 + span * stationPos(t) : x0 + span * progress;
-    if (style === 'calm') {
-      // No spectrum: a glowing line along the scale shows how far the song is.
-      const y = baseY - 1;
-      g.save();
-      g.lineCap = 'round';
-      g.lineWidth = this.big ? 3 : 2;
-      g.strokeStyle = `rgba(${AMBER},0.25)`;
-      g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke();
-      g.shadowColor = `rgba(${AMBER},0.7)`;
-      g.shadowBlur = this.big ? 10 : 6;
-      g.strokeStyle = `rgba(${AMBER},0.95)`;
-      g.beginPath(); g.moveTo(x0, y); g.lineTo(live ? x1 : Math.max(x0, needleX), y); g.stroke();
-      g.restore();
-    } else {
-      const mirror = style === 'mirror';
-      const mid = baseY - maxH / 2;
-      const lit = new Path2D(), dim = new Path2D();
-      for (let i = 0; i < n; i++) {
-        const x = x0 + i * (bw + gap);
-        const bh = Math.max(1.5, this.bars[i] * maxH);
-        if (mirror) (live || x < needleX ? lit : dim).rect(x, mid - bh / 2, bw, bh);
-        else (live || x < needleX ? lit : dim).rect(x, baseY - bh, bw, bh);
-      }
-      let paint: string | CanvasGradient = `rgba(${AMBER},0.95)`;
-      if (style === 'color') {
-        // Low notes cool, high notes warm.
-        const grad = g.createLinearGradient(x0, 0, x1, 0);
-        grad.addColorStop(0, '#3fa7ff');
-        grad.addColorStop(0.35, '#8b5cff');
-        grad.addColorStop(0.65, '#ff4fa3');
-        grad.addColorStop(1, '#ffb547');
-        paint = grad;
-      }
-      g.save();
-      g.shadowColor = style === 'color' ? 'rgba(255,255,255,0.35)' : `rgba(${AMBER},0.75)`;
-      g.shadowBlur = this.big ? 14 : 8;
-      g.fillStyle = paint;
-      g.fill(lit);
-      g.shadowBlur = 0;
-      if (style === 'color') { g.globalAlpha = 0.3; g.fill(dim); }
-      else { g.fillStyle = `rgba(${AMBER},0.32)`; g.fill(dim); }
-      g.restore();
+    const mirror = style === 'mirror';
+    const mid = baseY - maxH / 2;
+    const lit = new Path2D(), dim = new Path2D();
+    for (let i = 0; i < n; i++) {
+      const x = x0 + i * (bw + gap);
+      const bh = Math.max(1.5, this.bars[i] * maxH);
+      if (mirror) (live || x < needleX ? lit : dim).rect(x, mid - bh / 2, bw, bh);
+      else (live || x < needleX ? lit : dim).rect(x, baseY - bh, bw, bh);
     }
-
+    let paint: string | CanvasGradient = `rgba(${AMBER},0.95)`;
+    if (style === 'color') {
+      // Low notes cool, high notes warm.
+      const grad = g.createLinearGradient(x0, 0, x1, 0);
+      grad.addColorStop(0, '#3fa7ff');
+      grad.addColorStop(0.35, '#8b5cff');
+      grad.addColorStop(0.65, '#ff4fa3');
+      grad.addColorStop(1, '#ffb547');
+      paint = grad;
+    }
+    g.save();
+    g.shadowColor = style === 'color' ? 'rgba(255,255,255,0.35)' : `rgba(${AMBER},0.75)`;
+    g.shadowBlur = this.big ? 14 : 8;
+    g.fillStyle = paint;
+    g.fill(lit);
+    g.shadowBlur = 0;
+    if (style === 'color') { g.globalAlpha = 0.3; g.fill(dim); }
+    else { g.fillStyle = `rgba(${AMBER},0.32)`; g.fill(dim); }
+    g.restore();
     // ---- ticks and labels
     g.strokeStyle = `rgba(${AMBER},0.55)`;
     g.fillStyle = `rgba(${AMBER},0.7)`;

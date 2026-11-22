@@ -7,7 +7,7 @@ import { DataStore } from '../../../lib/data.ts';
 import type { PlaylistPatch, SettingsPatch } from '../../../lib/data.ts';
 import { httpError } from '../../../lib/types.ts';
 import type { Data, Track } from '../../../lib/types.ts';
-import { archive, audius, jamendo, listenbrainz, lyrics, radio, soundcloud } from '../../../lib/sources.ts';
+import { archive, audius, hearthis, jamendo, listenbrainz, lyrics, radio, soundcloud } from '../../../lib/sources.ts';
 import { idbGet, idbSet } from './idb.ts';
 
 const DATA_KEY = 'data';
@@ -93,6 +93,7 @@ route('GET', /^\/api\/search$/, async (m, q) => {
     archive: () => archive.search(term),
     radio: () => radio.search({ q: term, limit: 30 }),
     jamendo: () => jamendo.search(term, s().jamendoClientId, many ? 100 : 30),
+    hearthis: () => hearthis.search(term, many ? 100 : 40),
   };
   const keys = wanted.filter((k) => jobs[k] && (k !== 'jamendo' || s().jamendoClientId));
   const results = await Promise.allSettled(keys.map((k) => jobs[k]()));
@@ -111,6 +112,7 @@ route('GET', /^\/api\/archive\/item\/([\w.-]+)$/, ([, id]) => archive.item(id));
 route('GET', /^\/api\/radio\/search$/, (m, q) => radio.search({ q: q.get('q') || '', tag: q.get('tag') || '', countrycode: q.get('country') || '' }));
 route('GET', /^\/api\/radio\/top$/, () => radio.top());
 route('GET', /^\/api\/radio\/nowplaying$/, () => ({ title: null })); // needs the server's stream proxy
+route('GET', /^\/api\/hearthis\/popular$/, (m, q) => hearthis.popular(q.get('genre') || ''));
 route('GET', /^\/api\/jamendo\/popular$/, (m, q) => jamendo.popular(s().jamendoClientId, q.get('tag') || ''));
 route('GET', /^\/api\/soundcloud\/resolve$/, async (m, q) => ({ track: await soundcloud.resolve(soundcloud.find(q.get('u')) || q.get('u') || '') }));
 route('GET', /^\/api\/lyrics$/, (m, q) => lyrics({

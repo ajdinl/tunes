@@ -34,8 +34,8 @@ export const defaults = (folders: string[] = []): Data => ({
 export const PREF_VALUES: Record<keyof Prefs, readonly string[]> = {
   theme: ['black', 'indigo', 'light'],
   lang: ['en', 'bs', 'sr', 'hr', 'de', 'tr', 'es', 'fr', 'pt', 'sl', 'mk', 'sq'],
-  dialStyle: ['dial', 'calm', 'minimal', 'color', 'mirror'],
-  dialStylePhone: ['minimal', 'calm'], // phones have no spectrum
+  dialStyle: ['dial', 'minimal', 'color', 'mirror'],
+  dialStylePhone: ['minimal'], // phones have no spectrum
   deckCtrls: ['above', 'beside', 'hover'],
 };
 

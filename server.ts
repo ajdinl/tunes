@@ -15,7 +15,7 @@ import QRCode from 'qrcode';
 import { Store, cleanTrack, ICONS, DEFAULT_ICON, tildify } from './lib/store.ts';
 import type { PlaylistPatch, SettingsPatch } from './lib/store.ts';
 import { Library, MIME, AUDIO_EXT } from './lib/library.ts';
-import { audius, archive, radio, jamendo, lyrics, listenbrainz, soundcloud } from './lib/sources.ts';
+import { audius, archive, radio, jamendo, hearthis, lyrics, listenbrainz, soundcloud } from './lib/sources.ts';
 import { proxyAudio, SAFE_HEADERS } from './lib/proxy.ts';
 import { assertPublicUrl } from './lib/netguard.ts';
 import { httpError } from './lib/types.ts';
@@ -141,7 +141,7 @@ function hostAllowed(req: Req): boolean {
 }
 
 const sanitize = (s: unknown, max = 80): string => String(s || '').replace(/[\/\\:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().replace(/^\.+/, '').slice(0, max) || 'Unknown';
-const DOWNLOAD_HOSTS = /(^|\.)(archive\.org|audius\.co|jamendo\.com)$/;
+const DOWNLOAD_HOSTS = /(^|\.)(archive\.org|audius\.co|jamendo\.com|hearthis\.at|hearthis\.app)$/;
 
 // Content Security Policy for the app's pages: scripts only from Tunes itself (plus the
 // inline theme script, by hash, and the SoundCloud widget), no plugins, no framing. Even if
@@ -262,6 +262,7 @@ route('GET', /^\/api\/search$/, async (req, res, m, q) => {
     archive: () => archive.search(term),
     radio: () => radio.search({ q: term, limit: 30 }),
     jamendo: () => jamendo.search(term, store.data.settings.jamendoClientId, many ? 100 : 30),
+    hearthis: () => hearthis.search(term, many ? 100 : 40),
   };
   const keys = wanted.filter((k) => jobs[k] && (k !== 'jamendo' || store.data.settings.jamendoClientId));
   const results = await Promise.allSettled(keys.map((k) => jobs[k]()));
@@ -291,6 +292,8 @@ route('GET', /^\/api\/radio\/nowplaying$/, (req, res, m, q) => {
   const sid = q.get('sid');
   json(res, 200, { title: (sid !== null && icyTitles.get(sid)) || null });
 });
+
+route('GET', /^\/api\/hearthis\/popular$/, async (req, res, m, q) => json(res, 200, await hearthis.popular(q.get('genre') || '')));
 
 route('GET', /^\/api\/jamendo\/popular$/, async (req, res, m, q) =>
   json(res, 200, await jamendo.popular(store.data.settings.jamendoClientId, q.get('tag') || '')));

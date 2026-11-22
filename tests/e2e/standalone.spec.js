@@ -26,7 +26,7 @@ const test = base.extend({
       const url = new URL(req.url());
       asked.push(url.href);
       // Songs and stations: a short WAV.
-      if (/\/v1\/tracks\/\w+\/stream$/.test(url.pathname) || url.hostname === 'stream.example' || url.hostname === 'archive.org' && url.pathname.startsWith('/download/')) {
+      if (/\/v1\/tracks\/\w+\/stream$/.test(url.pathname) || /\/listen\/$/.test(url.pathname) || url.hostname === 'stream.example' || url.hostname === 'archive.org' && url.pathname.startsWith('/download/')) {
         return route.fulfill({ status: 200, headers: { ...CORS, 'Content-Type': 'audio/wav' }, body: SONG });
       }
       const res = answer(url, { headers: req.headers() });
@@ -166,4 +166,27 @@ test('downloads for a trip: straight from the source, listed and playing with no
   await expect.poll(() => playing(phone)).toBe(true);
   expect(await app(phone, () => window.__tunes.player.fx.src)).toMatch(/^blob:/);
   await phone.ctx.setOffline(false);
+});
+
+test('hearthis.at DJ mixes: played straight from the source, downloadable only where the DJ allows it', async ({ phone }) => {
+  await phone.goto('discover?source=hearthis');
+  await ready(phone);
+  await phone.locator('.chip', { hasText: 'Afro House' }).tap();
+  const free = phone.locator('#main .tr', { hasText: 'Sunset Afro Set' });
+  await expect(free).toBeVisible();
+  expect(phone.asked.some((u) => u.startsWith('https://api-v2.hearthis.at/feed/?type=popular&category=afrohouse'))).toBe(true);
+  await free.locator('.tr__title').tap();
+  await expect.poll(() => playing(phone)).toBe(true);
+  expect(await app(phone, () => window.__tunes.player.fx.src)).toBe('https://hearthis.app/dj-amara/sunset-set/listen/');
+
+  // The DJ allows downloading this one…
+  await free.locator('.tr__more').tap();
+  await expect(phone.locator('.menu__item', { hasText: 'Download' })).toBeVisible();
+  await phone.locator('#main h1').first().tap(); // a tap outside closes the menu
+  await expect(phone.locator('.menu')).toHaveCount(0);
+  // …but this one only streams, so there is no Download.
+  await phone.locator('#main .tr', { hasText: 'Club Night Mix' }).locator('.tr__more').tap();
+  await expect(phone.locator('.menu__item', { hasText: 'Open on source website' })).toBeVisible();
+  await expect(phone.locator('.menu__item', { hasText: 'Download' })).toHaveCount(0);
+  expect(await app(phone, async () => window.__tunes.offline.pin([{ id: 'hearthis:club-night', source: 'hearthis', title: 'x', stream: '/api/stream/url?u=x' }]))).toBe(0);
 });

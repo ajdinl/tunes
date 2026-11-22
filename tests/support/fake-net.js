@@ -28,6 +28,16 @@ export const AUDIUS_USER = {
   profile_picture: { '150x150': 'https://creatornode.example/content/u/150x150.jpg' },
 };
 
+// hearthis.at: one mix the DJ lets you download, one you may only stream.
+const hearthisMix = (id, title, downloadable) => ({
+  id, title, duration: '3605', genre: 'Afro House', release_date: '2026-11-01 20:00:00', private: '0',
+  permalink_url: `https://hearthis.at/dj-amara/${id}/`, artwork_url: `https://img.hearthis.example/${id}.jpg`,
+  stream_url: `https://hearthis.app/dj-amara/${id}/listen/`, downloadable: downloadable ? '1' : '0',
+  download_url: downloadable ? `https://hearthis.app/dj-amara/${id}/download/` : '', user: { username: 'DJ Amara' },
+});
+export const HEARTHIS_FREE = hearthisMix('sunset-set', 'Sunset Afro Set', true);
+export const HEARTHIS_STREAM = hearthisMix('club-night', 'Club Night Mix', false);
+
 export const ARCHIVE_DOC = { identifier: 'fen1999-06-12.sbd', title: 'The Fen Lights Live at the Mill', creator: 'The Fen Lights', year: '1999' };
 export const ARCHIVE_META = {
   metadata: { identifier: 'fen1999-06-12.sbd', title: 'The Fen Lights Live at the Mill', creator: 'The Fen Lights', date: '1999-06-12', description: '<p>Soundboard <b>recording</b>.</p>', licenseurl: 'https://creativecommons.org/licenses/by-nc-sa/3.0/' },
@@ -89,6 +99,8 @@ export function answer(url, init) {
     if (p === '/cover.png') return new Response(PNG, { status: 200, headers: { 'Content-Type': 'image/png' } });
     if (p === '/evil.svg') return new Response('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>', { status: 200, headers: { 'Content-Type': 'image/svg+xml' } });
   }
+
+  if (host === 'api-v2.hearthis.at' && (p === '/search/' || p === '/feed/')) return json([HEARTHIS_FREE, HEARTHIS_STREAM, { ...HEARTHIS_FREE, id: 'secret', private: '1' }]);
 
   if (host === 'archive.org') {
     if (p.startsWith('/download/')) return new Response(new Uint8Array([0xff, 0xfb, 0x90, 0x64, 0, 0, 0, 0]), { status: 200, headers: { 'Content-Type': 'audio/mpeg' } });

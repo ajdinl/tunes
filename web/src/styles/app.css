@@ -21,6 +21,7 @@
   --c-archive: #f28b82;
   --c-radio: #7ec4e6;
   --c-jamendo: #f5a3d0;
+  --c-hearthis: #6fd6b8;
   --c-soundcloud: #ff8a4c;
 
   --r-sm: 6px;
@@ -72,6 +73,7 @@
   --c-archive: #c03c33;
   --c-radio: #1f75a0;
   --c-jamendo: #b03c78;
+  --c-hearthis: #13836a;
   --c-soundcloud: #c9500f;
   --bg-clear: rgba(244, 244, 246, 0);
   --deck-a: #ffffff;
@@ -302,6 +304,7 @@ select.field:disabled { opacity: 0.5; cursor: default; }
 .chip--archive { --c: var(--c-archive); }
 .chip--radio { --c: var(--c-radio); }
 .chip--jamendo { --c: var(--c-jamendo); }
+.chip--hearthis { --c: var(--c-hearthis); }
 .chip--soundcloud { --c: var(--c-soundcloud); }
 
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
@@ -498,6 +501,7 @@ body.is-playing .tr.is-playing .tr__num::before { animation: bars 0.9s ease-in-o
 .src--radio { --c: var(--c-radio); }
 .src--jamendo { --c: var(--c-jamendo); }
 .src--soundcloud { --c: var(--c-soundcloud); }
+.src--hearthis { --c: var(--c-hearthis); }
 
 /* ------------------------------------------------------------ grid */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 24px 20px; }

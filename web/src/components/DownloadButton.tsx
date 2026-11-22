@@ -8,7 +8,7 @@ import type { Track } from '../lib/store.ts';
 
 export function DownloadButton({ tracks }: { tracks: Track[] }) {
   useOffline();
-  const list = tracks.filter((t) => offline.eligible(t));
+  const list = tracks.filter((t) => offline.pinnable(t));
   if (!offline.supported || !list.length) return null;
   const have = list.filter((t) => offline.isPinned(t.id)).length;
   const busy = list.some((t) => offline.isPinning(t.id));

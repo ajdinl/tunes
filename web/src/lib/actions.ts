@@ -116,7 +116,7 @@ export function trackMenu(track: Track, { playlist, index, list }: { playlist?: 
     if (track.artist) items.push({ label: tr('Go to artist'), icon: 'artist', action: () => openArtist(track) });
     if (track.album) items.push({ label: tr('Go to album'), icon: 'album', action: () => openAlbum(track) });
   }
-  if (offline.supported && offline.eligible(track)) {
+  if (offline.supported && offline.pinnable(track)) {
     items.push(offline.isPinned(track.id) || offline.isPinning(track.id)
       ? { label: tr('Remove download'), icon: 'trash', action: () => { removeDownloads([track]); } }
       : { label: tr('Download'), icon: 'download', action: () => { downloadTracks([track]); } });
