@@ -694,6 +694,10 @@ a.rank__name:hover { text-decoration: underline; }
 }
 :root[data-theme='light'][data-nowbg='color'] .now__bg, :root[data-theme='light'][data-nowbg='color'] .look-preview__bg { opacity: 0.45; }
 
+/* Text size: every font size in this file is calc(Npx * var(--fs)). */
+:root[data-text='small'] { --fs: 0.9; }
+:root[data-text='large'] { --fs: 1.15; }
+
 /* Compact song lists */
 :root[data-density='compact'] .tr { min-height: 42px; }
 :root[data-density='compact'] .tr__cv { width: 32px; }

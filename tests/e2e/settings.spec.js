@@ -174,7 +174,12 @@ test('accent color, Now Playing background, sources and Home sections follow you
   // Popular on Audius to the top of Home.
   for (let i = 0; i < 3; i++) await a.getByRole('button', { name: 'Move Popular this week on Audius up' }).click();
   await expect(a.locator('.opt-list__item[data-section]').first()).toHaveAttribute('data-section', 'popular');
+  const bodySize = (page) => page.evaluate(() => parseFloat(getComputedStyle(document.body).fontSize));
+  const normal = await bodySize(a);
+  await a.locator('.text-opt[data-text="small"]').click();
+  expect(await bodySize(a)).toBeLessThan(normal);
   await a.locator('.text-opt[data-text="large"]').click();
+  expect(await bodySize(a)).toBeGreaterThan(normal);
   await a.locator('.density-opt[data-density="compact"]').click();
   await expect(a.locator('html')).toHaveAttribute('data-text', 'large');
   await expect(a.locator('html')).toHaveAttribute('data-density', 'compact');
