@@ -43,7 +43,7 @@ export function History(_: { route: Route }) {
     return (
       <div className="view">
         {header}
-        <p className="empty">{tr('A song is added to history once you\'ve heard at least half of it (or 4 minutes). Radio stations after 30 seconds.')}</p>
+        <p className="empty">{tr('Everything you play shows up here: songs, mixes and radio stations.')}</p>
       </div>
     );
   }

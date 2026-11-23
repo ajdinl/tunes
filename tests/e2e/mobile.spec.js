@@ -96,6 +96,7 @@ test('tooltips show right away on mouse hover, not on touch', async ({ page, dev
   await playSong(page, 'Northbound');
   const tip = page.locator('.tip.is-on');
   const shuffle = page.locator('.deck__ctrls .ibtn').first();
+  await page.locator('.deck .dial').hover(); // the player buttons show while the mouse is on the bar
   await shuffle.hover();
   await expect(tip).toHaveText('Shuffle (S)', { timeout: 500 });
   // No native title on top of it (the browser's own tooltip would show after ~2 s).
@@ -233,6 +234,12 @@ test('phone: always the Minimal player style, nothing to choose, no equalizer', 
   await expect(phone.locator('.now .dial')).toHaveAttribute('data-style', 'minimal'); // not the computer's Mirror
   await expect(phone.locator('.now [aria-label="Sleep timer"]')).toBeVisible();
   await expect(phone.locator('.now [aria-label="Lyrics (T)"]')).toBeVisible();
+  // No room for the queue next to the cover: it opens in the side panel.
+  await phone.locator('.now__queuebtn').tap();
+  await expect(phone.locator('.now')).toBeHidden();
+  await expect(phone.locator('#panel .queue')).toBeVisible();
+  await phone.locator('#panel [aria-label="Close panel"]').tap();
+  await phone.locator('.deck__meta').tap();
   await phone.locator('.now__close').tap();
   await open(phone, '/settings');
   await expect(phone.locator('.dial-opt')).toHaveCount(0); // no player style picker

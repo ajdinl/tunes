@@ -125,8 +125,15 @@ route('POST', /^\/api\/history$/, (m, q, b) => {
   const track = needTrack(b, 'Song is missing');
   const when = Number(b.at) || Date.now();
   const counted = store.addHistory(track, when);
-  if (counted && !track.live) listenbrainz.submit(s().listenbrainzToken, 'single', track, when).catch((e: Error) => console.warn(e.message));
   return { ok: true, counted, playCount: store.data.playCounts[String(track.id)] };
+});
+route('POST', /^\/api\/scrobble$/, (m, q, b) => {
+  const track = needTrack(b, 'Song is missing');
+  const when = Number(b.at) || Date.now();
+  const token = s().listenbrainzToken;
+  const submitted = Boolean(token) && !track.live && store.claimScrobble(track, when);
+  if (submitted) listenbrainz.submit(token, 'single', track, when).catch((e: Error) => console.warn(e.message));
+  return { ok: true, submitted };
 });
 route('DELETE', /^\/api\/history$/, () => { store.clearHistory(); return { ok: true }; });
 route('POST', /^\/api\/nowplaying$/, (m, q, b) => {

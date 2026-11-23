@@ -183,7 +183,7 @@ export function Search({ route }: { route: Route }) {
           {onlineSrc.map((s) => {
             const on = sources.includes(s);
             return (
-              <button key={s} type="button" className={cx('chip', on && 'is-on', 'chip--' + s)} aria-pressed={on}
+              <button key={s} type="button" className={cx('chip', on && 'is-on', 'chip--' + s)} aria-pressed={on} title={tr(SOURCES[s].about)}
                 onClick={() => toggleSource(s)}>{tr(SOURCES[s].name)}</button>
             );
           })}

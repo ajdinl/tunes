@@ -8,7 +8,7 @@ test('handoff: the phone continues at the same second and the computer pauses', 
   const box = await laptop.locator('.deck .dial').boundingBox();
   await laptop.mouse.click(box.x + box.width * 0.3, box.y + box.height / 2); // about 1:00
   await expect.poll(() => position(laptop)).toBeGreaterThan(50);
-  await laptop.locator('.deck__ctrls').hover(); // the dial tooltip is not in the way
+  await laptop.locator('.deck__now').hover(); // the dial tooltip is not in the way
   await sleep(5500); // the playing device reports every 5 s
 
   await open(phone, '/');

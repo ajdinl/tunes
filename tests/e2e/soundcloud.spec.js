@@ -29,6 +29,7 @@ test('a pasted track link resolves and plays, pauses, seeks and sets the volume 
   await expectPlaying(page);
   await expect(page.locator('.deck__title')).toHaveText('Slow River');
 
+  await page.locator('.deck .dial').hover(); // the buttons show while the mouse is on the bar
   await page.locator('.deck .play').click();
   await expectPlaying(page, false);
   expect((await calls(page, 'pause')).length).toBeGreaterThan(0);

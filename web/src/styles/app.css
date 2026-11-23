@@ -180,9 +180,11 @@ code, kbd {
 /* Playlists take the room that is left; they scroll, and never spill over the items below. */
 .nav--lists { flex: 1 0 auto; flex-basis: 0; min-height: 84px; overflow: hidden; }
 .nav--lists > .nav__head { flex: none; }
-.nav__scroll { overflow-y: auto; min-height: 0; margin-top: 4px; }
-.nav__link--pl { justify-content: space-between; min-height: 32px; font-weight: 500; }
-.nav__link--pl span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Only up and down: at some zoom levels a fraction of a pixel too wide added a horizontal
+   scrollbar under the items (a cut-off grey shape). */
+.nav__scroll { overflow-x: hidden; overflow-y: auto; min-height: 0; margin-top: 4px; }
+/* Playlists look like the other menu items: an icon, the name, and the number of songs. */
+.nav__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nav__count { color: var(--faint); font-size: 12px; font-variant-numeric: tabular-nums; }
 .nav__hint { margin: 6px 10px; color: var(--faint); font-size: 13px; }
 .nav--foot { padding-top: 0; }
@@ -845,6 +847,12 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .now__album { color: var(--faint); }
 .now__lyrics { display: flex; min-height: 0; mask-image: linear-gradient(transparent, #000 10%, #000 85%, transparent); }
 .now__lyrics .lyr { padding-top: 12vh; }
+/* The queue in place of the lyrics (the queue button in "Now playing" on computers). */
+.now__queue { display: flex; flex-direction: column; min-height: 0; mask-image: linear-gradient(transparent, #000 4%, #000 92%, transparent); }
+.now__queue .queue { flex: 1; width: 100%; max-width: 620px; padding-top: 6vh; padding-bottom: 6vh; }
+.now__queue .qr__cv { width: 44px; }
+.now__queue .qr__title { font-size: 15px; }
+.now__queuebtn.is-on { color: var(--amber); }
 .now__deck { display: flex; flex-direction: column; gap: 14px; padding: 8px 56px 28px; }
 .dial--big { height: 108px; }
 .deck__ctrls--big { gap: 14px; }
@@ -1102,7 +1110,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
   .dial { height: 46px; }
   .panel { left: 0; width: auto; bottom: var(--deck-h, 70px); }
   .now__body { grid-template-columns: 1fr; padding: 12px 22px; gap: 20px; }
-  .now__lyrics { display: none; }
+  .now__lyrics, .now__queue { display: none; }
   .now__art { align-items: center; text-align: center; }
   /* Smaller on phones, so the title, the dial and all the buttons fit below it. */
   .now__cv { width: min(78%, 36vh); }
@@ -1167,9 +1175,13 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
   /* The song on the left and the tools on the right line up with the dial, not with the
      middle of the whole bar: half of the buttons row (34px) plus the gap (8px) lower. */
   .deck .deck__now, .deck .deck__tools { position: relative; top: 21px; }
+  /* That puts the cover low in the bar: more room below it than above the buttons, so it
+     doesn't touch the bottom edge of the window. */
+  .deck { padding-top: 8px; padding-bottom: max(20px, env(safe-area-inset-bottom)); }
 }
 @media (min-width: 861px) and (hover: hover) {
   body.deck-hover .deck .deck__now, body.deck-hover .deck .deck__tools { top: 0; }
+  body.deck-hover .deck { padding-top: 10px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
 }
 /* "Player buttons beside the progress bar" (Settings → Appearance): one row, like SoundCloud,
    so the bar is lower. Narrower windows keep them above, or the dial gets too short. */
@@ -1178,6 +1190,7 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
   body.deck-row .deck .deck__ctrls { flex: none; }
   body.deck-row .deck .deck__dial { flex: 1; min-width: 0; }
   body.deck-row .deck .deck__now, body.deck-row .deck .deck__tools { top: 0; }
+  body.deck-row .deck { padding-top: 10px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
 }
 
 /* ------------------------------------------------------------ mini player (picture-in-picture window) */

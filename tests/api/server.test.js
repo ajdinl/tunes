@@ -247,6 +247,21 @@ describe('online sources (through the fake internet)', () => {
     expect(good.state.settings.listenbrainzToken).toBe('••••');
     await api.put('/api/settings', { listenbrainzToken: '' });
   });
+
+  it('sends a listen to ListenBrainz once, only when it is connected, never radio', async () => {
+    const t = byTitle('Low Tide');
+    const at = Date.now();
+    expect((await api.post('/api/scrobble', { track: t, at })).body).toEqual({ ok: true, submitted: false }); // not connected
+    await api.put('/api/settings', { listenbrainzToken: 'good-token' });
+    expect((await api.post('/api/scrobble', { track: t, at })).body).toEqual({ ok: true, submitted: true });
+    expect((await api.post('/api/scrobble', { track: t, at: at + 5000 })).body.submitted).toBe(false); // reload or handoff
+    expect((await api.post('/api/scrobble', { track: t, at: at + t.duration * 1000 })).body.submitted).toBe(true);
+    expect((await api.post('/api/scrobble', { track: { id: 'radio:x', title: 'FM', live: true }, at })).body.submitted).toBe(false);
+    expect((await api.post('/api/scrobble', { track: {} })).status).toBe(400);
+    // The history is separate: a scrobble adds nothing there.
+    expect((await api.get('/api/state')).body.history.filter((h) => h.track.id === t.id)).toHaveLength(0);
+    await api.put('/api/settings', { listenbrainzToken: '' });
+  });
 });
 
 describe('app icon', () => {

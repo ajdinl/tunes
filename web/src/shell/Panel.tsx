@@ -36,7 +36,7 @@ export function Panel() {
   );
 }
 
-function Queue() {
+export function Queue() {
   const p = usePlayer('queue', 'track', 'mode');
   const q = p.queue;
   const i = p.index;

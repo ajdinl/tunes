@@ -328,10 +328,17 @@ route('POST', /^\/api\/history$/, async (req, res) => {
   const when = Number(at) || Date.now();
   const counted = store.addHistory(track, when);
   json(res, 200, { ok: true, counted, playCount: store.data.playCounts[track.id] });
-  if (counted && !track.live) {
-    listenbrainz.submit(store.data.settings.listenbrainzToken, 'single', track, when)
-      .catch((e: Error) => console.warn(e.message));
-  }
+});
+
+// Sent once half of the song (or 4 minutes) was heard; `at` is when it started.
+route('POST', /^\/api\/scrobble$/, async (req, res) => {
+  const { track, at } = await body<{ track?: Partial<Track>; at?: unknown }>(req);
+  if (!track?.id) return json(res, 400, { error: 'Song is missing' });
+  const when = Number(at) || Date.now();
+  const token = store.data.settings.listenbrainzToken;
+  const submitted = Boolean(token) && !track.live && store.claimScrobble(track, when);
+  json(res, 200, { ok: true, submitted });
+  if (submitted) listenbrainz.submit(token, 'single', track, when).catch((e: Error) => console.warn(e.message));
 });
 
 route('DELETE', /^\/api\/history$/, (req, res) => { store.clearHistory(); json(res, 200, { ok: true }); });

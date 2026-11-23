@@ -5,17 +5,20 @@ import { useSyncExternalStore } from 'react';
 import { STANDALONE } from '../lib/env.ts';
 
 // Where the player buttons sit on computers: above the dial, beside it (one row, the bar is
-// lower), or only while the mouse is over the bar.
+// lower), or only while the mouse is over the bar (the default; without a mouse it looks like
+// "above").
 export const DECK_CTRLS = ['above', 'beside', 'hover'] as const;
 export type DeckCtrls = (typeof DECK_CTRLS)[number];
 const savedCtrls = (): DeckCtrls => {
-  try { const v = JSON.parse(localStorage.getItem('tunes.deckCtrls') || 'null'); return DECK_CTRLS.includes(v) ? v : 'above'; } catch { return 'above'; }
+  try { const v = JSON.parse(localStorage.getItem('tunes.deckCtrls') || 'null'); return DECK_CTRLS.includes(v) ? v : 'hover'; } catch { return 'hover'; }
 };
 
 export interface ShellState {
   panel: 'queue' | 'lyrics' | null;
   eq: boolean;
   now: boolean;
+  // What the right half of "Now playing" shows on computers: the lyrics or the queue.
+  nowSide: 'lyrics' | 'queue';
   nav: boolean;
   sideMini: boolean;
   footCompact: boolean;
@@ -28,7 +31,7 @@ export interface ShellState {
 const saved = (key: string): boolean => { try { return JSON.parse(localStorage.getItem(key) || 'false') === true; } catch { return false; } };
 
 let state: ShellState = {
-  panel: null, eq: false, now: false, nav: false,
+  panel: null, eq: false, now: false, nowSide: 'lyrics', nav: false,
   sideMini: saved('tunes.sideMini'), footCompact: saved('tunes.footCompact'), deckCtrls: savedCtrls(), scMin: saved('tunes.scdockMin'), phone: false, install: false,
 };
 const listeners = new Set<() => void>();
@@ -45,6 +48,9 @@ export const shell = {
   },
   togglePanel(tab: 'queue' | 'lyrics'): void { shell.set({ panel: state.panel === tab ? null : tab }); },
 };
+
+// Wide enough for the two halves of "Now playing" (phones show only the cover there).
+export const nowHasSide = (): boolean => matchMedia('(min-width: 861px)').matches;
 
 export function useShell(): ShellState {
   return useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => state);

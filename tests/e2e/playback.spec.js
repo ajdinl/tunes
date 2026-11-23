@@ -46,6 +46,7 @@ test('the dial seeks with the mouse, and the arrow keys seek', async ({ page }) 
 
 test('play, pause and next from the player bar and the keyboard', async ({ page }) => {
   await playSong(page, 'Morning Light');
+  await page.locator('.deck .dial').hover(); // the buttons show while the mouse is on the bar
   await page.locator('.deck .play').click();
   await expectPlaying(page, false);
   await page.evaluate(() => document.activeElement?.blur());
@@ -79,16 +80,18 @@ test('history shows a song once per day with the number of plays', async ({ page
   await expect(page.locator('.tr', { has: page.locator('.tr__title', { hasText: 'Northbound' }) }).locator('.hist__n')).toHaveCount(0);
 });
 
-test('a song is added to history after half of it has been heard, not after skipping ahead', async ({ page, request }) => {
+test('everything that plays goes into history right away, even a song skipped after a moment', async ({ page, request }) => {
   await request.delete('/api/history', { data: {} });
-  await playSong(page, 'Night Bus'); // 150 s: counts after 75 s of listening
-  // Skipping to the end is not listening.
-  await appModule(page, 'player', (m) => { m.player.seek(140); });
+  const titles = async () => (await (await request.get('/api/state')).json()).history.map((h) => h.track.title);
+  await playSong(page, 'Night Bus');
+  await expect.poll(titles).toEqual(['Night Bus']);
+  // Left for another song after a moment: still in the history, and so is the new one.
+  await playSong(page, 'Low Tide');
+  await expect.poll(titles).toEqual(['Night Bus', 'Low Tide']);
+  // Back to the first one moments later (like a reload or another device): not counted twice.
+  await playSong(page, 'Night Bus');
   await sleep(1500);
-  expect((await (await request.get('/api/state')).json()).history).toHaveLength(0);
-  await appModule(page, 'player', (m) => { m.player.seek(0); m.player.fx.playbackRate = 6; });
-  await expect.poll(async () => (await (await request.get('/api/state')).json()).history.length, { timeout: 30000 }).toBe(1);
-  await appModule(page, 'player', (m) => { m.player.fx.playbackRate = 1; });
+  expect(await titles()).toEqual(['Night Bus', 'Low Tide']);
 });
 
 test('lyrics: a .lrc file next to the song, LRCLIB for an exact match, nothing for no match', async ({ page }) => {
@@ -173,6 +176,7 @@ test('player styles: picked in Settings, remembered on this device, seeking stil
   await page.reload();
   await settle(page);
   await expect(page.locator('.deck .dial')).toHaveAttribute('data-style', 'minimal');
+  await page.locator('.deck .dial').hover(); // the buttons show while the mouse is on the bar
   await page.locator('.deck .play').click();
   await expectPlaying(page);
   const box = await page.locator('.deck .dial').boundingBox();
@@ -250,6 +254,7 @@ test('mini player in Safari: a picture-in-picture video drawn from the song', as
   await expect.poll(() => video.evaluate((v) => v.paused)).toBe(false); // follows the music
 
   // The picture: the progress line along the bottom is drawn in amber up to the position.
+  await page.locator('.deck .dial').hover(); // the buttons show while the mouse is on the bar
   await page.locator('.deck .play').click();
   await expectPlaying(page, false);
   const box = await page.locator('.deck .dial').boundingBox();
@@ -302,7 +307,38 @@ test('mini player button is hidden where the browser has no picture-in-picture a
   await expect(page.locator('.mini-video')).toHaveCount(0);
 });
 
-test('player buttons: above the dial, beside it in one row, or only on hover', async ({ page }) => {
+test('"Now playing" on a computer: the queue button swaps the lyrics for the queue, without leaving', async ({ page }) => {
+  await playSong(page, 'Morning Light');
+  await page.locator('.deck__cv').click();
+  const now = page.locator('.now');
+  await expect(now).toBeVisible();
+  await expect(now.locator('.now__lyrics')).toBeVisible();
+  const btn = now.locator('.now__queuebtn');
+  await expect(btn).toHaveAttribute('aria-pressed', 'false');
+  await btn.click();
+  await expect(now).toBeVisible(); // still full screen
+  await expect(page.locator('#panel')).toBeHidden();
+  await expect(now.locator('.now__lyrics')).toHaveCount(0);
+  await expect(now.locator('.now__queue .qr.is-current .qr__title')).toHaveText('Morning Light');
+  await expect(btn).toHaveAttribute('aria-pressed', 'true');
+  // A song from the queue plays right there.
+  const next = now.locator('.now__queue .queue__list .qr').first();
+  const title = await next.locator('.qr__title').textContent();
+  await next.locator('.qr__main').click();
+  await expect(now.locator('.now__title')).toHaveText(title);
+  await expect(now).toBeVisible();
+  // The same button (or T) brings the lyrics back; Q switches too.
+  await btn.click();
+  await expect(now.locator('.now__lyrics')).toBeVisible();
+  await page.evaluate(() => document.activeElement?.blur());
+  await page.keyboard.press('q');
+  await expect(now.locator('.now__queue')).toBeVisible();
+  await page.keyboard.press('t');
+  await expect(now.locator('.now__lyrics')).toBeVisible();
+  await expect(now).toBeVisible();
+});
+
+test('player buttons: only on hover (the default), above the dial, or beside it in one row', async ({ page }) => {
   await playSong(page, 'Slow River');
   const deck = page.locator('.deck');
   const ctrls = page.locator('.deck .deck__ctrls');
@@ -310,7 +346,6 @@ test('player buttons: above the dial, beside it in one row, or only on hover', a
   const dial = page.locator('.deck .dial');
   const height = async () => (await deck.boundingBox()).height;
   const opacity = () => ctrls.evaluate((el) => getComputedStyle(el).opacity);
-  const before = await height();
   const expectTipClear = async () => {
     for (const style of ['minimal', 'dial']) { // ends on the default style
       await page.locator(`.dial-opt[data-style="${style}"]`).click();
@@ -330,8 +365,15 @@ test('player buttons: above the dial, beside it in one row, or only on hover', a
     await page.locator(`.ctrls-opt[data-ctrls="${value}"]`).click();
     await expect(page.locator(`.ctrls-opt[data-ctrls="${value}"]`)).toHaveAttribute('aria-pressed', 'true');
   };
-  // Above (the default): the buttons sit over the dial; the song and the tools line up with the dial.
-  await expect(page.locator('.ctrls-opt[data-ctrls="above"]')).toHaveAttribute('aria-pressed', 'true');
+  // Only on hover is the default with a mouse.
+  await expect(page.locator('.ctrls-opt[data-ctrls="hover"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('body')).toHaveClass(/deck-hover/);
+  const low = await height();
+  // Above: the buttons sit over the dial; the song and the tools line up with the dial.
+  await pick('above');
+  await expect(page.locator('body')).not.toHaveClass(/deck-hover/);
+  await expect.poll(height).toBeGreaterThan(low + 20);
+  const before = await height();
   const mid = (b) => b.y + b.height / 2;
   expect((await ctrls.boundingBox()).y + 20).toBeLessThan((await dial.boundingBox()).y);
   expect(Math.abs(mid(await page.locator('.deck__now').boundingBox()) - mid(await dial.boundingBox()))).toBeLessThan(6);

@@ -7,7 +7,8 @@ import { Cover } from '../components/common.tsx';
 import { Lyrics } from '../components/Lyrics.tsx';
 import { DialView } from './DialView.tsx';
 import { shownTrack, SleepButton } from './Deck.tsx';
-import { shell, useShell } from './ui.ts';
+import { Queue } from './Panel.tsx';
+import { shell, useShell, nowHasSide } from './ui.ts';
 import { player, usePlayer } from '../lib/player.ts';
 import { store, useStore } from '../lib/store.ts';
 import { tr } from '../lib/i18n.ts';
@@ -16,6 +17,12 @@ import { stationFreq } from '../lib/dial.ts';
 import { toggleFav, artistHref } from '../lib/actions.ts';
 import { toPath } from '../lib/router.ts';
 import { media } from '../lib/media.ts';
+
+// The queue button in "Now playing" (and Q while it is open).
+export function toggleNowQueue(): void {
+  if (nowHasSide()) shell.set({ nowSide: shell.get().nowSide === 'queue' ? 'lyrics' : 'queue' });
+  else shell.set({ now: false, panel: 'queue' });
+}
 
 export function NowPlaying() {
   const ui = useShell();
@@ -69,7 +76,7 @@ export function NowPlaying() {
                 </p>
               </div>
             </div>
-            <div className="now__lyrics"><Lyrics big /></div>
+            {ui.nowSide === 'queue' ? <div className="now__queue"><Queue /></div> : <div className="now__lyrics"><Lyrics big /></div>}
           </div>
           <div className="now__deck">
             <div className="deck__dial">
@@ -91,9 +98,13 @@ export function NowPlaying() {
               <button type="button" className={cx('ibtn', fav && 'is-on')} aria-label={tr('Favorite')} onClick={() => p.track && toggleFav(p.track)}>
                 <Icon name={fav ? 'heartFill' : 'heart'} size={22} />
               </button>
-              {/* Lyrics and the queue open in the side panel, over the bar. */}
+              {/* Computers: the queue takes the place of the lyrics, and the same button brings them
+                  back. Phones have no room for either, so they open in the side panel. */}
               <IconButton icon="lyrics" label={tr('Lyrics (T)')} className="now__lyricsbtn" onClick={() => shell.set({ now: false, panel: 'lyrics' })} />
-              <IconButton icon="queue" label={tr('Play queue (Q)')} onClick={() => shell.set({ now: false, panel: 'queue' })} />
+              <button type="button" className={cx('ibtn', 'now__queuebtn', ui.nowSide === 'queue' && 'is-on')} aria-label={tr('Play queue (Q)')}
+                aria-pressed={nowHasSide() ? ui.nowSide === 'queue' : undefined} onClick={() => toggleNowQueue()}>
+                <Icon name="queue" size={22} />
+              </button>
               <SleepButton />
             </div>
           </div>

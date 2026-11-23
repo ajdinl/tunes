@@ -8,12 +8,12 @@ import { Sidebar } from './shell/Sidebar.tsx';
 import { Deck } from './shell/Deck.tsx';
 import { Panel } from './shell/Panel.tsx';
 import { Equalizer } from './shell/Equalizer.tsx';
-import { NowPlaying } from './shell/NowPlaying.tsx';
+import { NowPlaying, toggleNowQueue } from './shell/NowPlaying.tsx';
 import { Handoff } from './shell/Handoff.tsx';
 import { ScDock } from './shell/ScDock.tsx';
 import { PhoneDialog, InstallDialog } from './shell/PhoneDialogs.tsx';
 import { MiniPlayer } from './shell/MiniPlayer.tsx';
-import { shell, useShell, CAN_HOVER } from './shell/ui.ts';
+import { shell, useShell, CAN_HOVER, nowHasSide } from './shell/ui.ts';
 import { player, usePlayer } from './lib/player.ts';
 import { useStore } from './lib/store.ts';
 import { tr, useLang } from './lib/i18n.ts';
@@ -152,8 +152,9 @@ function useShortcuts(): void {
         l: () => { if (player.track) toggleFav(player.track); },
         s: () => player.toggleShuffle(),
         r: () => player.cycleRepeat(),
-        q: () => shell.togglePanel('queue'),
-        t: () => shell.togglePanel('lyrics'),
+        // While "Now playing" is open on a computer, Q and T switch its right half.
+        q: () => (shell.get().now ? toggleNowQueue() : shell.togglePanel('queue')),
+        t: () => (shell.get().now && nowHasSide() ? shell.set({ nowSide: 'lyrics' }) : shell.togglePanel('lyrics')),
         e: () => shell.set({ eq: !ui.eq }),
         f: () => shell.set({ now: !ui.now && Boolean(player.track) }),
         '/': () => go('/search'),

@@ -66,8 +66,10 @@ class Player extends EventTarget {
   loadSeq = 0;          // bumped on every load(), guards async source switches
   offlineSrc = false;   // fx is playing a downloaded copy (blob URL)
   stallTimer: ReturnType<typeof setTimeout> | 0 = 0;
-  listened = 0;
-  logged = false;
+  listened = 0;         // seconds really heard of the current track (seeking doesn't count)
+  logged = false;       // in the history
+  scrobbled = false;    // sent to ListenBrainz
+  startedAt = 0;        // when the current track started playing
   lastT = 0;
   triedDirect = false;
   pendingSeek = 0;
@@ -279,6 +281,7 @@ class Player extends EventTarget {
     if (!t) return;
     this.listened = 0;
     this.logged = false;
+    this.scrobbled = false;
     this.lastT = 0;
     this.icyTitle = null;
     this.triedDirect = false;
@@ -395,11 +398,16 @@ class Player extends EventTarget {
     if (d > 0 && d < 2 && !el.paused) this.listened += d;
     this.lastT = t;
     const track = this.track;
-    // Same rule as ListenBrainz: half the song or 4 minutes.
-    if (track && !this.logged) {
+    // History: everything that really started playing (sound for a moment, not a failed load).
+    if (track && !this.logged && this.listened > 0.5) {
+      this.logged = true;
+      this.startedAt = Date.now() - this.listened * 1000;
+      store.logPlay(track, this.startedAt).catch(() => {});
+    }
+    // ListenBrainz has its own rule: half the song or 4 minutes (not radio).
+    if (track && this.logged && !this.scrobbled && !track.live) {
       const dur = this.duration;
-      const enough = track.live ? this.listened >= 30 : (dur > 30 && this.listened >= Math.min(dur / 2, 240));
-      if (enough) { this.logged = true; store.logPlay(track).catch(() => {}); }
+      if (dur > 30 && this.listened >= Math.min(dur / 2, 240)) { this.scrobbled = true; store.scrobble(track, this.startedAt).catch(() => {}); }
     }
     if (this.sleep?.mode === 'time' && Date.now() >= this.sleep.until) this.fadeOutAndStop();
     const now = Date.now();
@@ -602,6 +610,7 @@ class Player extends EventTarget {
     }
     this.listened = 0;
     this.logged = false;
+    this.scrobbled = false;
     this.lastT = 0;
     queueMicrotask(() => { this.updateMediaSession(); this.emit('track', t); this.emit('queue'); });
   }

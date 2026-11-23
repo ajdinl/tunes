@@ -102,6 +102,15 @@ describe('Store', () => {
     expect(s.toggleStation(st)).toBe(false);
   });
 
+  it('claims a ListenBrainz listen once per song length', () => {
+    const s = open();
+    const t0 = 1_000_000;
+    expect(s.claimScrobble(track({ duration: 200 }), t0)).toBe(true);
+    expect(s.claimScrobble(track({ duration: 200 }), t0 + 199_000)).toBe(false);
+    expect(s.claimScrobble(track({ duration: 200 }), t0 + 200_000)).toBe(true);
+    expect(s.data.history).toHaveLength(0);
+  });
+
   describe('addHistory', () => {
     it('counts a play and updates counts and last played', () => {
       const s = open();

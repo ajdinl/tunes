@@ -8,6 +8,8 @@ Lični muzički player bez pretplate. Na jednom mjestu spaja muziku sa računara
 | Audius | Nezavisni izvođači koji sami objavljuju muziku za besplatno slušanje | – |
 | Internet Archive | Live Music Archive (koncerti uz dozvolu izvođača), netlabel izdanja, stare ploče | – |
 | Radio Browser | Preko 40.000 internet radio stanica, sa nazivom pjesme koja ide uživo | – |
+| hearthis.at | DJ miksevi i elektronska muzika (offline kopije gdje izvođač dozvoljava preuzimanje) | – |
+| SoundCloud | Pjesme, setovi i izvođači preko zalijepljenog linka, u SoundCloudovom plejeru | – |
 | LRCLIB | Tekstovi pjesama, često sinhronizovani sa muzikom | – |
 | ListenBrainz | Historija slušanja, statistike i preporuke (opciono) | token |
 | Jamendo | Creative Commons muzika (opciono) | client ID |
@@ -42,26 +44,32 @@ Da izgleda kao prava aplikacija: klikni **Instaliraj aplikaciju** u lijevom meni
 
 ## Mogućnosti
 
-- Jezik: engleski, bosanski, srpski, hrvatski, slovenski, makedonski, albanski, njemački, španski, francuski, portugalski ili turski (Postavke), mijenja se bez prekidanja muzike. Tema, jezik i izgled playera se prenose na svaki browser i uređaj.
-- Na telefonu: **Dodaj na početni ekran** (iPhone i Android), uz uputstvo i za Tailscale verziju
-- Offline buffer: trenutna i sljedeće pjesme se skidaju na telefon, pa muzika svira i kad nestane interneta. Pjesme koje nisu puštane 3 dana brišu se same
-- Ikonica aplikacije: četiri varijante u Postavke → Izgled; izbor važi na svim uređajima
-- Nastavak slušanja na drugom uređaju od iste sekunde (laptop → mobitel i obrnuto); muzika svira samo na jednom uređaju ili tabu
-- SoundCloud linkovi: zalijepi link pjesme, seta ili izvođača u pretragu i svira preko zvaničnog SoundCloud playera
-- Slušanje na mobitelu kod kuće (Wi-Fi) i van kuće (Tailscale), preko QR koda
+- Jezik: engleski, bosanski, srpski, hrvatski, slovenski, makedonski, albanski, njemački, španski, francuski, portugalski ili turski (Postavke), mijenja se bez prekidanja muzike. Tema, jezik i izgled plejera se prenose na svaki browser i uređaj.
 - Tema: crna, noćni indigo ili svijetla (Postavke)
-- Pretraga kroz sve izvore odjednom, sa kategorijama: pjesme, setovi i miksevi, albumi i koncerti, izvođači, radio
+- Pretraga kroz sve izvore odjednom, sa kategorijama: pjesme, setovi i miksevi, albumi i koncerti, izvođači, radio. Kad pređeš mišem preko izvora, piše šta on nudi
+- Otkrij: popularna muzika sa Audius-a, DJ miksevi po žanru sa hearthis.at, koncerti sa Internet Archive-a
 - Stranice izvođača sa Audius-a (sve njihove pjesme i setovi)
-- Izvođači, albumi, pjesme, omiljene, historija sa statistikom (svaka pjesma jednom po danu, s brojem slušanja)
+- Izvođači, albumi, pjesme, omiljene
+- Historija svega što pustiš (pjesme, miksevi i radio stanice), svaka stavka jednom po danu, s brojem slušanja, plus najslušaniji izvođači. ListenBrainz (opciono) dobija pjesmu po svom pravilu: pola pjesme ili 4 minuta
+- Preuzimanja za slušanje bez interneta: pjesma, album, plejlista ili omiljene ostaju na uređaju dok ih ne obrišeš, za putovanja. Sortiranje, pretraga i vlastiti redoslijed na ekranu Preuzimanja
 - Plejliste sa miješanim izvorima, promjena redoslijeda prevlačenjem, izvoz u M3U
 - Pametne plejliste: Moj miks, Najslušanije, Zaboravljene omiljene, Nedavno dodano…
 - Nasumično, ponavljanje, red za puštanje, tajmer za spavanje
 - Ekvalizer sa 10 opsega i gotovim postavkama
-- Skala sa spektrom zvuka uživo; klik ili prevlačenje premotava
-- „Sada svira” preko cijelog ekrana sa tekstom pjesme: iz samog fajla (ugrađen ili `.lrc` pored pjesme) ili sa LRCLIB-a, ali samo kad se izvođač, naslov i trajanje poklapaju
+- Izgled plejera: radio skala sa spektrom zvuka uživo, Minimalno (samo linija), Ogledalo ili U bojama; klik ili prevlačenje premotava
+- Dugmad plejera na računaru: samo kad je miš iznad trake plejera (podrazumijevano), iznad trake napretka ili pored nje u jednom redu
+- „Sada svira” preko cijelog ekrana sa tekstom pjesme; dugme za red mijenja tekst redom za puštanje, bez izlaska iz punog ekrana. Tekst dolazi iz samog fajla (ugrađen ili `.lrc` pored pjesme) ili sa LRCLIB-a, ali samo kad se izvođač, naslov i trajanje poklapaju
+- Mini plejer: mali prozor uvijek na vrhu (Picture-in-Picture) sa omotom, dugmadima i napretkom
+- Na telefonu: kompaktna traka plejera, a sve kontrole su u „Sada svira”. **Dodaj na početni ekran** (iPhone i Android), uz uputstvo i za Tailscale verziju
+- Slušanje na mobitelu kod kuće (Wi-Fi) i van kuće (Tailscale), preko QR koda
+- Offline buffer: trenutna i sljedeće pjesme se skidaju na telefon, pa muzika svira i kad nestane interneta. Pjesme koje nisu puštane 3 dana brišu se same
+- Nastavak slušanja na drugom uređaju od iste sekunde (laptop → mobitel i obrnuto); muzika svira samo na jednom uređaju ili tabu
+- SoundCloud linkovi: zalijepi link pjesme, seta ili izvođača u pretragu i svira preko zvaničnog SoundCloud plejera
+- Ikonica aplikacije: četiri varijante u Postavke → Izgled; izbor važi na svim uređajima
 - Tasteri za muziku na Mac-u i kontrolni centar (Media Session)
 - Čuvanje legalno preuzimljivih pjesama (Internet Archive, Jamendo, Audius gdje je dozvoljeno) u biblioteku
 - Uvoz Spotify plejlisti preko Exportify CSV-a: pronalazi pjesme koje već imaš i pokazuje šta nedostaje
+- Verzija samo za telefon na <https://ajdinl.github.io/tunes/>: bez računara i servera, otvori link na telefonu i dodaj ga na početni ekran. Online izvori, omiljene, plejliste, historija i preuzimanja, sve se čuva na telefonu
 
 ## Prečice
 

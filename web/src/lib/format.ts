@@ -49,14 +49,15 @@ export function isSet(x: Pick<Track, 'live' | 'duration' | 'title'> | null | und
 export type Kind = 'all' | 'songs' | 'sets';
 export const byKind = (kind: string) => (x: Track): boolean => (kind === 'songs' ? !isSet(x) : kind === 'sets' ? isSet(x) : true);
 
-export const SOURCES: Record<string, { name: string; short: string }> = {
-  local: { name: 'On this computer', short: 'Local' },
-  audius: { name: 'Audius', short: 'Audius' },
-  archive: { name: 'Internet Archive', short: 'Archive' },
-  radio: { name: 'Radio', short: 'Radio' },
-  jamendo: { name: 'Jamendo', short: 'Jamendo' },
-  hearthis: { name: 'hearthis.at', short: 'hearthis' },
-  soundcloud: { name: 'SoundCloud', short: 'SoundCloud' },
+// Where music comes from. `about` is the one-line description in the tooltip over a source.
+export const SOURCES: Record<string, { name: string; short: string; about: string }> = {
+  local: { name: 'On this computer', short: 'Local', about: 'Music files on this computer' },
+  audius: { name: 'Audius', short: 'Audius', about: 'Free music from independent artists' },
+  archive: { name: 'Internet Archive', short: 'Archive', about: 'Live concerts and old recordings, free to play' },
+  radio: { name: 'Radio', short: 'Radio', about: 'Internet radio stations from around the world' },
+  jamendo: { name: 'Jamendo', short: 'Jamendo', about: 'Free Creative Commons music' },
+  hearthis: { name: 'hearthis.at', short: 'hearthis', about: 'DJ mixes and electronic music' },
+  soundcloud: { name: 'SoundCloud', short: 'SoundCloud', about: 'Plays through SoundCloud’s own player' },
 };
 
 export function norm(s: unknown): string {

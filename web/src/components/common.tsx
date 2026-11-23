@@ -32,8 +32,9 @@ export function Collage({ covers, label }: { covers: (string | null | undefined)
 
 export function SourceTag({ source }: { source?: string }) {
   const src = source || '';
-  const s = SOURCES[src] || { name: src, short: src };
-  return <span className={'src src--' + src} title={tr(s.name)}>{tr(s.short)}</span>;
+  const s = SOURCES[src];
+  if (!s) return <span className={'src src--' + src} title={src}>{src}</span>;
+  return <span className={'src src--' + src} title={tr(s.name) + ': ' + tr(s.about)}>{tr(s.short)}</span>;
 }
 
 export function Header({ title, kicker, meta, art, actions = [], big = false }:

@@ -174,14 +174,20 @@ class Store extends EventTarget {
     return saved;
   }
 
-  async logPlay(track: Track): Promise<void> {
-    const at = Date.now();
+  // A song, set or station started playing: into the history.
+  async logPlay(track: Track, at: number = Date.now()): Promise<void> {
     const r = await api<{ counted?: boolean; playCount: number }>('/api/history', { method: 'POST', body: { track, at } });
     if (r.counted === false) return; // already counted moments ago (reload, other device)
     this.history = [...this.history, { track, at }];
     this.playCounts = { ...this.playCounts, [track.id]: r.playCount };
     this.lastPlayed = { ...this.lastPlayed, [track.id]: at };
     this.emit('history');
+  }
+
+  // Half of it (or 4 minutes) was heard: ListenBrainz gets the listen, if it is connected.
+  async scrobble(track: Track, at: number): Promise<void> {
+    if (!this.settings.hasListenbrainz || track.live) return;
+    await api('/api/scrobble', { method: 'POST', body: { track, at } });
   }
 
   async clearHistory(): Promise<void> {

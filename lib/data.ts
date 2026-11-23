@@ -98,8 +98,9 @@ export class DataStore {
     return Boolean(fav[id]);
   }
 
-  // Returns false when the play is not counted: the same song was already counted less than
-  // its own length ago (a page reload or continuing on another device, not a second listen).
+  // Every song, set and station that started playing goes into the history. Returns false
+  // when the play is not counted: the same song was already counted less than its own length
+  // ago (a page reload or continuing on another device, not a second listen).
   addHistory(track: Partial<Track>, at: number = Date.now()): boolean {
     const t = cleanTrack(track);
     const last = this.data.lastPlayed[t.id];
@@ -112,6 +113,19 @@ export class DataStore {
     this.data.playCounts[t.id] = (this.data.playCounts[t.id] || 0) + 1;
     this.data.lastPlayed[t.id] = at;
     this.save();
+    return true;
+  }
+
+  // ListenBrainz gets a listen once the song was really heard (half of it or 4 minutes, their
+  // rule). Returns false when the same song was sent less than its own length ago (a reload
+  // or continuing on another device, not a second listen). Kept in memory only.
+  private scrobbled = new Map<string, number>();
+  claimScrobble(track: Partial<Track>, at: number = Date.now()): boolean {
+    const id = String(track.id);
+    const last = this.scrobbled.get(id);
+    const gap = Math.max(Number(track.duration) || 0, 60) * 1000;
+    if (last !== undefined && Math.abs(at - last) < gap) return false;
+    this.scrobbled.set(id, at);
     return true;
   }
 

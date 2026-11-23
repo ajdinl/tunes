@@ -66,7 +66,7 @@ export function Sidebar() {
               return (
                 <a key={p.id} className={cx('nav__link', 'nav__link--pl', on && 'is-on')} href={playlistHref(p.id)} title={p.name} aria-current={on ? 'page' : undefined}
                   data-route="playlist" data-arg={p.id} onDragOver={(e) => e.preventDefault()}>
-                  <span>{p.name}</span><span className="nav__count">{p.tracks.length}</span>
+                  <Icon name="queue" size={19} /><span className="nav__name">{p.name}</span><span className="nav__count">{p.tracks.length}</span>
                 </a>
               );
             })}
