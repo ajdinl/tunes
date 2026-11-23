@@ -13,7 +13,7 @@ export interface Context { label: string; href: string }
 // Points the favicon, the home screen icon and the logo at the chosen app icon variant.
 // ?v= forces browsers to drop the cached image after a change. The phone-only version has no
 // server to pick the variant, so it points at the variant's own files.
-export function applyIcon(name: string | undefined): void {
+function applyIcon(name: string | undefined): void {
   if (!name) return;
   const v = '?v=' + encodeURIComponent(name);
   const svg = STANDALONE ? asset(`icons/${name}/icon.svg`) : '/icons/app.svg' + v;

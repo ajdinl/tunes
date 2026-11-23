@@ -1,7 +1,7 @@
 // Line icons (24x24, drawn with currentColor). The paths are trusted constants.
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-export const ICON_PATHS: Record<string, string> = {
+const ICON_PATHS: Record<string, string> = {
   play: '<path d="M7 4.5v15l12.5-7.5z" fill="currentColor" stroke="none"/>',
   pause: '<path d="M7 4.5h3.5v15H7zM13.5 4.5H17v15h-3.5z" fill="currentColor" stroke="none"/>',
   next: '<path d="M5 5l10 7-10 7z" fill="currentColor" stroke="none"/><path d="M18.5 5v14"/>',

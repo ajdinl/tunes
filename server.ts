@@ -288,11 +288,6 @@ route('GET', /^\/api\/radio\/search$/, async (req, res, m, q) =>
 
 route('GET', /^\/api\/radio\/top$/, async (req, res) => json(res, 200, await radio.top()));
 
-route('GET', /^\/api\/radio\/nowplaying$/, (req, res, m, q) => {
-  const sid = q.get('sid');
-  json(res, 200, { title: (sid !== null && icyTitles.get(sid)) || null });
-});
-
 route('GET', /^\/api\/hearthis\/popular$/, async (req, res, m, q) => json(res, 200, await hearthis.popular(q.get('genre') || '')));
 
 route('GET', /^\/api\/jamendo\/popular$/, async (req, res, m, q) =>

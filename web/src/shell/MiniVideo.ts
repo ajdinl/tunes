@@ -108,7 +108,7 @@ function rounded(c: CanvasRenderingContext2D, x: number, y: number, w: number, h
   if (c.roundRect) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h);
 }
 
-export function draw(): void {
+function draw(): void {
   const c = ctx;
   if (!c || !video) return;
   const css = getComputedStyle(document.documentElement);

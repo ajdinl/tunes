@@ -31,7 +31,7 @@ export const defaults = (folders: string[] = []): Data => ({
 });
 
 // Allowed values of the synced appearance choices (Settings → Language and Appearance).
-export const PREF_VALUES: Record<keyof Prefs, readonly string[]> = {
+const PREF_VALUES: Record<keyof Prefs, readonly string[]> = {
   theme: ['black', 'indigo', 'light'],
   lang: ['en', 'bs', 'sr', 'hr', 'de', 'tr', 'es', 'fr', 'pt', 'sl', 'mk', 'sq'],
   dialStyle: ['dial', 'minimal', 'color', 'mirror'],

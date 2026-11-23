@@ -205,7 +205,6 @@ describe('online sources (through the fake internet)', () => {
     expect((await api.get('/api/archive/item/' + ARCHIVE_DOC.identifier)).body.tracks).toHaveLength(2);
     expect((await api.get('/api/radio/top')).body).toHaveLength(1);
     expect((await api.get('/api/radio/search?q=coast')).body).toHaveLength(1);
-    expect((await api.get('/api/radio/nowplaying?sid=x')).body).toEqual({ title: null });
     expect((await api.get('/api/jamendo/popular')).body).toEqual([]);
   });
 

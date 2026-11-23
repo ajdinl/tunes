@@ -21,7 +21,7 @@ export type DialStyle = (typeof DIAL_STYLES)[number];
 // Minimal; there is nothing to choose. (dialStylePhone stays in the synced prefs for
 // older clients.)
 const MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || STANDALONE;
-export const PHONE_STYLES: readonly DialStyle[] = ['minimal'];
+const PHONE_STYLES: readonly DialStyle[] = ['minimal'];
 export const DEVICE_STYLES: readonly DialStyle[] = MOBILE ? PHONE_STYLES : DIAL_STYLES;
 export const DIAL_PREF = MOBILE ? 'dialStylePhone' : 'dialStyle';
 export const STYLE_KEY = MOBILE ? 'tunes.dialStylePhone' : 'tunes.dialStyle';

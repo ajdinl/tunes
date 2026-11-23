@@ -78,7 +78,7 @@ export function initRouter(): void {
   });
 }
 
-export function navigate(to: string, { replace = false } = {}): void {
+function navigate(to: string, { replace = false } = {}): void {
   const path = legacyFix(toPath(to));
   if (path === current.path && !replace) { notify(); return; }
   if (replace) history.replaceState(null, '', fullPath(path)); else history.pushState(null, '', fullPath(path));

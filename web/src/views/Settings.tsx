@@ -240,7 +240,7 @@ export function Settings(_: { route: Route }) {
 interface ImportResult { error: boolean; found: Track[]; missing: { title: string; artist: string; album: string }[] }
 
 // Exportify CSV -> a playlist of the tracks you already have.
-export function spotifyImport(text: string): ImportResult {
+function spotifyImport(text: string): ImportResult {
   const rows = parseCsv(text);
   const head = rows.shift() || [];
   const col = (re: RegExp) => head.findIndex((x) => re.test(x));
@@ -292,7 +292,7 @@ function SpotifyImport({ text, name }: { text: string; name: string }) {
   );
 }
 
-export function parseCsv(text: string): string[][] {
+function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [], cell = '', q = false;
   for (let i = 0; i < text.length; i++) {

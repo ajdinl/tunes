@@ -18,7 +18,7 @@ export type { Prefs };
 type Key = keyof Prefs;
 
 const THEME_COLOR: Record<string, string> = { black: '#000000', light: '#f4f4f6', indigo: '#1c1f3a' };
-export const THEMES = Object.keys(THEME_COLOR);
+const THEMES = Object.keys(THEME_COLOR);
 
 const themeListeners = new Set<() => void>();
 export function setTheme(t: string): void {

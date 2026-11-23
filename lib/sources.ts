@@ -24,7 +24,7 @@ async function getJSON<T = any>(url: string, { timeout = 12000, headers = {} }: 
 const enc = encodeURIComponent;
 // Links from the sources' own data (station homepages, licenses) are written by uploaders:
 // only plain web addresses are kept, never javascript: or data:.
-export const webUrl = (u: unknown): string | null => (typeof u === 'string' && /^https?:\/\/[^\s]+$/i.test(u.trim()) ? u.trim() : null);
+const webUrl = (u: unknown): string | null => (typeof u === 'string' && /^https?:\/\/[^\s]+$/i.test(u.trim()) ? u.trim() : null);
 const proxied = (u: string): string => '/api/stream/url?u=' + enc(u);
 const first = <T>(v: T | T[] | undefined): T | undefined => (Array.isArray(v) ? v[0] : v);
 

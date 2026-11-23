@@ -135,16 +135,18 @@ describe('audio proxy', () => {
     const body = Buffer.from(await r.arrayBuffer());
     expect(body.equals(icyBody('').audio)).toBe(true);
     expect((await sse.next('icy')).data).toEqual({ sid: 'station-1', title: 'Nadia Vale - Slow River' });
-    expect(await (await fetch(srv.url + '/api/radio/nowplaying?sid=station-1')).json()).toEqual({ title: 'Nadia Vale - Slow River' });
     sse.close();
   });
 
   it('plays SHOUTcast v1 stations ("ICY 200 OK")', async () => {
+    const sse = listen(srv.url);
+    await sse.ready;
     const r = await viaRadio(sc + '/', 'old-1');
     expect(r.status).toBe(200);
     expect(r.headers.get('content-type')).toBe('audio/mpeg');
     const body = Buffer.from(await r.arrayBuffer());
     expect(body.equals(icyBody('').audio)).toBe(true);
-    expect(await (await fetch(srv.url + '/api/radio/nowplaying?sid=old-1')).json()).toEqual({ title: 'Old Station Song' });
+    expect((await sse.next('icy')).data).toEqual({ sid: 'old-1', title: 'Old Station Song' });
+    sse.close();
   });
 });

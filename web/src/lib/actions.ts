@@ -22,7 +22,7 @@ export async function toggleFav(track: Track): Promise<void> {
   } catch (e) { toast((e as Error).message, { error: true }); }
 }
 
-export async function addToPlaylist(p: Playlist, tracks: Track[]): Promise<void> {
+async function addToPlaylist(p: Playlist, tracks: Track[]): Promise<void> {
   const have = new Set(p.tracks.map((t) => t.id));
   const fresh = tracks.filter((t) => !have.has(t.id) && !t.live);
   if (!fresh.length) { toast(tr('Already in playlist “{name}”', { name: p.name })); return; }
@@ -30,7 +30,7 @@ export async function addToPlaylist(p: Playlist, tracks: Track[]): Promise<void>
   toast(fresh.length === 1 ? tr('Added to “{name}”', { name: p.name }) : tr('{n} added to “{name}”', { n: songs(fresh.length), name: p.name }));
 }
 
-export async function addAllToPlaylist(tracks: Track[]): Promise<void> {
+async function addAllToPlaylist(tracks: Track[]): Promise<void> {
   const options = store.playlists.map((p) => p.name).join(', ');
   const name = await ask(tr('Add to playlist'), { placeholder: options ? tr('Existing ({list}) or new', { list: options }) : tr('New playlist name'), confirm: tr('Add') });
   if (!name) return;
@@ -78,7 +78,7 @@ export async function removeDownloads(tracks: Track[]): Promise<void> {
   toast(tr('Removed from downloads'));
 }
 
-export async function saveToLibrary(tracks: Track[]): Promise<void> {
+async function saveToLibrary(tracks: Track[]): Promise<void> {
   const list = tracks.filter((t) => t.download);
   if (!list.length) { toast(tr('The source doesn\'t allow downloading these songs'), { error: true }); return; }
   toast(list.length === 1 ? tr('Saving “{title}” to your computer…', { title: list[0].title }) : tr('Saving {n} to your computer…', { n: songs(list.length) }));

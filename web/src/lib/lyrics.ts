@@ -7,7 +7,7 @@ export interface SongLyrics { synced: LrcLine[] | null; plain: string | null; in
 
 const cache = new Map<string, SongLyrics | null>();
 
-export function parseLrc(text: string): LrcLine[] {
+function parseLrc(text: string): LrcLine[] {
   const lines: LrcLine[] = [];
   for (const raw of text.split('\n')) {
     const times = [...raw.matchAll(/\[(\d+):(\d+(?:\.\d+)?)\]/g)];

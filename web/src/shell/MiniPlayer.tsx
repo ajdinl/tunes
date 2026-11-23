@@ -33,7 +33,7 @@ function setWin(w: Window | null): void {
   win = w;
   for (const l of listeners) l();
 }
-export function useMiniWindow(): Window | null {
+function useMiniWindow(): Window | null {
   return useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => win);
 }
 
