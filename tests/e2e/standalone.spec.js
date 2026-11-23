@@ -84,6 +84,8 @@ test('plays from the sources directly and keeps favorites, playlists and choices
 
   await phone.locator('.deck__fav').tap();
   await app(phone, async () => { const s = window.__tunes.store; await s.createPlaylist('For the road', [window.__tunes.player.track]); });
+  // Shown once right away, not only after a reload (the app used to get the stored array itself).
+  expect(await app(phone, () => window.__tunes.store.playlists.map((p) => p.name))).toEqual(['For the road']);
   await phone.goto('settings');
   await phone.locator('.theme-opt', { hasText: 'Light' }).click();
   // The icon: picked before adding Tunes to the Home Screen (the linked manifest and touch icon follow).

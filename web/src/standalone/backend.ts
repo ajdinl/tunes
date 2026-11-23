@@ -156,12 +156,16 @@ route('GET', /^\/api\/phone$/, () => ({ enabled: false }));
 route('GET', /^\/api\/phone\/links$/, () => ({ tailscale: null }));
 
 // Same signature as a fetch to the server: resolves with the JSON, rejects with the server's
-// (English) error message.
+// (English) error message. Both ways go through a JSON copy, like over the network: the app
+// must never hold the stored objects themselves (it appended a new playlist to the very array
+// the store had just added it to, so it showed twice until a reload).
+const copy = <T,>(v: T): T => (v === undefined ? v : JSON.parse(JSON.stringify(v)));
+
 export async function handle(method: string, path: string, body?: unknown): Promise<unknown> {
   const url = new URL(path, location.origin);
   for (const r of routes) {
     const m = r.method === method ? r.pattern.exec(url.pathname) : null;
-    if (m) return r.handler(m, url.searchParams, (body && typeof body === 'object' ? body : {}) as Body);
+    if (m) return copy(await r.handler(m, url.searchParams, (body && typeof body === 'object' ? copy(body) : {}) as Body));
   }
   throw httpError('Unknown route', 404);
 }
