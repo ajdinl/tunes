@@ -58,7 +58,7 @@ export function NowPlaying() {
   const artistLink = Boolean(t && !t.live && store.index.artistMap.has(norm(t.albumArtist || t.artist)));
   return (
     <div ref={root} className="now" id="now" role="dialog" aria-modal="true" aria-label={tr('Now playing')} hidden={!open} onKeyDown={onKeyDown}>
-      {open && t ? (
+      {open && t && (
         <>
           <div className="now__bg" style={t.cover ? { backgroundImage: `url("${media(t.cover)}")` } : {}} />
           <div className="now__top">
@@ -72,7 +72,7 @@ export function NowPlaying() {
                 <h2 className="now__title">{t.live && p.icyTitle ? p.icyTitle : t.title}</h2>
                 <p className="now__artist">
                   {t.live ? t.title : artistLink ? <a href={artistHref(t.albumArtist || t.artist || '')} onClick={close}>{t.artist}</a> : t.artist || ''}
-                  {t.album && !t.live ? <span className="now__album">{t.album}</span> : null}
+                  {t.album && !t.live && <span className="now__album">{t.album}</span>}
                 </p>
               </div>
             </div>
@@ -109,7 +109,7 @@ export function NowPlaying() {
             </div>
           </div>
         </>
-      ) : null}
+      )}
     </div>
   );
 }

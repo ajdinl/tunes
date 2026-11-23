@@ -102,7 +102,7 @@ export function Deck() {
         <IconButton icon="lyrics" label={tr('Lyrics (T)')} className={cx(ui.panel === 'lyrics' && 'is-on')} onClick={() => shell.togglePanel('lyrics')} />
         <IconButton icon="queue" label={tr('Play queue (Q)')} className={cx('deck__queue', ui.panel === 'queue' && 'is-on')} onClick={() => shell.togglePanel('queue')} />
         {/* Phones have no equalizer (no Web Audio graph, or iOS stops the music on lock). */}
-        {p.noGraph ? null : <IconButton icon="eq" label={tr('Equalizer (E)')} className={cx('deck__eq', (p.eq.enabled || ui.eq) && 'is-on')} onClick={() => shell.set({ eq: !ui.eq })} />}
+        {!p.noGraph && <IconButton icon="eq" label={tr('Equalizer (E)')} className={cx('deck__eq', (p.eq.enabled || ui.eq) && 'is-on')} onClick={() => shell.set({ eq: !ui.eq })} />}
         <SleepButton />
         <div className="volbox">
           <IconButton icon={v === 0 ? 'mute' : v < 0.5 ? 'volumeLow' : 'volume'} label={tr('Mute (M)')} onClick={() => player.toggleMute()} />
@@ -111,10 +111,10 @@ export function Deck() {
             onChange={(e) => player.setVolume(Number(e.target.value))}
             onWheel={(e) => player.setVolume(player.volume - Math.sign(e.deltaY) * 0.05)} />
         </div>
-        {miniSupported() ? (
+        {miniSupported() && (
           <IconButton icon="pip" label={mini ? tr('Close mini player') : tr('Mini player')} className={cx(mini && 'is-on')} aria-pressed={mini}
             onClick={() => { toggleMini(); }} />
-        ) : null}
+        )}
         <IconButton icon="expand" label={tr('Full screen (F)')} disabled={!p.track} onClick={() => { if (player.track) shell.set({ now: true }); }} />
         {/* The compact bar's own play button (phones); computers use the one above the dial. */}
         <button type="button" className={cx('deck__mplay', p.loading && 'is-loading')} aria-label={playing ? tr('Pause') : tr('Play')} onClick={() => player.toggle()}>

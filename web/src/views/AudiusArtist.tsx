@@ -65,7 +65,7 @@ function AudiusArtistPage({ id }: { id: string }) {
         art={<Cover src={a.cover} label={a.name} className="hd__cv hd__cv--round" />}
         actions={[...playButtons(head.tracks, context),
           <a key="link" className="btn btn--ghost" href={a.link} target="_blank" rel="noopener"><Icon name="external" size={16} />audius.co</a>]} />
-      {a.bio ? <p className="desc">{a.bio.slice(0, 500)}</p> : null}
+      {a.bio && <p className="desc">{a.bio.slice(0, 500)}</p>}
       <div className="toolbar">
         <Chips options={[{ value: 'all', label: 'All' }, { value: 'songs', label: 'Songs' }, { value: 'sets', label: 'Sets & mixes' }]}
           value={kind} onPick={setKind} label={tr('Category')} />

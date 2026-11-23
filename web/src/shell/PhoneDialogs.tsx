@@ -77,7 +77,7 @@ export function PhoneDialog() {
   else if (!st.enabled) {
     body = (
       <>
-        {err ? <p className="err">{err}</p> : null}
+        {err && <p className="err">{err}</p>}
         <p className="muted">{tr('Phone access is off. Once you turn it on, your music, playlists and favorites are the same as on this computer.')}</p>
         <div className="dlg__actions"><button type="button" className="btn btn--primary" onClick={() => toggle(true)}><Icon name="phone" size={16} />{tr('Turn on')}</button></div>
       </>
@@ -86,7 +86,7 @@ export function PhoneDialog() {
     const cur = tab === 'wifi' ? st.wifi : st.tailscale;
     body = (
       <>
-        {err ? <p className="err">{err}</p> : null}
+        {err && <p className="err">{err}</p>}
         <div className="tabs tabs--small phone__tabs" role="tablist">
           {([['wifi', tr('At home (Wi-Fi)')], ['tailscale', tr('Away from home (Tailscale)')]] as const).map(([k, label]) => (
             <button key={k} type="button" role="tab" className={cx('tab', tab === k && 'is-on')} aria-selected={tab === k} onClick={() => setTab(k)}>{label}</button>
@@ -196,7 +196,7 @@ export function InstallDialog() {
         <li>{tr('Open the Tailscale version with the button below.')}</li>
         <li>{tr('Add that one to your Home Screen. It works both at home and away.')}</li>
       </ol>
-      {link ? <a className="btn btn--primary" href={link}><Icon name="external" size={16} />{tr('Open Tailscale version')}</a> : null}
+      {link && <a className="btn btn--primary" href={link}><Icon name="external" size={16} />{tr('Open Tailscale version')}</a>}
     </div>
   );
 
@@ -215,7 +215,7 @@ export function InstallDialog() {
       <Head title={title} onClose={close} />
       <p className="muted">{IS_PHONE ? tr('Tunes will open like a real app, full screen and with its own icon.') : tr('Tunes will open in its own window, with its own icon in the Dock or taskbar.')}</p>
       {steps}
-      {ts ? <><h3 className="install__h">{tr('Listening away from home (Tailscale)')}</h3><div className="install__ts">{ts}</div></> : null}
+      {ts && <><h3 className="install__h">{tr('Listening away from home (Tailscale)')}</h3><div className="install__ts">{ts}</div></>}
     </Modal>
   );
 }

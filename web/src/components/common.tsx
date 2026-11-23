@@ -44,10 +44,10 @@ export function Header({ title, kicker, meta, art, actions = [], big = false }:
     <header className={cx('hd', art ? 'hd--art' : '', big && 'hd--big')}>
       {art || null}
       <div className="hd__text">
-        {kicker ? <p className="hd__kicker">{kicker}</p> : null}
+        {kicker && <p className="hd__kicker">{kicker}</p>}
         <h1 className="hd__title" tabIndex={-1}>{title}</h1>
-        {meta ? <p className="hd__meta">{meta}</p> : null}
-        {shown.length ? <div className="hd__actions">{shown}</div> : null}
+        {meta && <p className="hd__meta">{meta}</p>}
+        {shown.length > 0 && <div className="hd__actions">{shown}</div>}
       </div>
     </header>
   );
@@ -58,7 +58,7 @@ export function Section({ title, link, children }: { title: ReactNode; link?: { 
     <section className="sec">
       <div className="sec__head">
         <h2 className="sec__title">{title}</h2>
-        {link ? <a className="sec__link" href={link.href}>{link.label}</a> : null}
+        {link && <a className="sec__link" href={link.href}>{link.label}</a>}
       </div>
       {children}
     </section>
@@ -104,7 +104,7 @@ export function ErrorBox({ msg, retry }: { msg: string; retry?: () => void }) {
   return (
     <div className="err" role="alert">
       <p>{msg}</p>
-      {retry ? <button type="button" className="btn" onClick={retry}><Icon name="refresh" size={16} />{tr('Try again')}</button> : null}
+      {retry && <button type="button" className="btn" onClick={retry}><Icon name="refresh" size={16} />{tr('Try again')}</button>}
     </div>
   );
 }
@@ -131,9 +131,9 @@ export function Grid({ items, round = false }: { items: Tile[]; round?: boolean 
           <a className="tile__link" href={it.href} aria-label={it.title}>
             {it.collage ? <Collage covers={it.collage} label={it.title} /> : <Cover src={it.cover} label={it.title} className="tile__cv" />}
           </a>
-          {it.play ? <button type="button" className="tile__play" aria-label={tr('Play ') + it.title} onClick={it.play}><Icon name="play" size={18} /></button> : null}
+          {it.play && <button type="button" className="tile__play" aria-label={tr('Play ') + it.title} onClick={it.play}><Icon name="play" size={18} /></button>}
           <a className="tile__title" href={it.href} tabIndex={-1}>{it.title}</a>
-          {it.sub ? <span className="tile__sub">{it.sub}</span> : null}
+          {it.sub && <span className="tile__sub">{it.sub}</span>}
         </div>
       ))}
     </div>

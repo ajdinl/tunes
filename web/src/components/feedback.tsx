@@ -15,7 +15,7 @@ export function Toasts() {
       {list.map((t) => (
         <div key={t.id} className={cx('toast', t.error && 'toast--error', t.out && 'is-out')} role={t.error ? 'alert' : 'status'}>
           <span>{t.msg}</span>
-          {t.action ? <button type="button" className="toast__act" onClick={() => { t.onAction?.(); dismissToast(t.id); }}>{t.action}</button> : null}
+          {t.action && <button type="button" className="toast__act" onClick={() => { t.onAction?.(); dismissToast(t.id); }}>{t.action}</button>}
         </div>
       ))}
     </div>
@@ -38,7 +38,7 @@ function MenuList({ items, sub = false, onPick, style, rootRef, onKeyDown, class
         return (
           <button key={k} type="button" className="menu__item" role="menuitem" tabIndex={-1} disabled={a.disabled}
             onClick={(e) => { e.stopPropagation(); onPick(a); }}>
-            {a.icon ? <Icon name={a.icon} size={16} /> : null}{a.label}
+            {a.icon && <Icon name={a.icon} size={16} />}{a.label}
           </button>
         );
       })}
@@ -131,7 +131,7 @@ export function AskDialog() {
     <dialog ref={dlg} className="dlg" onClose={() => { if (asking.get() === state) finish(false); }} onCancel={(e) => { e.preventDefault(); finish(false); }}>
       <form className="dlg__body" method="dialog" onSubmit={(e) => { e.preventDefault(); finish(true); }}>
         <h2 className="dlg__title">{state.title}</h2>
-        {state.input ? <input ref={field} className="field" type="text" defaultValue={state.value || ''} placeholder={state.placeholder || ''} aria-label={state.title} /> : null}
+        {state.input && <input ref={field} className="field" type="text" defaultValue={state.value || ''} placeholder={state.placeholder || ''} aria-label={state.title} />}
         <div className="dlg__actions">
           <button type="button" className="btn btn--ghost" onClick={() => finish(false)}>{tr('Cancel')}</button>
           <button type="submit" className={cx('btn', state.danger ? 'btn--danger' : 'btn--primary')} value="ok">{state.confirm || tr('Save')}</button>

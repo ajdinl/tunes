@@ -22,7 +22,7 @@ export function Equalizer() {
 
   return (
     <div ref={box} className="eq" id="eq" role="dialog" aria-label={tr('Equalizer')} hidden={!ui.eq}>
-      {ui.eq ? (
+      {ui.eq && (
         <>
           <div className="eq__head">
             <h2 className="eq__title">{tr('Equalizer')}</h2>
@@ -51,10 +51,10 @@ export function Equalizer() {
               </div>
             ))}
           </div>
-          {p.mobile ? <p className="eq__note">{tr('On phones the equalizer is off so music keeps playing when the screen is locked.')}</p>
-            : !p.analysing && p.track?.live ? <p className="eq__note">{tr('This station plays directly, so the equalizer doesn\'t affect it.')}</p> : null}
+          {p.mobile && <p className="eq__note">{tr('On phones the equalizer is off so music keeps playing when the screen is locked.')}</p>}
+          {!p.mobile && !p.analysing && p.track?.live && <p className="eq__note">{tr('This station plays directly, so the equalizer doesn\'t affect it.')}</p>}
         </>
-      ) : null}
+      )}
     </div>
   );
 }

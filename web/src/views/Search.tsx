@@ -138,29 +138,27 @@ export function Search({ route }: { route: Route }) {
     const shown = showArtists || showAlbums || showTracks;
     body = (
       <>
-        {showArtists ? (
+        {showArtists && (
           <Section title={tr('Artists in your collection')}><Grid items={local.artists.slice(0, 12).map(artistTile)} round /></Section>
-        ) : null}
-        {showAlbums ? (
+        )}
+        {showAlbums && (
           <Section title={tr('Albums in your collection')}><Grid items={local.albums.slice(0, 12).map(albumTile)} /></Section>
-        ) : null}
-        {showTracks ? (
+        )}
+        {showTracks && (
           <Section title={kind === 'sets' ? tr('Sets in your collection') : tr('Songs in your collection')}>
             <TrackList tracks={localTracks.slice(0, 50)} context={{ label: tr('Search “{q}”', { q: query }), href: here }} />
           </Section>
-        ) : null}
-        {!shown && store.collection.length && kind !== 'radio'
-          ? <p className="muted pad">{tr('Nothing in your collection for “{q}”. Online results are coming below.', { q: query })}</p>
-          : null}
+        )}
+        {!shown && store.collection.length > 0 && kind !== 'radio' && <p className="muted pad">{tr('Nothing in your collection for “{q}”. Online results are coming below.', { q: query })}</p>}
         <div className="online">
           <OnlineResults online={online} q={query} kind={kind} here={here} retry={() => run(query, true)} />
         </div>
         {/* SoundCloud can't be searched without a paid API key: search on their site, paste the link here. */}
-        {kind !== 'radio' ? (
+        {kind !== 'radio' && (
           <p className="muted pad scsearch"><Icon name="cloud" size={16} />{tr('Looking for something on SoundCloud? ')}
             <a href={'https://soundcloud.com/search?q=' + encodeURIComponent(query)} target="_blank" rel="noopener">{tr('Search on SoundCloud')}</a>
             {tr(', copy the link of a song, set or artist and paste it here.')}</p>
-        ) : null}
+        )}
       </>
     );
   }

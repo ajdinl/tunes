@@ -52,7 +52,7 @@ export function Radio({ route }: { route: Route }) {
   return (
     <div className="view">
       <Header title="Radio" meta={tr('Over 40,000 internet stations from the open radio-browser.info database')} />
-      {saved.length ? <Section title={tr('My stations')}><StationGrid list={saved} /></Section> : null}
+      {saved.length > 0 && <Section title={tr('My stations')}><StationGrid list={saved} /></Section>}
       <Section title={tr('Find a station')}>
         <div>
           <div className="toolbar">
@@ -73,13 +73,9 @@ export function Radio({ route }: { route: Route }) {
             <ChipPicker options={[{ value: '', label: 'All genres' }, ...RADIO_TAGS.map((x) => ({ value: x, label: x }))]} initial="" onPick={setTag} label={tr('Genre')} />
           </div>
           <div>
-            {load.state === 'loading' ? <Loading text={tr('Searching stations…')} /> : null}
-            {load.state === 'error'
-              ? <ErrorBox msg={tr('The radio database isn\'t responding: ') + load.msg} retry={() => setAttempt((n) => n + 1)} />
-              : null}
-            {load.state === 'done'
-              ? (load.list.length ? <StationGrid list={load.list} /> : <p className="empty">{tr('No stations for this selection.')}</p>)
-              : null}
+            {load.state === 'loading' && <Loading text={tr('Searching stations…')} />}
+            {load.state === 'error' && <ErrorBox msg={tr('The radio database isn\'t responding: ') + load.msg} retry={() => setAttempt((n) => n + 1)} />}
+            {load.state === 'done' && (load.list.length ? <StationGrid list={load.list} /> : <p className="empty">{tr('No stations for this selection.')}</p>)}
           </div>
         </div>
       </Section>

@@ -50,7 +50,7 @@ export function Playlist({ route }: { route: Route }) {
           store.updatePlaylist(p.id, { tracks: list });
         }}
         emptyText={tr('Add songs with the ⋯ menu next to any song, or by right-clicking a song.')} />
-      {p.tracks.length > 1 ? <p className="muted pad">{tr('Drag a song by its handle to change the order.')}</p> : null}
+      {p.tracks.length > 1 && <p className="muted pad">{tr('Drag a song by its handle to change the order.')}</p>}
     </div>
   );
 }

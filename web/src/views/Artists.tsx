@@ -16,7 +16,7 @@ export function Artists(_: { route: Route }) {
   return (
     <div className="view">
       <Header title={tr('Artists')} meta={tr('{n} in your collection', { n: plural(all.length, 'artist', 'artists') })} />
-      {all.length > 8 ? <div className="toolbar"><FilterInput placeholder={tr('Filter artists')} onChange={setFilter} /></div> : null}
+      {all.length > 8 && <div className="toolbar"><FilterInput placeholder={tr('Filter artists')} onChange={setFilter} /></div>}
       <div>{list.length ? <Grid items={list.map(artistTile)} round /> : <EmptyCollection text={tr('No artists yet.')} />}</div>
     </div>
   );

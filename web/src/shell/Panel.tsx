@@ -18,7 +18,7 @@ export function Panel() {
   const tab = ui.panel;
   return (
     <aside className="panel" id="panel" aria-label={tr('Side panel')} hidden={!tab}>
-      {tab ? (
+      {tab && (
         <>
           <div className="panel__head">
             <div className="tabs tabs--small" role="tablist">
@@ -31,7 +31,7 @@ export function Panel() {
           </div>
           {tab === 'lyrics' ? <Lyrics /> : <Queue />}
         </>
-      ) : null}
+      )}
     </aside>
   );
 }
@@ -49,20 +49,20 @@ export function Queue() {
       <QueueRow t={q[i]} idx={i} current />
       <div className="queue__bar">
         <p className="queue__label">{upcoming.length ? tr('Up next ({n})', { n: songs(upcoming.length) }) : tr('No more songs in the queue')}</p>
-        {upcoming.length ? <button type="button" className="link" onClick={() => player.clearUpcoming()}>{tr('Clear')}</button> : null}
+        {upcoming.length > 0 && <button type="button" className="link" onClick={() => player.clearUpcoming()}>{tr('Clear')}</button>}
       </div>
-      {p.context ? <p className="queue__ctx">{tr('From: ')}<a href={toPath(p.context.href)}>{p.context.label}</a></p> : null}
+      {p.context && <p className="queue__ctx">{tr('From: ')}<a href={toPath(p.context.href)}>{p.context.label}</a></p>}
       <ol className="queue__list">
         {upcoming.slice(0, 300).map((t, k) => <QueueRow key={t.id + ':' + (i + 1 + k)} t={t} idx={i + 1 + k} />)}
       </ol>
-      {i > 0 ? (
+      {i > 0 && (
         <details className="queue__prev">
           <summary>{tr('Already played ({n})', { n: i })}</summary>
           <ol className="queue__list">
             {q.slice(Math.max(0, i - 50), i).map((t, k) => <QueueRow key={t.id + ':' + (Math.max(0, i - 50) + k)} t={t} idx={Math.max(0, i - 50) + k} />)}
           </ol>
         </details>
-      ) : null}
+      )}
     </div>
   );
 }
@@ -87,7 +87,7 @@ function QueueRow({ t, idx, current = false }: { t: Track; idx: number; current?
       <button type="button" className="qr__main" aria-label={tr('Play ') + t.title} onClick={() => player.jump(idx)}>
         <span className="qr__title">{t.title}</span><span className="qr__artist">{t.artist || ''}</span>
       </button>
-      {current ? null : <IconButton icon="close" size={16} label={tr('Remove from queue')} onClick={() => player.removeAt(idx)} />}
+      {!current && <IconButton icon="close" size={16} label={tr('Remove from queue')} onClick={() => player.removeAt(idx)} />}
     </li>
   );
 }

@@ -117,7 +117,7 @@ export function TrackList({ tracks, context = null, numbered = false, album = tr
           grip={onReorder ? { onPointerDown: (e) => startDrag(e, i), onKeyDown: (e) => gripKey(e, i) } : null}
           dragState={!drag ? null : drag.from === i ? 'drag' : drag.over === i && drag.over !== drag.from ? (drag.over < drag.from ? 'before' : 'after') : null} />
       ))}
-      {shown < tracks.length ? <div className="tl__more" aria-hidden="true" ref={sentinel} /> : null}
+      {shown < tracks.length && <div className="tl__more" aria-hidden="true" ref={sentinel} />}
     </div>
   );
 }
@@ -146,23 +146,23 @@ function Row({ t, i, playing, fav, lead, album, coverArt, onPlay, menu, grip, dr
       // On touch screens one tap on a song plays it (the buttons in the row keep their own job).
       onClick={TOUCH ? (e) => { if (!(e.target as Element).closest('button, a, input')) onPlay(); } : undefined}
       onContextMenu={(e) => { e.preventDefault(); openMenu(e.clientX, e.clientY, menu()); }}>
-      {grip ? (
+      {grip && (
         <button type="button" className="tr__grip" aria-label={tr('Drag to change the order')} title={tr('Drag to change the order')}
           onPointerDown={grip.onPointerDown} onKeyDown={grip.onKeyDown} onClick={(e) => e.stopPropagation()}><Icon name="grip" size={18} /></button>
-      ) : null}
+      )}
       <div className="tr__lead">
         <span className="tr__num">{lead}</span>
         <button type="button" className="tr__play" aria-label={tr('Play ') + t.title} onClick={(e) => { e.stopPropagation(); onPlay(); }}><Icon name="play" size={16} /></button>
       </div>
-      {coverArt ? <Cover src={t.cover} label={t.title} className="tr__cv" /> : null}
+      {coverArt && <Cover src={t.cover} label={t.title} className="tr__cv" />}
       <div className="tr__main">
         <span className="tr__title">{t.title}</span>
         <span className="tr__artist">
-          {offline.isPinned(t.id) ? <span className="tr__dl" role="img" aria-label={tr('Downloaded')} title={tr('Downloaded')}><Icon name="downloaded" size={13} /></span> : null}
+          {offline.isPinned(t.id) && <span className="tr__dl" role="img" aria-label={tr('Downloaded')} title={tr('Downloaded')}><Icon name="downloaded" size={13} /></span>}
           {t.artist || ''}
         </span>
       </div>
-      {album ? <span className="tr__album">{t.album || ''}</span> : null}
+      {album && <span className="tr__album">{t.album || ''}</span>}
       <span className="tr__src"><SourceTag source={t.source} /></span>
       <button type="button" className={cx('tr__fav', fav && 'is-on')} aria-pressed={fav} aria-label={fav ? tr('Remove from favorites') : tr('Add to favorites')}
         onClick={(e) => { e.stopPropagation(); toggleFav(t); }}><Icon name={fav ? 'heartFill' : 'heart'} size={17} /></button>

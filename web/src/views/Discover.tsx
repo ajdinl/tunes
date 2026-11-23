@@ -71,10 +71,10 @@ export function Discover({ route }: { route: Route }) {
         ))}
       </div>
       <div>
-        {tab === 'audius' ? <AudiusTab /> : null}
-        {tab === 'hearthis' ? <HearthisTab /> : null}
-        {tab === 'archive' ? <ArchiveTab /> : null}
-        {tab === 'jamendo' ? <JamendoTab /> : null}
+        {tab === 'audius' && <AudiusTab />}
+        {tab === 'hearthis' && <HearthisTab />}
+        {tab === 'archive' && <ArchiveTab />}
+        {tab === 'jamendo' && <JamendoTab />}
         {!tab && <p className="empty">{tr('All sources of this page are turned off. Turn them on in Settings → Music sources.')}</p>}
       </div>
     </div>
@@ -100,12 +100,12 @@ function AudiusTab() {
           initial="week" onPick={setTime} label={tr('Period')} />
       </div>
       <div>
-        {res.state === 'loading' ? <Loading /> : null}
-        {res.state === 'error' ? <ErrorBox msg={tr('Audius isn\'t responding: ') + res.msg} retry={retry} /> : null}
-        {res.state === 'done' ? (
+        {res.state === 'loading' && <Loading />}
+        {res.state === 'error' && <ErrorBox msg={tr('Audius isn\'t responding: ') + res.msg} retry={retry} />}
+        {res.state === 'done' && (
           <TrackList tracks={res.value.filter(byKind(kind))} context={{ label: 'Audius' + (genre ? ', ' + genre : ''), href: '/discover' }}
             emptyText={kind === 'sets' ? tr('No sets among the popular tracks. Try searching “set” or “mix”.') : tr('No songs.')} />
-        ) : null}
+        )}
       </div>
     </>
   );
@@ -122,9 +122,9 @@ function HearthisTab() {
         <ChipPicker options={HEARTHIS_GENRES} initial="" onPick={setGenre} label={tr('Genre')} />
       </div>
       <div>
-        {res.state === 'loading' ? <Loading /> : null}
-        {res.state === 'error' ? <ErrorBox msg={tr('hearthis.at isn\'t responding: ') + res.msg} retry={retry} /> : null}
-        {res.state === 'done' ? <TrackList tracks={res.value} context={{ label: 'hearthis.at' + (genre ? ', ' + label : ''), href: '/discover?source=hearthis' }} /> : null}
+        {res.state === 'loading' && <Loading />}
+        {res.state === 'error' && <ErrorBox msg={tr('hearthis.at isn\'t responding: ') + res.msg} retry={retry} />}
+        {res.state === 'done' && <TrackList tracks={res.value} context={{ label: 'hearthis.at' + (genre ? ', ' + label : ''), href: '/discover?source=hearthis' }} />}
       </div>
     </>
   );
@@ -140,9 +140,9 @@ function ArchiveTab() {
         <ChipPicker options={IA_PRESETS} initial={IA_PRESETS[0].value} onPick={setQ} label={tr('Collection')} />
       </div>
       <div>
-        {res.state === 'loading' ? <Loading /> : null}
-        {res.state === 'error' ? <ErrorBox msg={tr('Internet Archive isn\'t responding: ') + res.msg} retry={retry} /> : null}
-        {res.state === 'done' ? (res.value.length ? <Grid items={res.value.map(archiveTile)} /> : <p className="empty">{tr('No results.')}</p>) : null}
+        {res.state === 'loading' && <Loading />}
+        {res.state === 'error' && <ErrorBox msg={tr('Internet Archive isn\'t responding: ') + res.msg} retry={retry} />}
+        {res.state === 'done' && (res.value.length ? <Grid items={res.value.map(archiveTile)} /> : <p className="empty">{tr('No results.')}</p>)}
       </div>
     </>
   );
@@ -176,9 +176,9 @@ function JamendoList() {
         <ChipPicker options={JAMENDO_TAGS.map((x) => ({ value: x, label: x || 'All' }))} initial="" onPick={setTag} label={tr('Genre')} />
       </div>
       <div>
-        {res.state === 'loading' ? <Loading /> : null}
-        {res.state === 'error' ? <ErrorBox msg={res.msg} retry={retry} /> : null}
-        {res.state === 'done' ? <TrackList tracks={res.value} context={{ label: 'Jamendo', href: '/discover?source=jamendo' }} /> : null}
+        {res.state === 'loading' && <Loading />}
+        {res.state === 'error' && <ErrorBox msg={res.msg} retry={retry} />}
+        {res.state === 'done' && <TrackList tracks={res.value} context={{ label: 'Jamendo', href: '/discover?source=jamendo' }} />}
       </div>
     </>
   );

@@ -69,15 +69,15 @@ export function Downloads(_: { route: Route }) {
         meta={recent.length ? `${songs(recent.length)}, ${fmtSize(offline.pinnedBytes)}` : null}
         actions={[...playButtons(list, ctx),
           recent.length || waiting ? <button key="remove" type="button" className="btn btn--ghost" onClick={removeAll}><Icon name="trash" size={16} />{tr('Remove all downloads')}</button> : null]} />
-      {waiting ? <p className="muted pad" aria-live="polite">{tr('Downloading {n}…', { n: songs(waiting) })}</p> : null}
-      {IS_IOS && !HOME_SCREEN ? <p className="muted pad">{tr('On iPhone, add Tunes to your Home Screen, or Safari may delete downloads after a week without use.')}</p> : null}
-      {recent.length > 1 ? (
+      {waiting > 0 && <p className="muted pad" aria-live="polite">{tr('Downloading {n}…', { n: songs(waiting) })}</p>}
+      {IS_IOS && !HOME_SCREEN && <p className="muted pad">{tr('On iPhone, add Tunes to your Home Screen, or Safari may delete downloads after a week without use.')}</p>}
+      {recent.length > 1 && (
         <div className="toolbar">
           <FilterInput placeholder={tr('Search downloads')} onChange={setFilter} />
           <Chips options={SORTS} value={sort} onPick={setSort} label={tr('Sort')} />
         </div>
-      ) : null}
-      {sort === 'mine' && !filter && list.length > 1 ? <p className="muted pad">{tr('Drag a song by its handle to change the order.')}</p> : null}
+      )}
+      {sort === 'mine' && !filter && list.length > 1 && <p className="muted pad">{tr('Drag a song by its handle to change the order.')}</p>}
       <TrackList tracks={list} context={ctx} onReorder={sort === 'mine' && !filter ? reorder : undefined}
         emptyText={filter ? tr('No songs match this filter.') : tr('Nothing downloaded yet. Use Download on a song, album or playlist, and it plays without a connection.')} />
     </div>

@@ -83,7 +83,7 @@ export function History(_: { route: Route }) {
   return (
     <div className="view">
       {header}
-      {top.length ? (
+      {top.length > 0 && (
         <Section title={tr('Top artists in the last 30 days')}>
           <ol className="rank">
             {top.map(([name, n]) => (
@@ -97,7 +97,7 @@ export function History(_: { route: Route }) {
             ))}
           </ol>
         </Section>
-      ) : null}
+      )}
       {days.map(({ day, items }) => (
         <Section key={day} title={day}>
           <TrackList tracks={items.map((x) => x.track)} context={{ label: tr('History'), href: '/history' }}

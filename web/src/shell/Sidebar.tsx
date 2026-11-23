@@ -83,13 +83,13 @@ export function Sidebar() {
           label={ui.footCompact ? tr('Show the labels below') : tr('Fold the items below into icons')}
           onDrag={(dx, dy) => { if (dy > 14) shell.set({ footCompact: true }); else if (dy < -14) shell.set({ footCompact: false }); }}
           onToggle={() => shell.set({ footCompact: !shell.get().footCompact })} />
-        {IS_LOCAL ? (
+        {IS_LOCAL && (
           <button type="button" className={cx('nav__link', 'nav__phone', store.settings.phoneOn && 'is-live')} title={tr('Listen on phone')} onClick={() => shell.set({ phone: true })}>
             <Icon name="phone" size={19} /><span>{tr('Listen on phone')}</span>
-            {store.settings.phoneOn ? <span className="nav__dot" title={tr('On')} /> : null}
+            {store.settings.phoneOn && <span className="nav__dot" title={tr('On')} />}
           </button>
-        ) : null}
-        {install ? (
+        )}
+        {install && (
           <button type="button" className="nav__link nav__phone nav__install" title={installLabel} onClick={async () => {
             // One click where the browser can install; otherwise the steps for this browser.
             if (install === 'prompt') { if (await promptInstall()) toast(tr('Tunes is installed')); }
@@ -97,7 +97,7 @@ export function Sidebar() {
           }}>
             <Icon name="plus" size={19} /><span>{installLabel}</span>
           </button>
-        ) : null}
+        )}
         {link({ href: '/settings', name: 'settings', label: 'Settings', icon: 'settings' })}
       </div>
       {/* The right edge: drag it left to fold the menu to icons, right to unfold (computers). */}

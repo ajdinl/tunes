@@ -49,8 +49,8 @@ function ArchivePage({ id }: { id: string }) {
         actions={[...playButtons(tracks, ctx),
           <DownloadButton key="dl" tracks={tracks} />,
           <a key="link" className="btn btn--ghost" href={a.link} target="_blank" rel="noopener"><Icon name="external" size={16} />archive.org</a>]} />
-      {a.description ? <p className="desc">{a.description}</p> : null}
-      {safeHttp(a.license) ? <p className="muted pad">{tr('License: ')}<a href={safeHttp(a.license)!} target="_blank" rel="noopener">{a.license}</a></p> : null}
+      {a.description && <p className="desc">{a.description}</p>}
+      {safeHttp(a.license) && <p className="muted pad">{tr('License: ')}<a href={safeHttp(a.license)!} target="_blank" rel="noopener">{a.license}</a></p>}
       <TrackList tracks={tracks} context={ctx} numbered album={false} coverArt={false}
         emptyText={tr('This release has no recordings your browser can play.')} />
     </div>

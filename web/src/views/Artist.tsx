@@ -26,7 +26,7 @@ export function Artist({ route }: { route: Route }) {
         meta={[plural(albums.length, 'album', 'albums'), totalMeta(tracks)].join(', ')}
         actions={[...playButtons(tracks, ctx),
           <a key="more" className="btn btn--ghost" href={'/search?q=' + encodeURIComponent(a.name)}><Icon name="search" size={16} />{tr('Find more online')}</a>]} />
-      {albums.length ? <Section title={tr('Albums')}><Grid items={albums.map(albumTile)} /></Section> : null}
+      {albums.length > 0 && <Section title={tr('Albums')}><Grid items={albums.map(albumTile)} /></Section>}
       <Section title={tr('All songs')}><TrackList tracks={tracks} context={ctx} /></Section>
     </div>
   );

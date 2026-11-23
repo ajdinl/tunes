@@ -101,14 +101,14 @@ export function Home(_props: { route: Route }) {
             : tr('Your local library is empty, but internet radio, Audius and Internet Archive work right away.')}
         big />
 
-      {!lib.length && !STANDALONE ? (
+      {!lib.length && !STANDALONE && (
         <div className="note">
           <h2>{tr('Add your music')}</h2>
           <p>{tr('Put MP3, FLAC or M4A files in the folder ')}<code>{store.folders[0] || '~/Music/Tunes'}</code>
             {tr('. Tunes picks them up in seconds and sorts them by artist and album.')}</p>
           <a className="btn" href="/settings"><Icon name="folder" size={16} />{tr('Set up folders')}</a>
         </div>
-      ) : null}
+      )}
 
       {look.home.filter((sec) => sec.on).map((sec) => <Fragment key={sec.key}>{sections[sec.key]}</Fragment>)}
     </div>

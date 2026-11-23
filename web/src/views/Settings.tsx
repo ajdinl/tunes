@@ -138,8 +138,8 @@ export function Settings(_: { route: Route }) {
           <AccentPicker />
           <LookPreview />
           {/* Phones have only Minimal (no spectrum there), so nothing to choose. */}
-          {DEVICE_STYLES.length > 1 ? <><h3 className="form__label">{tr('Player style')}</h3><DialStylePicker /></> : null}
-          {IS_PHONE ? null : <DeckControlsPicker />}
+          {DEVICE_STYLES.length > 1 && <><h3 className="form__label">{tr('Player style')}</h3><DialStylePicker /></>}
+          {!IS_PHONE && <DeckControlsPicker />}
           <NowBgPicker />
           <TextPickers />
           <AppIconPicker icon={icon} pick={pickIcon} />
@@ -149,7 +149,7 @@ export function Settings(_: { route: Route }) {
       <Section title={tr('Music sources')}><SourceSettings /></Section>
       <Section title={tr('Home screen')}><HomeSettings /></Section>
 
-      {STANDALONE ? null : <>
+      {!STANDALONE && <>
       <Section title={tr('Music on this computer')}>
         <div className="form">
           <p className="muted">{tr('{n} in your libraries. New songs appear on their own as soon as you drop them in the folder.', { n: songs(store.library.length) })}</p>
@@ -157,7 +157,7 @@ export function Settings(_: { route: Route }) {
             {folders.map((f, i) => (
               <li className="folders__item" key={f + ':' + i}>
                 <Icon name="folder" size={16} /><code>{f}</code>
-                {folders.length > 1 && IS_LOCAL ? <button type="button" className="ibtn" aria-label={tr('Remove folder')} onClick={() => removeFolder(i)}><Icon name="close" size={16} /></button> : null}
+                {folders.length > 1 && IS_LOCAL && <button type="button" className="ibtn" aria-label={tr('Remove folder')} onClick={() => removeFolder(i)}><Icon name="close" size={16} /></button>}
               </li>
             ))}
           </ul>
@@ -213,7 +213,7 @@ export function Settings(_: { route: Route }) {
             input.value = '';
           }} />
           <label className="btn" htmlFor="csv"><Icon name="plus" size={16} />{tr('Choose CSV file')}</label>
-          <div>{csv ? <SpotifyImport key={csv.n} text={csv.text} name={csv.name} /> : null}</div>
+          <div>{csv && <SpotifyImport key={csv.n} text={csv.text} name={csv.name} />}</div>
         </div>
       </Section>
 
@@ -230,7 +230,7 @@ export function Settings(_: { route: Route }) {
         </div>
       </Section>
 
-      {IS_PHONE ? null : <Section title={tr('Keyboard shortcuts')}>
+      {!IS_PHONE && <Section title={tr('Keyboard shortcuts')}>
         <dl className="keys">
           {KEYS.map(([k, d, translate]) => (
             <Fragment key={k}><dt><kbd>{translate ? tr(k) : k}</kbd></dt><dd>{tr(d)}</dd></Fragment>
@@ -238,7 +238,7 @@ export function Settings(_: { route: Route }) {
         </dl>
       </Section>}
 
-      {STANDALONE ? null : <Section title={tr('Listening on your phone')}>
+      {!STANDALONE && <Section title={tr('Listening on your phone')}>
         <div className="form">
           <p className="muted">{tr('Click “Listen on phone” in the left menu and scan the QR code with your phone camera. The phone must be on the same Wi-Fi network.')}</p>
           <button type="button" className="btn" onClick={() => document.dispatchEvent(new CustomEvent('open-phone'))}><Icon name="phone" size={16} />{tr('Listen on phone')}</button>
@@ -285,8 +285,8 @@ function SpotifyImport({ text, name }: { text: string; name: string }) {
   return (
     <div className="import">
       <p>{tr('Found on this computer: {found} of {total}.', { found: found.length, total: found.length + missing.length })}</p>
-      {found.length ? <button type="button" className="btn btn--primary" disabled={busy} onClick={create}><Icon name="plus" size={16} />{tr('Create playlist “{name}”', { name })}</button> : null}
-      {missing.length ? (
+      {found.length > 0 && <button type="button" className="btn btn--primary" disabled={busy} onClick={create}><Icon name="plus" size={16} />{tr('Create playlist “{name}”', { name })}</button>}
+      {missing.length > 0 && (
         <details className="missing">
           <summary>{tr('Missing {n}: look for them on Bandcamp, Jamendo or Audius', { n: songs(missing.length) })}</summary>
           <ul>
@@ -299,7 +299,7 @@ function SpotifyImport({ text, name }: { text: string; name: string }) {
             ))}
           </ul>
         </details>
-      ) : null}
+      )}
     </div>
   );
 }

@@ -28,12 +28,12 @@ export function Albums(_: { route: Route }) {
   return (
     <div className="view">
       <Header title={tr('Albums')} meta={tr('{n} in your collection', { n: plural(all.length, 'album', 'albums') })} />
-      {all.length > 1 ? (
+      {all.length > 1 && (
         <div className="toolbar">
           <FilterInput placeholder={tr('Filter albums')} onChange={setFilter} />
           <Chips options={SORTS} value={sort} onPick={setSort} label={tr('Sort')} />
         </div>
-      ) : null}
+      )}
       <div>{list.length ? <Grid items={list.map(albumTile)} /> : <EmptyCollection text={tr('No albums yet.')} />}</div>
     </div>
   );
