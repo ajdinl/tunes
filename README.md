@@ -54,7 +54,7 @@ Self-hosted players like Navidrome or Jellyfin are great for your own files, but
 - **SoundCloud links:** paste a song, set or artist link into Search and it plays through SoundCloud's official player (SoundCloud's own search needs a paid API key)
 - Media keys and Control Center on macOS, installable as an app (PWA), keyboard shortcuts
 - Twelve languages; black, "night indigo" and light themes
-- **Make it yours:** eight accent colors, any color you pick, or colors taken from the cover of the song that plays; Now playing over a blurred cover, cover colors or a plain background; small, normal or large text and roomy or compact song lists (per device), with a live preview in Settings
+- **Make it yours:** eight accent colors, any color you pick, or colors taken from the cover of the song that plays; Now playing over a blurred cover, cover colors or a plain background; small, normal or large text and roomy or compact song lists (per device), with a live preview in Settings. Settings are split into three tabs: Appearance, Music, and Playback & data
 - **Only what you use:** turn off sources you don't need (they leave the menu, Search, Discover and Home), and choose which sections Home shows and in what order
 - **Add to Home Screen** on iPhone and Android, with a guide that also sets up the Tailscale version
 - **Offline buffer:** the current and next songs are downloaded to the phone, so music keeps playing if the connection drops. Songs not played for 3 days are deleted automatically

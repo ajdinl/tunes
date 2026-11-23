@@ -672,6 +672,12 @@ a.rank__name:hover { text-decoration: underline; }
 .look-preview__side { display: flex; align-items: center; gap: 10px; color: var(--amber); }
 .look-preview__play { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--amber); color: var(--amber-ink); }
 
+/* Settings tabs: one line; on a narrow phone they scroll sideways rather than wrap. */
+.settings-tabs { overflow-x: auto; scrollbar-width: none; }
+.settings-tabs::-webkit-scrollbar { display: none; }
+.settings-tabs .tab { flex: none; white-space: nowrap; }
+@media (max-width: 860px) { .settings-tabs .tab { padding: 10px; } }
+
 /* Music sources and Home sections */
 .opt-list { list-style: none; width: 100%; max-width: 520px; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r); }
 .opt-list__item { display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 14px; }

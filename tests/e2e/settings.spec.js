@@ -169,11 +169,14 @@ test('accent color, Now Playing background, sources and Home sections follow you
   await expect(a.locator('.accent-opt[data-accent="teal"]')).toHaveAttribute('aria-pressed', 'true');
   expect(await cssVar(a, '--amber')).toBe('#40d3c8');
   await a.locator('.nowbg-opt[data-nowbg="plain"]').click();
+  await a.locator('.settings-tabs [data-tab="music"]').click();
+  await expect(a).toHaveURL(/\/settings\?tab=music$/);
   await a.locator('.switch[data-source="radio"]').click();
   await expect(a.locator('.switch[data-source="radio"]')).toHaveAttribute('aria-checked', 'false');
   // Popular on Audius to the top of Home.
   for (let i = 0; i < 3; i++) await a.getByRole('button', { name: 'Move Popular this week on Audius up' }).click();
   await expect(a.locator('.opt-list__item[data-section]').first()).toHaveAttribute('data-section', 'popular');
+  await a.locator('.settings-tabs [data-tab="look"]').click();
   const bodySize = (page) => page.evaluate(() => parseFloat(getComputedStyle(document.body).fontSize));
   const normal = await bodySize(a);
   await a.locator('.text-opt[data-text="small"]').click();

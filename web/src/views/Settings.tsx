@@ -37,33 +37,96 @@ const KEYS: [string, string, boolean][] = [ // [key, description, translate the 
 ];
 const ext = { target: '_blank', rel: 'noopener' } as const;
 
-export function Settings(_: { route: Route }) {
+// Three tabs, so the page isn't one long list: how Tunes looks, what music it shows, and
+// playback, backup and devices. The tab is in the address (/settings?tab=music).
+const TABS = [
+  { value: 'look', label: 'Appearance' },
+  { value: 'music', label: 'Music' },
+  { value: 'more', label: 'Playback & data' },
+] as const;
+
+export function Settings({ route }: { route: Route }) {
   useStore('library', 'settings');
+  const asked = route.params.get('tab');
+  const tab = TABS.find((t) => t.value === asked)?.value || 'look';
+  return (
+    <div className="view view--narrow">
+      <Header title={tr('Settings')} />
+      <div className="tabs settings-tabs" role="tablist">
+        {TABS.map((t) => (
+          <a key={t.value} className={cx('tab', t.value === tab && 'is-on')} role="tab" href={t.value === 'look' ? '/settings' : '/settings?tab=' + t.value}
+            aria-selected={t.value === tab} data-tab={t.value}>{tr(t.label)}</a>
+        ))}
+      </div>
+      {tab === 'look' && <LookTab />}
+      {tab === 'music' && <MusicTab />}
+      {tab === 'more' && <MoreTab />}
+    </div>
+  );
+}
+
+function LookTab() {
   const lang = useLang();
   const theme = useTheme();
   const icon = store.settings.icon || 'bars';
-
-  // ---- folders (a local copy, refreshed when the library reloads)
-  const [folders, setFolders] = useState<string[]>(() => store.folders.slice());
-  useEffect(() => { setFolders(store.folders.slice()); }, [store.folders]);
-  const [newFolder, setNewFolder] = useState('');
-  const [scanning, setScanning] = useState(false);
-
-  // ---- ListenBrainz / Jamendo
-  const [lbToken, setLbToken] = useState('');
-  // Kept as an English key so it follows a language switch.
-  const [lbStatus, setLbStatus] = useState<{ key: string; vars?: Record<string, string> }>(() => ({
-    key: store.settings.hasListenbrainz ? 'Connected: every song you finish is also logged on ListenBrainz.' : 'Not connected.',
-  }));
-  const [jmId, setJmId] = useState('');
-
-  // ---- Spotify import
-  const [csv, setCsv] = useState<{ text: string; name: string; n: number } | null>(null);
 
   const pickIcon = async (value: string) => {
     if (icon === value) return;
     try { await store.saveSettings({ icon: value }); toast(tr('App icon changed')); } catch (e) { toast((e as Error).message, { error: true }); }
   };
+
+  return (
+    <>
+      <Section title={tr('Language')}>
+        {/* One dropdown: twelve languages as buttons would fill the screen. Each shows its own
+            name first, so people find their language even when the app speaks another one. */}
+        <select className="field lang-select" aria-label={tr('Language')} value={lang}
+          onChange={(e) => { const code = e.target.value as LangCode; setLang(code); savePref('lang', code); }}>
+          {LANGUAGES.map((l) => {
+            const name = tr(l.name);
+            return <option key={l.code} value={l.code} lang={l.code}>{`${l.flag}  ${l.native}${name !== l.native ? ` · ${name}` : ''}`}</option>;
+          })}
+        </select>
+      </Section>
+
+      <Section title={tr('Theme and colors')}>
+        <div className="form">
+          <div className="theme-pick" role="group" aria-label={tr('Theme')}>
+            {THEMES.map((t) => (
+              <button key={t.value} type="button" className="theme-opt" aria-pressed={theme === t.value}
+                onClick={() => { setTheme(t.value); savePref('theme', t.value); }}>
+                <span className="theme-opt__sw" style={{ '--sw': t.sw } as CSSProperties} aria-hidden="true" />{tr(t.label)}
+              </button>
+            ))}
+          </div>
+          <AccentPicker />
+          <LookPreview />
+          <NowBgPicker />
+        </div>
+      </Section>
+
+      <Section title={tr('Player and lists')}>
+        <div className="form">
+          {/* Phones have only Minimal (no spectrum there), so nothing to choose. */}
+          {DEVICE_STYLES.length > 1 && <><h3 className="form__label">{tr('Player style')}</h3><DialStylePicker /></>}
+          {!IS_PHONE && <DeckControlsPicker />}
+          <TextPickers />
+        </div>
+      </Section>
+
+      <Section title={tr('App icon')}><AppIconPicker icon={icon} pick={pickIcon} /></Section>
+    </>
+  );
+}
+
+function MusicTab() {
+  // ---- folders (a local copy, refreshed when the library reloads)
+  const [folders, setFolders] = useState<string[]>(() => store.folders.slice());
+  useEffect(() => { setFolders(store.folders.slice()); }, [store.folders]);
+  const [newFolder, setNewFolder] = useState('');
+  const [scanning, setScanning] = useState(false);
+  const [jmId, setJmId] = useState('');
+  const [csv, setCsv] = useState<{ text: string; name: string; n: number } | null>(null);
 
   const removeFolder = async (i: number) => {
     const next = folders.slice();
@@ -93,15 +156,6 @@ export function Settings(_: { route: Route }) {
     } finally { setScanning(false); }
   };
 
-  const saveLb = async (e: FormEvent) => {
-    e.preventDefault();
-    const r = await store.saveSettings({ listenbrainzToken: lbToken.trim() });
-    setLbToken('');
-    if (r.listenbrainz?.valid) { setLbStatus({ key: 'Connected as {user}.', vars: { user: r.listenbrainz.user || '' } }); toast(tr('ListenBrainz connected')); }
-    else if (r.listenbrainz) { setLbStatus({ key: 'The token wasn\'t accepted. Copy it again from the page below.' }); toast(tr('ListenBrainz rejected the token'), { error: true }); }
-    else { setLbStatus({ key: 'Not connected.' }); toast(tr('ListenBrainz disconnected')); }
-  };
-
   const saveJamendo = async (e: FormEvent) => {
     e.preventDefault();
     await store.saveSettings({ jamendoClientId: jmId.trim() });
@@ -110,45 +164,9 @@ export function Settings(_: { route: Route }) {
   };
 
   return (
-    <div className="view view--narrow">
-      <Header title={tr('Settings')} />
-
-      <Section title={tr('Language')}>
-        {/* One dropdown: twelve languages as buttons would fill the screen. Each shows its own
-            name first, so people find their language even when the app speaks another one. */}
-        <select className="field lang-select" aria-label={tr('Language')} value={lang}
-          onChange={(e) => { const code = e.target.value as LangCode; setLang(code); savePref('lang', code); }}>
-          {LANGUAGES.map((l) => {
-            const name = tr(l.name);
-            return <option key={l.code} value={l.code} lang={l.code}>{`${l.flag}  ${l.native}${name !== l.native ? ` · ${name}` : ''}`}</option>;
-          })}
-        </select>
-      </Section>
-
-      <Section title={tr('Appearance')}>
-        <div className="form">
-          <div className="theme-pick" role="group" aria-label={tr('Theme')}>
-            {THEMES.map((t) => (
-              <button key={t.value} type="button" className="theme-opt" aria-pressed={theme === t.value}
-                onClick={() => { setTheme(t.value); savePref('theme', t.value); }}>
-                <span className="theme-opt__sw" style={{ '--sw': t.sw } as CSSProperties} aria-hidden="true" />{tr(t.label)}
-              </button>
-            ))}
-          </div>
-          <AccentPicker />
-          <LookPreview />
-          {/* Phones have only Minimal (no spectrum there), so nothing to choose. */}
-          {DEVICE_STYLES.length > 1 && <><h3 className="form__label">{tr('Player style')}</h3><DialStylePicker /></>}
-          {!IS_PHONE && <DeckControlsPicker />}
-          <NowBgPicker />
-          <TextPickers />
-          <AppIconPicker icon={icon} pick={pickIcon} />
-        </div>
-      </Section>
-
+    <>
       <Section title={tr('Music sources')}><SourceSettings /></Section>
       <Section title={tr('Home screen')}><HomeSettings /></Section>
-
       {!STANDALONE && <>
       <Section title={tr('Music on this computer')}>
         <div className="form">
@@ -171,19 +189,6 @@ export function Settings(_: { route: Route }) {
             {tr('Tip: the ')}<a href="https://beets.io" {...ext}>beets</a>
             {tr(' tool fixes tags and covers and sorts files by artist and album. Command: ')}<code>beet import ~/Downloads/new-album</code>
           </p>
-        </div>
-      </Section>
-
-      <Section title={tr('History on ListenBrainz')}>
-        <div className="form">
-          <p className="muted">{tr('A free, open-source service: it keeps your full history, makes yearly reviews and weekly recommendations. It can also log what you play on Spotify, so you have one history for everything.')}</p>
-          <form className="row" onSubmit={saveLb}>
-            <input className="field" type="password" placeholder={store.settings.hasListenbrainz ? tr('Token saved') : tr('Paste token')} aria-label="ListenBrainz token" autoComplete="off"
-              value={lbToken} onChange={(e) => setLbToken(e.target.value)} />
-            <button className="btn">{tr('Save')}</button>
-          </form>
-          <p className="muted">{tr(lbStatus.key, lbStatus.vars)}</p>
-          <p className="muted">{tr('Find your token at ')}<a href="https://listenbrainz.org/settings/" {...ext}>listenbrainz.org/settings</a>{tr('. Saving an empty field disconnects it.')}</p>
         </div>
       </Section>
 
@@ -216,11 +221,30 @@ export function Settings(_: { route: Route }) {
           <div>{csv && <SpotifyImport key={csv.n} text={csv.text} name={csv.name} />}</div>
         </div>
       </Section>
-
       </>}
+    </>
+  );
+}
 
+function MoreTab() {
+  const [lbToken, setLbToken] = useState('');
+  // Kept as an English key so it follows a language switch.
+  const [lbStatus, setLbStatus] = useState<{ key: string; vars?: Record<string, string> }>(() => ({
+    key: store.settings.hasListenbrainz ? 'Connected: every song you finish is also logged on ListenBrainz.' : 'Not connected.',
+  }));
+
+  const saveLb = async (e: FormEvent) => {
+    e.preventDefault();
+    const r = await store.saveSettings({ listenbrainzToken: lbToken.trim() });
+    setLbToken('');
+    if (r.listenbrainz?.valid) { setLbStatus({ key: 'Connected as {user}.', vars: { user: r.listenbrainz.user || '' } }); toast(tr('ListenBrainz connected')); }
+    else if (r.listenbrainz) { setLbStatus({ key: 'The token wasn\'t accepted. Copy it again from the page below.' }); toast(tr('ListenBrainz rejected the token'), { error: true }); }
+    else { setLbStatus({ key: 'Not connected.' }); toast(tr('ListenBrainz disconnected')); }
+  };
+
+  return (
+    <>
       <Section title={tr('Offline playback')}><OfflineSettings /></Section>
-
       <Section title={tr('Backup')}>
         <div className="form">
           <p className="muted">{tr('Favorites, playlists and history in one JSON file.')}</p>
@@ -230,6 +254,27 @@ export function Settings(_: { route: Route }) {
         </div>
       </Section>
 
+      {!STANDALONE && <>
+      <Section title={tr('History on ListenBrainz')}>
+        <div className="form">
+          <p className="muted">{tr('A free, open-source service: it keeps your full history, makes yearly reviews and weekly recommendations. It can also log what you play on Spotify, so you have one history for everything.')}</p>
+          <form className="row" onSubmit={saveLb}>
+            <input className="field" type="password" placeholder={store.settings.hasListenbrainz ? tr('Token saved') : tr('Paste token')} aria-label="ListenBrainz token" autoComplete="off"
+              value={lbToken} onChange={(e) => setLbToken(e.target.value)} />
+            <button className="btn">{tr('Save')}</button>
+          </form>
+          <p className="muted">{tr(lbStatus.key, lbStatus.vars)}</p>
+          <p className="muted">{tr('Find your token at ')}<a href="https://listenbrainz.org/settings/" {...ext}>listenbrainz.org/settings</a>{tr('. Saving an empty field disconnects it.')}</p>
+        </div>
+      </Section>
+      </>}
+      {!STANDALONE && <Section title={tr('Listening on your phone')}>
+        <div className="form">
+          <p className="muted">{tr('Click “Listen on phone” in the left menu and scan the QR code with your phone camera. The phone must be on the same Wi-Fi network.')}</p>
+          <button type="button" className="btn" onClick={() => document.dispatchEvent(new CustomEvent('open-phone'))}><Icon name="phone" size={16} />{tr('Listen on phone')}</button>
+        </div>
+      </Section>}
+
       {!IS_PHONE && <Section title={tr('Keyboard shortcuts')}>
         <dl className="keys">
           {KEYS.map(([k, d, translate]) => (
@@ -237,14 +282,7 @@ export function Settings(_: { route: Route }) {
           ))}
         </dl>
       </Section>}
-
-      {!STANDALONE && <Section title={tr('Listening on your phone')}>
-        <div className="form">
-          <p className="muted">{tr('Click “Listen on phone” in the left menu and scan the QR code with your phone camera. The phone must be on the same Wi-Fi network.')}</p>
-          <button type="button" className="btn" onClick={() => document.dispatchEvent(new CustomEvent('open-phone'))}><Icon name="phone" size={16} />{tr('Listen on phone')}</button>
-        </div>
-      </Section>}
-    </div>
+    </>
   );
 }
 
@@ -353,8 +391,7 @@ function DialPreview({ style }: { style: DialStyle }) {
 // phone-only version it is this phone's choice, used when Tunes is added to the Home Screen.
 function AppIconPicker({ icon, pick }: { icon: string; pick: (value: string) => void }) {
   return (
-    <>
-      <h3 className="form__label">{tr('App icon')}</h3>
+    <div className="form">
       <div className="theme-pick" role="group" aria-label={tr('App icon')}>
         {ICON_OPTS.map((o) => (
           <button key={o.value} type="button" className="theme-opt" aria-pressed={icon === o.value} onClick={() => pick(o.value)}>
@@ -365,7 +402,7 @@ function AppIconPicker({ icon, pick }: { icon: string; pick: (value: string) => 
       <p className="muted">{STANDALONE
         ? tr('Pick it before adding Tunes to your Home Screen. A shortcut already there keeps its old icon until you add it again.')
         : tr('The icon changes on all your devices. A shortcut already on a home screen keeps its old icon until you add it again.')}</p>
-    </>
+    </div>
   );
 }
 

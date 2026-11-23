@@ -59,8 +59,13 @@ test('opens from the link: English, the music sources, no computer parts', async
   // A deep link works too (GitHub Pages answers it with the app's 404.html).
   await phone.goto('settings');
   await expect(phone.locator('#main h1')).toHaveText('Settings');
-  await expect(phone.locator('#main h2')).toHaveText(['Language', 'Appearance', 'Music sources', 'Home screen', 'Offline playback', 'Backup']);
+  await expect(phone.locator('#main h2')).toHaveText(['Language', 'Theme and colors', 'Player and lists', 'App icon']);
   await expect(phone.locator('.dial-opt')).toHaveCount(0); // phones always use Minimal
+  await phone.locator('.settings-tabs [data-tab="music"]').tap();
+  await expect(phone).toHaveURL(/\/tunes\/settings\?tab=music$/);
+  await expect(phone.locator('#main h2')).toHaveText(['Music sources', 'Home screen']); // no folders, Jamendo or Spotify here
+  await phone.locator('.settings-tabs [data-tab="more"]').tap();
+  await expect(phone.locator('#main h2')).toHaveText(['Offline playback', 'Backup']);
   await phone.locator('#navToggle').tap();
   await expect(phone.locator('.nav__phone:not(.nav__install)')).toHaveCount(0); // no "Listen on phone"
   await expect(phone.locator('.nav__install')).toBeVisible(); // but "Add to Home Screen"
@@ -139,7 +144,7 @@ test('backup: the whole collection as a file, made on the phone', async ({ phone
   const fav = phone.locator('#main .tr', { hasText: 'Harbor Lights' }).first().locator('.tr__fav');
   await fav.tap();
   await expect(fav).toHaveAttribute('aria-pressed', 'true');
-  await phone.goto('settings');
+  await phone.goto('settings?tab=more');
   await ready(phone);
   const [download] = await Promise.all([phone.waitForEvent('download'), phone.getByRole('button', { name: 'Download backup' }).click()]);
   expect(download.suggestedFilename()).toMatch(/^tunes-\d{4}-\d{2}-\d{2}\.json$/);
