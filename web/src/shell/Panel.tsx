@@ -1,7 +1,7 @@
 // Side panel: the play queue or the lyrics.
 import { useState } from 'react';
 
-import { IconButton } from '../components/Icon.tsx';
+import { Icon, IconButton } from '../components/Icon.tsx';
 import { Cover } from '../components/common.tsx';
 import { Lyrics } from '../components/Lyrics.tsx';
 import { shell, useShell } from './ui.ts';
@@ -80,7 +80,12 @@ function QueueRow({ t, idx, current = false }: { t: Track; idx: number; current?
         const from = Number(e.dataTransfer.getData('text/x-q'));
         if (!Number.isNaN(from)) player.move(from, idx);
       }}>
-      <Cover src={t.cover} label={t.title} className="qr__cv" />
+      {/* The cover shows a play mark on hover (always on touch screens); the title button is the
+          accessible way to play the row, so this one stays out of the tab order. */}
+      <button type="button" className="qr__cvbtn" tabIndex={-1} aria-hidden="true" onClick={() => player.jump(idx)}>
+        <Cover src={t.cover} label={t.title} className="qr__cv" />
+        {!current && <span className="qr__play"><Icon name="play" size={16} /></span>}
+      </button>
       <button type="button" className="qr__main" aria-label={tr('Play ') + t.title} onClick={() => player.jump(idx)}>
         <span className="qr__title">{t.title}</span><span className="qr__artist">{t.artist || ''}</span>
       </button>

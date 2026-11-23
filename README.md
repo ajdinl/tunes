@@ -38,7 +38,7 @@ Self-hosted players like Navidrome or Jellyfin are great for your own files, but
 - **Library by artists and albums**, built from tags (or the folder structure when tags are missing). New files appear on their own. Audius artist pages with all their songs and sets
 - **Playlists** that mix local and online songs, drag-and-drop reordering, M3U export
 - **Smart playlists:** My mix, Most played, Forgotten favorites, Recently added, Never played
-- **Favorites, shuffle, repeat, play queue, sleep timer**
+- **Favorites, shuffle, repeat, play queue, sleep timer**; one button opens the queue and lyrics panel, and any queued song plays from its cover
 - **Listening history** of everything you play (songs, mixes and radio stations), each one once per day with its play count, plus top artists. Optional ListenBrainz scrobbling with their rule (half the song or 4 minutes)
 - **Downloads for offline listening:** download a song, album, playlist or your favorites and it stays on the device until you remove it, for trips without internet. Sort, search and reorder them on the Downloads screen
 - **10-band equalizer** with presets
@@ -55,6 +55,7 @@ Self-hosted players like Navidrome or Jellyfin are great for your own files, but
 - Media keys and Control Center on macOS, installable as an app (PWA), keyboard shortcuts
 - Twelve languages; black, "night indigo" and light themes
 - **Make it yours:** eight accent colors, any color you pick, or colors taken from the cover of the song that plays; Now playing over a blurred cover, cover colors or a plain background; small, normal or large text and roomy or compact song lists (per device), with a live preview in Settings. Settings are split into three tabs: Appearance, Music, and Playback & data
+- **Share a song:** send a link to anyone (WhatsApp, Messages…; on a computer copy it or show a QR code). It opens in the free phone-only version, ready to play, keep or add to a playlist, with no account or app. Online songs and stations only: files on your computer stay yours
 - **Only what you use:** turn off sources you don't need (they leave the menu, Search, Discover and Home), and choose which sections Home shows and in what order
 - **Add to Home Screen** on iPhone and Android, with a guide that also sets up the Tailscale version
 - **Offline buffer:** the current and next songs are downloaded to the phone, so music keeps playing if the connection drops. Songs not played for 3 days are deleted automatically

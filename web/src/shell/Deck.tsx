@@ -15,8 +15,9 @@ import { tr } from '../lib/i18n.ts';
 import { fmtTime, cx } from '../lib/format.ts';
 import { stationFreq } from '../lib/dial.ts';
 import { openMenu, toast } from '../lib/feedback.ts';
-import { toggleFav } from '../lib/actions.ts';
+import { shareTrack, toggleFav } from '../lib/actions.ts';
 import { toPath } from '../lib/router.ts';
+import { canShare } from '../../../lib/share.ts';
 
 // The track as shown: inside a SoundCloud set, the song that is playing right now.
 export function shownTrack(p: Player): Track | null {
@@ -99,8 +100,9 @@ export function Deck() {
         </div>
       </div>
       <div className="deck__tools">
-        <IconButton icon="lyrics" label={tr('Lyrics (T)')} className={cx(ui.panel === 'lyrics' && 'is-on')} onClick={() => shell.togglePanel('lyrics')} />
-        <IconButton icon="queue" label={tr('Play queue (Q)')} className={cx('deck__queue', ui.panel === 'queue' && 'is-on')} onClick={() => shell.togglePanel('queue')} />
+        {/* One button for the side panel: it opens on the tab used last (Q and T pick one). */}
+        <IconButton icon="queue" label={tr('Queue and lyrics (Q, T)')} className={cx('deck__queue', ui.panel && 'is-on')} aria-pressed={Boolean(ui.panel)} onClick={() => shell.togglePanel()} />
+        {canShare(p.track) && <IconButton icon="share" label={tr('Share')} className="deck__share" onClick={() => shareTrack(p.track!)} />}
         {/* Phones have no equalizer (no Web Audio graph, or iOS stops the music on lock). */}
         {!p.noGraph && <IconButton icon="eq" label={tr('Equalizer (E)')} className={cx('deck__eq', (p.eq.enabled || ui.eq) && 'is-on')} onClick={() => shell.set({ eq: !ui.eq })} />}
         <SleepButton />

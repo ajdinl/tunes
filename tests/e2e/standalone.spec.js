@@ -8,6 +8,7 @@ import { answer } from '../support/fake-net.js';
 import { makeWav } from '../support/fixtures.js';
 import { IPHONE_UA, sleep } from './helpers.js';
 import { PAGES_URL } from '../../playwright.config.js';
+import { shareLink } from '../../lib/share.ts';
 
 const SONG = makeWav(245);
 const CORS = { 'Access-Control-Allow-Origin': '*' };
@@ -196,4 +197,25 @@ test('hearthis.at DJ mixes: played straight from the source, downloadable only w
   await expect(phone.locator('.menu__item', { hasText: 'Open on source website' })).toBeVisible();
   await expect(phone.locator('.menu__item', { hasText: 'Download' })).toHaveCount(0);
   expect(await app(phone, async () => window.__tunes.offline.pin([{ id: 'hearthis:club-night', source: 'hearthis', title: 'x', stream: '/api/stream/url?u=x' }]))).toBe(0);
+});
+
+test('a shared song opens ready to play, keep or add to a playlist; a broken link says so', async ({ phone }) => {
+  // The link as Tunes on a computer makes it (server-shaped addresses), opened on this phone.
+  const link = shareLink({
+    id: 'audius:D7KyD', source: 'audius', title: 'Harbor Lights', artist: 'Nadia Vale', duration: 245,
+    cover: '/api/img?u=' + encodeURIComponent('https://creatornode.example/content/abc/480x480.jpg'), stream: '/api/stream/audius/D7KyD',
+  }, PAGES_URL);
+  await phone.goto(link);
+  await expect(phone.locator('#main h1')).toHaveText('Harbor Lights');
+  await expect(phone.locator('.hd__kicker')).toHaveText('Shared with you');
+  await expect(phone.locator('.hd__meta')).toContainText('Nadia Vale · Audius · 4:05');
+  await phone.locator('.shared__play').tap();
+  await expect.poll(() => playing(phone)).toBe(true);
+  expect(await app(phone, () => window.__tunes.player.fx.src)).toBe('https://api.audius.co/v1/tracks/D7KyD/stream?app_name=Tunes');
+  await phone.locator('.shared__fav').tap();
+  await expect(phone.locator('.shared__fav')).toHaveAttribute('aria-pressed', 'true');
+  expect(await app(phone, () => Object.keys(window.__tunes.store.favorites))).toEqual(['audius:D7KyD']);
+
+  await phone.goto('shared#bm90LWEtc29uZw');
+  await expect(phone.locator('.empty')).toContainText('This link is broken or incomplete');
 });

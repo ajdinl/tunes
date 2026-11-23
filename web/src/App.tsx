@@ -37,13 +37,15 @@ import { Playlist } from './views/Playlist.tsx';
 import { Smart } from './views/Smart.tsx';
 import { ArchiveItem } from './views/ArchiveItem.tsx';
 import { Settings } from './views/Settings.tsx';
+import { Shared } from './views/Shared.tsx';
+import { ShareDialog } from './shell/ShareDialog.tsx';
 import { AudiusArtist } from './views/AudiusArtist.tsx';
 
 const ROUTES: Record<string, ComponentType<{ route: Route }>> = {
   '': Home, search: Search, discover: Discover, radio: Radio,
   artists: Artists, artist: Artist, albums: Albums, album: Album,
   songs: Songs, favorites: Favorites, downloads: Downloads, history: History,
-  playlist: Playlist, smart: Smart, archive: ArchiveItem, settings: Settings,
+  playlist: Playlist, smart: Smart, archive: ArchiveItem, settings: Settings, shared: Shared,
   audius: AudiusArtist,
 };
 
@@ -92,6 +94,7 @@ export function App() {
       <AskDialog />
       <PhoneDialog />
       <InstallDialog />
+      <ShareDialog />
       <MiniPlayer />
     </>
   );

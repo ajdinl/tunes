@@ -233,7 +233,8 @@ test('phone: always the Minimal player style, nothing to choose, no equalizer', 
   await phone.locator('.deck__meta').tap();
   await expect(phone.locator('.now .dial')).toHaveAttribute('data-style', 'minimal'); // not the computer's Mirror
   await expect(phone.locator('.now [aria-label="Sleep timer"]')).toBeVisible();
-  await expect(phone.locator('.now [aria-label="Lyrics (T)"]')).toBeVisible();
+  await expect(phone.locator('.now [aria-label="Lyrics (T)"]')).toHaveCount(0); // one button for the queue and lyrics
+  await expect(phone.locator('.now__share')).toHaveCount(0); // a file on the computer can't be shared
   // No room for the queue next to the cover: it opens in the side panel.
   await phone.locator('.now__queuebtn').tap();
   await expect(phone.locator('.now')).toBeHidden();

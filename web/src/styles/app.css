@@ -721,6 +721,15 @@ a.rank__name:hover { text-decoration: underline; }
 .dlg--phone { width: min(420px, calc(100vw - 32px)); }
 .phone__qr { align-self: center; width: 240px; padding: 12px; border-radius: var(--r-lg); background: #fff; }
 .phone__qr svg { display: block; width: 100%; height: auto; }
+.share__song { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.share__cv { width: 64px; flex: none; border-radius: var(--r-sm); }
+.share__meta { min-width: 0; }
+.share__title { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.share__artist { margin: 2px 0 0; }
+.share__row { display: flex; gap: 8px; }
+.share__link { flex: 1; min-width: 0; font-size: calc(13px * var(--fs)); }
+.share__qr { width: 200px; }
+.shared__about { max-width: 60ch; margin: 8px 0 0; }
 .phone__steps { margin: 0; padding-left: 20px; color: var(--muted); }
 .phone__steps li { margin-bottom: 4px; }
 .phone__url { margin: 0; color: var(--faint); font-size: calc(12.5px * var(--fs)); overflow-wrap: anywhere; }
@@ -764,7 +773,6 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .deck__center { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .deck__progress, .deck__tools > .deck__mplay { display: none; }
 .now__tools { display: flex; align-items: center; justify-content: center; gap: 18px; }
-@media (min-width: 861px) { .now__lyricsbtn { display: none; } } /* lyrics are on the screen there */
 .deck__ctrls { display: flex; align-items: center; justify-content: center; gap: 6px; }
 .play, .deck__mplay {
   display: grid;
@@ -877,6 +885,10 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .qr.is-drag { opacity: 0.4; }
 .qr.is-over { box-shadow: inset 0 2px 0 var(--amber); }
 .qr__cv { width: 38px; flex: none; border-radius: 4px; }
+.qr__cvbtn { position: relative; flex: none; padding: 0; border: 0; border-radius: 4px; background: none; cursor: pointer; }
+.qr__play { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 4px; background: rgb(0 0 0 / 0.5); color: #fff; opacity: 0; transition: opacity 0.12s; }
+.qr:hover .qr__play { opacity: 1; }
+@media (hover: none) { .qr__play { opacity: 1; background: rgb(0 0 0 / 0.32); } } /* touch: always say it plays */
 .qr__main { display: flex; flex-direction: column; flex: 1; min-width: 0; padding: 2px 0; border: 0; background: none; text-align: left; }
 .qr__title, .qr__artist { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .qr__title { font-weight: 600; font-size: calc(14px * var(--fs)); }

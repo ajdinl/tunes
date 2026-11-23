@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from 'react';
 
 import { STANDALONE } from '../lib/env.ts';
+import type { Track } from '../lib/store.ts';
 
 // Where the player buttons sit on computers: above the dial, beside it (one row, the bar is
 // lower), or only while the mouse is over the bar (the default; without a mouse it looks like
@@ -15,6 +16,7 @@ const savedCtrls = (): DeckCtrls => {
 
 export interface ShellState {
   panel: 'queue' | 'lyrics' | null;
+  lastPanel: 'queue' | 'lyrics'; // the tab the one Queue and lyrics button opens
   eq: boolean;
   now: boolean;
   // What the right half of "Now playing" shows on computers: the lyrics or the queue.
@@ -26,13 +28,14 @@ export interface ShellState {
   scMin: boolean;
   phone: boolean;
   install: boolean;
+  share: Track | null; // the song in the Share dialog
 }
 
 const saved = (key: string): boolean => { try { return JSON.parse(localStorage.getItem(key) || 'false') === true; } catch { return false; } };
 
 let state: ShellState = {
-  panel: null, eq: false, now: false, nowSide: 'lyrics', nav: false,
-  sideMini: saved('tunes.sideMini'), footCompact: saved('tunes.footCompact'), deckCtrls: savedCtrls(), scMin: saved('tunes.scdockMin'), phone: false, install: false,
+  panel: null, lastPanel: 'queue', eq: false, now: false, nowSide: 'lyrics', nav: false,
+  sideMini: saved('tunes.sideMini'), footCompact: saved('tunes.footCompact'), deckCtrls: savedCtrls(), scMin: saved('tunes.scdockMin'), phone: false, install: false, share: null,
 };
 const listeners = new Set<() => void>();
 
@@ -40,13 +43,14 @@ export const shell = {
   get: (): ShellState => state,
   set(patch: Partial<ShellState>): void {
     state = { ...state, ...patch };
+    if (patch.panel) state.lastPanel = patch.panel;
     if ('sideMini' in patch) try { localStorage.setItem('tunes.sideMini', JSON.stringify(state.sideMini)); } catch { /* */ }
     if ('footCompact' in patch) try { localStorage.setItem('tunes.footCompact', JSON.stringify(state.footCompact)); } catch { /* */ }
     if ('deckCtrls' in patch) try { localStorage.setItem('tunes.deckCtrls', JSON.stringify(state.deckCtrls)); } catch { /* */ }
     if ('scMin' in patch) try { localStorage.setItem('tunes.scdockMin', JSON.stringify(state.scMin)); } catch { /* */ }
     for (const l of listeners) l();
   },
-  togglePanel(tab: 'queue' | 'lyrics'): void { shell.set({ panel: state.panel === tab ? null : tab }); },
+  togglePanel(tab: 'queue' | 'lyrics' = state.lastPanel): void { shell.set({ panel: state.panel === tab ? null : tab }); },
 };
 
 // Wide enough for the two halves of "Now playing" (phones show only the cover there).

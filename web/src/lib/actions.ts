@@ -10,6 +10,9 @@ import { norm, songs, safeHttp } from './format.ts';
 import { go } from './router.ts';
 import { STANDALONE } from './env.ts';
 import { offline } from './offline.ts';
+import { canShare, shareLink } from '../../../lib/share.ts';
+import { IS_PHONE } from './install.ts';
+import { shell } from '../shell/ui.ts';
 
 export const artistHref = (name: string): string => '/artist/' + encodeURIComponent(norm(name));
 export const albumHref = (key: string): string => '/album/' + encodeURIComponent(key);
@@ -38,6 +41,26 @@ async function addAllToPlaylist(tracks: Track[]): Promise<void> {
   if (existing) { await addToPlaylist(existing, tracks); return; }
   const p = await store.createPlaylist(name, tracks.filter((t) => !t.live));
   toast(tr('Created playlist “{name}”', { name: p.name }), { action: tr('Open'), onAction: () => go(playlistHref(p.id)) });
+}
+
+// Share a song: the phone's own share sheet (WhatsApp, Messages…), else a dialog with the link
+// and a QR code. Files on the computer can't be shared (callers hide the button for them).
+export async function shareTrack(t: Track): Promise<void> {
+  const url = shareLink(t);
+  if (!url) return;
+  if (IS_PHONE && navigator.share) {
+    try { await navigator.share({ title: t.title, text: tr('Listen to “{title}”', { title: t.title + (t.artist ? ' – ' + t.artist : '') }), url }); return; }
+    catch (e) { if ((e as Error).name === 'AbortError') return; } // closed by the user; anything else: the dialog
+  }
+  shell.set({ share: t });
+}
+
+// Copies text; without a secure context (the phone over http) the selected field is copied.
+export async function copyText(text: string, field?: HTMLInputElement | null): Promise<boolean> {
+  try { await navigator.clipboard.writeText(text); return true; } catch { /* not allowed here */ }
+  if (!field) return false;
+  field.select();
+  return document.execCommand('copy');
 }
 
 export async function newPlaylist(tracks: Track[] = []): Promise<Playlist | null> {
@@ -121,6 +144,7 @@ export function trackMenu(track: Track, { playlist, index, list }: { playlist?: 
       ? { label: tr('Remove download'), icon: 'trash', action: () => { removeDownloads([track]); } }
       : { label: tr('Download'), icon: 'download', action: () => { downloadTracks([track]); } });
   }
+  if (canShare(track)) items.push({ label: tr('Share'), icon: 'share', action: () => { shareTrack(track); } });
   if (track.download && !STANDALONE) items.push({ label: tr('Save to computer'), icon: 'download', action: () => { saveToLibrary([track]); } });
   const link = safeHttp(track.link);
   if (link) items.push({ label: tr('Open on source website'), icon: 'external', action: () => { window.open(link, '_blank', 'noopener'); } });

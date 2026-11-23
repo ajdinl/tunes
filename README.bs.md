@@ -47,6 +47,7 @@ Da izgleda kao prava aplikacija: klikni **Instaliraj aplikaciju** u lijevom meni
 - Jezik: engleski, bosanski, srpski, hrvatski, slovenski, makedonski, albanski, njemački, španski, francuski, portugalski ili turski (Postavke), mijenja se bez prekidanja muzike. Tema, boje, jezik i izgled plejera se prenose na svaki browser i uređaj.
 - Tema: crna, noćni indigo ili svijetla (Postavke)
 - Prilagodi po svom ukusu: osam boja akcenta, bilo koja boja po izboru ili boja iz omota pjesme koja svira; „Sada svira” preko zamućenog omota, u bojama omota ili na običnoj pozadini; mali, normalni ili veliki tekst i prozračne ili kompaktne liste pjesama (posebno za svaki uređaj), uz pregled uživo u Postavkama. Postavke su podijeljene u tri taba: Izgled, Muzika te Reprodukcija i podaci
+- Podijeli pjesmu: pošalji link bilo kome (WhatsApp, Poruke…; na računaru ga kopiraj ili pokaži QR kod). Otvara se u besplatnoj verziji za telefon, spremno za puštanje, čuvanje u omiljene ili dodavanje u plejlistu, bez računa i aplikacije. Samo pjesme s interneta i stanice: fajlovi s tvog računara ostaju tvoji
 - Samo ono što koristiš: isključi izvore koji ti ne trebaju (nestanu iz menija, Pretrage, Otkrij i Početne) i izaberi koje sekcije Početna prikazuje i kojim redom
 - Pretraga kroz sve izvore odjednom, sa kategorijama: pjesme, setovi i miksevi, albumi i koncerti, izvođači, radio. Kad pređeš mišem preko izvora, piše šta on nudi
 - Otkrij: popularna muzika sa Audius-a, DJ miksevi po žanru sa hearthis.at, koncerti sa Internet Archive-a
@@ -56,7 +57,7 @@ Da izgleda kao prava aplikacija: klikni **Instaliraj aplikaciju** u lijevom meni
 - Preuzimanja za slušanje bez interneta: pjesma, album, plejlista ili omiljene ostaju na uređaju dok ih ne obrišeš, za putovanja. Sortiranje, pretraga i vlastiti redoslijed na ekranu Preuzimanja
 - Plejliste sa miješanim izvorima, promjena redoslijeda prevlačenjem, izvoz u M3U
 - Pametne plejliste: Moj miks, Najslušanije, Zaboravljene omiljene, Nedavno dodano…
-- Nasumično, ponavljanje, red za puštanje, tajmer za spavanje
+- Nasumično, ponavljanje, red za puštanje, tajmer za spavanje; jedno dugme otvara red i tekst pjesme, a svaka pjesma iz reda pušta se klikom na omot
 - Ekvalizer sa 10 opsega i gotovim postavkama
 - Izgled plejera: radio skala sa spektrom zvuka uživo, Minimalno (samo linija), Ogledalo ili U bojama; klik ili prevlačenje premotava
 - Dugmad plejera na računaru: samo kad je miš iznad trake plejera (podrazumijevano), iznad trake napretka ili pored nje u jednom redu

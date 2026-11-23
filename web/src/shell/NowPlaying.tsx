@@ -14,14 +14,17 @@ import { store, useStore } from '../lib/store.ts';
 import { tr } from '../lib/i18n.ts';
 import { fmtTime, norm, cx } from '../lib/format.ts';
 import { stationFreq } from '../lib/dial.ts';
-import { toggleFav, artistHref } from '../lib/actions.ts';
+import { shareTrack, toggleFav, artistHref } from '../lib/actions.ts';
 import { toPath } from '../lib/router.ts';
 import { media } from '../lib/media.ts';
+import { canShare } from '../../../lib/share.ts';
 
 // The queue button in "Now playing" (and Q while it is open).
+// Computers: the queue takes the place of the lyrics on the right, and back. Phones have no
+// room for either: the side panel opens, on the tab used last.
 export function toggleNowQueue(): void {
   if (nowHasSide()) shell.set({ nowSide: shell.get().nowSide === 'queue' ? 'lyrics' : 'queue' });
-  else shell.set({ now: false, panel: 'queue' });
+  else shell.set({ now: false, panel: shell.get().lastPanel });
 }
 
 export function NowPlaying() {
@@ -98,13 +101,12 @@ export function NowPlaying() {
               <button type="button" className={cx('ibtn', fav && 'is-on')} aria-label={tr('Favorite')} onClick={() => p.track && toggleFav(p.track)}>
                 <Icon name={fav ? 'heartFill' : 'heart'} size={22} />
               </button>
-              {/* Computers: the queue takes the place of the lyrics, and the same button brings them
-                  back. Phones have no room for either, so they open in the side panel. */}
-              <IconButton icon="lyrics" label={tr('Lyrics (T)')} className="now__lyricsbtn" onClick={() => shell.set({ now: false, panel: 'lyrics' })} />
-              <button type="button" className={cx('ibtn', 'now__queuebtn', ui.nowSide === 'queue' && 'is-on')} aria-label={tr('Play queue (Q)')}
+              <button type="button" className={cx('ibtn', 'now__queuebtn', ui.nowSide === 'queue' && 'is-on')}
+                aria-label={nowHasSide() ? tr('Play queue (Q)') : tr('Queue and lyrics')}
                 aria-pressed={nowHasSide() ? ui.nowSide === 'queue' : undefined} onClick={() => toggleNowQueue()}>
                 <Icon name="queue" size={22} />
               </button>
+              {canShare(p.track) && <IconButton icon="share" size={22} label={tr('Share')} className="now__share" onClick={() => shareTrack(p.track!)} />}
               <SleepButton />
             </div>
           </div>
