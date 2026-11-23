@@ -17,6 +17,7 @@ import type { Track } from '../lib/store.ts';
 import { replaceUrl } from '../lib/router.ts';
 import type { Route } from '../lib/router.ts';
 import { findSoundCloudUrl } from '../lib/soundcloud.ts';
+import { getLook, useLook } from '../lib/look.ts';
 
 // The online sources you picked are remembered while the app is open.
 let lastSources = ['audius', 'hearthis', 'archive', 'radio', 'jamendo'];
@@ -67,6 +68,7 @@ export function Search({ route }: { route: Route }) {
   const token = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useStore('library', 'favorites', 'settings');
+  const look = useLook();
 
   function run(raw: string, force = false, k: Kind = kind, srcs: string[] = sources): void {
     const q = raw.trim();
@@ -79,7 +81,8 @@ export function Search({ route }: { route: Route }) {
     setKind(k);
     clearTimeout(timer.current);
     if (!q || findSoundCloudUrl(q)) { setOnline({ state: 'idle' }); return; }
-    const src = KIND_SOURCES[k].filter((x) => srcs.includes(x === 'artists' ? 'audius' : x));
+    const hidden = getLook().hide;
+    const src = KIND_SOURCES[k].filter((x) => { const s = x === 'artists' ? 'audius' : x; return srcs.includes(s) && !hidden.includes(s); });
     if (!src.length) { setOnline({ state: 'nosrc' }); return; }
     setOnline({ state: 'idle' });
     timer.current = setTimeout(async () => {
@@ -162,7 +165,9 @@ export function Search({ route }: { route: Route }) {
     );
   }
 
-  const onlineSrc = ['audius', 'hearthis', 'archive', 'radio'].concat(store.settings.hasJamendo ? ['jamendo'] : []);
+  const onlineSrc = ['audius', 'hearthis', 'archive', 'radio'].concat(store.settings.hasJamendo ? ['jamendo'] : []).filter((s) => !look.hide.includes(s));
+  // Radio turned off in Settings → Music sources: no radio category either (your collection has no stations).
+  const kinds = look.hide.includes('radio') ? KINDS.filter((x) => x.value !== 'radio') : KINDS;
 
   return (
     <div className="view">
@@ -175,9 +180,9 @@ export function Search({ route }: { route: Route }) {
       </div>
       <div className="searchsrc">
         <span className="muted">{tr('Show:')}</span>
-        <Chips options={KINDS} value={kind} onPick={(v) => run(input, true, v)} label={tr('Category')} />
+        <Chips options={kinds} value={kind} onPick={(v) => run(input, true, v)} label={tr('Category')} />
       </div>
-      <div className="searchsrc">
+      {onlineSrc.length > 0 && <div className="searchsrc">
         <span className="muted">{tr('Also search:')}</span>
         <div className="chips" role="group" aria-label={tr('Online sources')}>
           {onlineSrc.map((s) => {
@@ -188,7 +193,7 @@ export function Search({ route }: { route: Route }) {
             );
           })}
         </div>
-      </div>
+      </div>}
       <div className="results">{body}</div>
     </div>
   );

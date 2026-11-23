@@ -44,8 +44,10 @@ Da izgleda kao prava aplikacija: klikni **Instaliraj aplikaciju** u lijevom meni
 
 ## Mogućnosti
 
-- Jezik: engleski, bosanski, srpski, hrvatski, slovenski, makedonski, albanski, njemački, španski, francuski, portugalski ili turski (Postavke), mijenja se bez prekidanja muzike. Tema, jezik i izgled plejera se prenose na svaki browser i uređaj.
+- Jezik: engleski, bosanski, srpski, hrvatski, slovenski, makedonski, albanski, njemački, španski, francuski, portugalski ili turski (Postavke), mijenja se bez prekidanja muzike. Tema, boje, jezik i izgled plejera se prenose na svaki browser i uređaj.
 - Tema: crna, noćni indigo ili svijetla (Postavke)
+- Prilagodi po svom ukusu: osam boja akcenta, bilo koja boja po izboru ili boja iz omota pjesme koja svira; „Sada svira” preko zamućenog omota, u bojama omota ili na običnoj pozadini; mali, normalni ili veliki tekst i prozračne ili kompaktne liste pjesama (posebno za svaki uređaj), uz pregled uživo u Postavkama
+- Samo ono što koristiš: isključi izvore koji ti ne trebaju (nestanu iz menija, Pretrage, Otkrij i Početne) i izaberi koje sekcije Početna prikazuje i kojim redom
 - Pretraga kroz sve izvore odjednom, sa kategorijama: pjesme, setovi i miksevi, albumi i koncerti, izvođači, radio. Kad pređeš mišem preko izvora, piše šta on nudi
 - Otkrij: popularna muzika sa Audius-a, DJ miksevi po žanru sa hearthis.at, koncerti sa Internet Archive-a
 - Stranice izvođača sa Audius-a (sve njihove pjesme i setovi)

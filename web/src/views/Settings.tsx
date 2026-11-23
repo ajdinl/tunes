@@ -1,16 +1,21 @@
-// Settings: language, appearance, folders, ListenBrainz, Jamendo, Spotify import,
+// Settings: language, appearance, music sources, Home sections, folders, ListenBrainz, Jamendo, Spotify import,
 // offline playback, backup, keyboard shortcuts and phone access.
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
 
 import { Header, Section } from '../components/common.tsx';
-import { Icon } from '../components/Icon.tsx';
+import { Icon, IconButton } from '../components/Icon.tsx';
 import { OfflineSettings } from './OfflineSettings.tsx';
 import { tr, setLang, LANGUAGES, useLang } from '../lib/i18n.ts';
 import type { LangCode } from '../lib/i18n.ts';
 import { DEVICE_STYLES, DIAL_PREF, setDialStyle, useDialStyle } from '../lib/dial.ts';
 import type { DialStyle } from '../lib/dial.ts';
-import { norm, songs } from '../lib/format.ts';
+import { norm, songs, SOURCES, cx } from '../lib/format.ts';
+import { Cover } from '../components/common.tsx';
+import { usePlayer } from '../lib/player.ts';
+import { media } from '../lib/media.ts';
+import { ACCENTS, PRESETS, NOW_BGS, TEXT_SIZES, DENSITIES, HIDEABLE_SOURCES, homeString, setAccent, setNowBg, setTextSize, setDensity, setHidden, setHome, useLook } from '../lib/look.ts';
+import type { HomeSection } from '../lib/look.ts';
 import { store, useStore, api } from '../lib/store.ts';
 import type { Track } from '../lib/store.ts';
 import { toast } from '../lib/feedback.ts';
@@ -130,12 +135,19 @@ export function Settings(_: { route: Route }) {
               </button>
             ))}
           </div>
+          <AccentPicker />
+          <LookPreview />
           {/* Phones have only Minimal (no spectrum there), so nothing to choose. */}
           {DEVICE_STYLES.length > 1 ? <><h3 className="form__label">{tr('Player style')}</h3><DialStylePicker /></> : null}
           {IS_PHONE ? null : <DeckControlsPicker />}
+          <NowBgPicker />
+          <TextPickers />
           <AppIconPicker icon={icon} pick={pickIcon} />
         </div>
       </Section>
+
+      <Section title={tr('Music sources')}><SourceSettings /></Section>
+      <Section title={tr('Home screen')}><HomeSettings /></Section>
 
       {STANDALONE ? null : <>
       <Section title={tr('Music on this computer')}>
@@ -320,18 +332,18 @@ const DIAL_OPTS: { value: DialStyle; label: string }[] = [
 const BARS = [5, 9, 13, 8, 11, 6, 10, 7, 4, 6];
 
 function DialPreview({ style }: { style: DialStyle }) {
-  const amber = '#ffb547';
+  const amber = 'var(--amber)'; // set as style: SVG attributes don't read CSS variables
   const colors = ['#3fa7ff', '#5b8cff', '#7a6bff', '#8b5cff', '#b257e8', '#d953c8', '#ff4fa3', '#ff6f84', '#ff9260', '#ffb547'];
   let body;
   if (style === 'minimal') {
     body = <><line x1="4" y1="11" x2="44" y2="11" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" strokeLinecap="round" />
-      <line x1="4" y1="11" x2="24" y2="11" stroke={amber} strokeWidth="3" strokeLinecap="round" /><circle cx="24" cy="11" r="4" fill="currentColor" /></>;
+      <line x1="4" y1="11" x2="24" y2="11" style={{ stroke: amber }} strokeWidth="3" strokeLinecap="round" /><circle cx="24" cy="11" r="4" fill="currentColor" /></>;
   } else {
     body = <>{BARS.map((b, i) => {
       const x = 4 + i * 4;
       const y = style === 'mirror' ? 10 - b / 2 : 16 - b;
       const fill = style === 'color' ? colors[i] : amber;
-      return <rect key={i} x={x} y={y} width="2.6" height={b} fill={fill} fillOpacity={x < 24 ? 1 : 0.35} />;
+      return <rect key={i} x={x} y={y} width="2.6" height={b} style={{ fill }} fillOpacity={x < 24 ? 1 : 0.35} />;
     })}<line x1="24" y1="1" x2="24" y2="20" stroke="#ff5e3a" strokeWidth="1.5" /></>;
   }
   return <svg className="theme-opt__icon" width="48" height="22" viewBox="0 0 48 22" aria-hidden="true">{body}</svg>;
@@ -402,3 +414,185 @@ function DialStylePicker() {
     </>
   );
 }
+
+// ---- accent color: presets, the playing song's cover, or any color
+const ACCENT_NAMES: Record<string, string> = {
+  amber: 'Amber', coral: 'Coral', pink: 'Pink', violet: 'Violet', blue: 'Blue', teal: 'Teal', green: 'Green', lime: 'Lime',
+};
+
+function AccentPicker() {
+  const look = useLook();
+  const theme = useTheme();
+  const shade = theme === 'light' ? 'light' : 'dark';
+  const custom = look.accent.startsWith('#');
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const pick = (v: string) => { setAccent(v); savePref('accent', v); };
+  return (
+    <>
+      <h3 className="form__label">{tr('Accent color')}</h3>
+      <div className="accent-pick" role="group" aria-label={tr('Accent color')}>
+        {ACCENTS.map((a) => (
+          <button key={a} type="button" className="accent-opt" data-accent={a} aria-pressed={look.accent === a} aria-label={tr(ACCENT_NAMES[a])}
+            style={{ '--sw': PRESETS[a][shade] } as CSSProperties} onClick={() => pick(a)}>
+            {look.accent === a && <Icon name="check" size={16} />}
+          </button>
+        ))}
+        <button type="button" className="accent-opt accent-opt--cover" data-accent="cover" aria-pressed={look.accent === 'cover'}
+          aria-label={tr('From the cover')} onClick={() => pick('cover')}>
+          {look.accent === 'cover' && <Icon name="check" size={16} />}
+        </button>
+        {/* Any color: the app follows it while you drag, the choice is saved once you stop. */}
+        <label className={cx('accent-opt', 'accent-opt--custom', custom && 'is-on')} style={custom ? { '--sw': look.accent } as CSSProperties : undefined}>
+          <input type="color" aria-label={tr('Custom color')} value={custom ? look.accent : PRESETS.amber[shade]}
+            onChange={(e) => {
+              const v = e.target.value.toLowerCase();
+              setAccent(v);
+              clearTimeout(saveTimer.current);
+              saveTimer.current = setTimeout(() => savePref('accent', v), 400);
+            }} />
+          <Icon name={custom ? 'check' : 'plus'} size={16} />
+        </label>
+      </div>
+      <p className="muted">{look.accent === 'cover'
+        ? tr('The color changes with every song, taken from its cover.')
+        : tr('Buttons, the progress bar and the spectrum use this color.')}</p>
+    </>
+  );
+}
+
+// A small Now Playing card with the current song: shows the accent and background as you pick.
+function LookPreview() {
+  const p = usePlayer('track');
+  const t = p.track;
+  const cover = t?.cover ? media(t.cover) : '';
+  return (
+    <div className="look-preview" aria-hidden="true">
+      <div className="look-preview__bg" style={cover ? { backgroundImage: `url("${cover}")` } : {}} />
+      <Cover src={t?.cover} label={t?.title || 'T'} />
+      <div style={{ minWidth: 0 }}>
+        <p className="look-preview__title">{t?.title || tr('Song title')}</p>
+        <p className="look-preview__artist">{t?.artist || tr('Artist')}</p>
+        <div className="look-preview__bar" />
+      </div>
+      <div className="look-preview__side">
+        <Icon name="heart" size={20} />
+        <span className="look-preview__play"><Icon name="play" size={18} /></span>
+      </div>
+    </div>
+  );
+}
+
+const NOW_BG_LABELS: Record<string, string> = { cover: 'Blurred cover', color: 'Cover colors', plain: 'Plain' };
+
+function NowBgPicker() {
+  const look = useLook();
+  return (
+    <>
+      <h3 className="form__label">{tr('Now playing background')}</h3>
+      <div className="theme-pick" role="group" aria-label={tr('Now playing background')}>
+        {NOW_BGS.map((v) => (
+          <button key={v} type="button" className="theme-opt nowbg-opt" data-nowbg={v} aria-pressed={look.nowBg === v}
+            onClick={() => { setNowBg(v); savePref('nowBg', v); }}>{tr(NOW_BG_LABELS[v])}</button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+// Text size and list density are per device: a phone may want bigger text than the computer.
+const TEXT_LABELS: Record<string, string> = { small: 'Small', normal: 'Normal', large: 'Large' };
+const DENSITY_LABELS: Record<string, string> = { comfortable: 'Roomy', compact: 'Compact' };
+
+function TextPickers() {
+  const look = useLook();
+  return (
+    <>
+      <h3 className="form__label">{tr('Text size')}</h3>
+      <div className="theme-pick" role="group" aria-label={tr('Text size')}>
+        {TEXT_SIZES.map((v) => (
+          <button key={v} type="button" className="theme-opt text-opt" data-text={v} aria-pressed={look.text === v}
+            onClick={() => setTextSize(v)}>{tr(TEXT_LABELS[v])}</button>
+        ))}
+      </div>
+      <h3 className="form__label">{tr('Song lists')}</h3>
+      <div className="theme-pick" role="group" aria-label={tr('Song lists')}>
+        {DENSITIES.map((v) => (
+          <button key={v} type="button" className="theme-opt density-opt" data-density={v} aria-pressed={look.density === v}
+            onClick={() => setDensity(v)}>{tr(DENSITY_LABELS[v])}</button>
+        ))}
+      </div>
+      <p className="muted">{tr('Text size and song lists are set for each device separately.')}</p>
+    </>
+  );
+}
+
+// ---- online sources you don't use: out of the menu, Search, Discover and Home
+const SHOWN_SOURCES = HIDEABLE_SOURCES.filter((s) => !(STANDALONE && s === 'jamendo')); // Jamendo needs a key
+
+function SourceSettings() {
+  const look = useLook();
+  const toggle = (s: string) => {
+    const next = look.hide.includes(s) ? look.hide.filter((x) => x !== s) : [...look.hide, s];
+    setHidden(next);
+    savePref('hide', next.join(','));
+  };
+  return (
+    <div className="form">
+      <p className="muted">{tr('Sources you turn off disappear from the menu, Search, Discover and Home. Songs you saved from them keep playing.')}</p>
+      <ul className="opt-list">
+        {SHOWN_SOURCES.map((s) => {
+          const on = !look.hide.includes(s);
+          const id = 'src-' + s;
+          return (
+            <li key={s} className={cx('opt-list__item', !on && 'is-off')}>
+              <span className="opt-list__text"><span className="opt-list__name" id={id}>{tr(SOURCES[s].name)}</span><span className="opt-list__about">{tr(SOURCES[s].about)}</span></span>
+              <button type="button" className="switch" role="switch" aria-checked={on} aria-labelledby={id} data-source={s} onClick={() => toggle(s)}><span className="switch__knob" /></button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+// ---- Home sections: order and visibility
+const HOME_LABELS: Record<string, string> = {
+  recent: 'Recently played', smart: 'Smart playlists', stations: 'My stations', popular: 'Popular this week on Audius',
+};
+const HOME_SOURCE: Record<string, string> = { stations: 'radio', popular: 'audius' };
+
+function HomeSettings() {
+  const look = useLook();
+  const save = (list: HomeSection[]) => { setHome(list); savePref('home', homeString(list)); };
+  const move = (i: number, d: number) => {
+    const list = look.home.slice();
+    [list[i], list[i + d]] = [list[i + d], list[i]];
+    save(list);
+  };
+  return (
+    <div className="form">
+      <p className="muted">{tr('Choose what Home shows and in which order.')}</p>
+      <ul className="opt-list">
+        {look.home.map((sec, i) => {
+          const id = 'home-' + sec.key;
+          const src = HOME_SOURCE[sec.key];
+          const srcOff = Boolean(src && look.hide.includes(src));
+          const name = tr(HOME_LABELS[sec.key]);
+          return (
+            <li key={sec.key} className={cx('opt-list__item', (!sec.on || srcOff) && 'is-off')} data-section={sec.key}>
+              <span className="opt-list__text">
+                <span className="opt-list__name" id={id}>{name}</span>
+                {srcOff && <span className="opt-list__about">{tr('Its source is turned off above')}</span>}
+              </span>
+              <IconButton size={18} icon="chevronUp" label={tr('Move {name} up', { name })} disabled={i === 0} onClick={() => move(i, -1)} />
+              <IconButton size={18} icon="chevronDown" label={tr('Move {name} down', { name })} disabled={i === look.home.length - 1} onClick={() => move(i, 1)} />
+              <button type="button" className="switch" role="switch" aria-checked={sec.on} aria-labelledby={id}
+                onClick={() => save(look.home.map((x) => (x.key === sec.key ? { ...x, on: !x.on } : x)))}><span className="switch__knob" /></button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+

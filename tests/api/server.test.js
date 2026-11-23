@@ -302,6 +302,19 @@ describe('appearance choices (theme, language, player style, buttons)', () => {
     expect((await api.get('/api/state')).body.settings.prefs).toEqual({});
     sse.close();
   });
+
+  it('check the accent color, Now Playing background, hidden sources and Home sections', async () => {
+    const put = async (prefs) => (await api.put('/api/settings', { prefs })).body.state.settings.prefs;
+    expect(await put({ accent: 'teal', nowBg: 'color', hide: 'radio,jamendo', home: 'popular,-recent' }))
+      .toEqual({ accent: 'teal', nowBg: 'color', hide: 'radio,jamendo', home: 'popular,-recent' });
+    expect((await put({ accent: '#1a2b3c', hide: '' }))).toMatchObject({ accent: '#1a2b3c', hide: '' });
+    // Not a preset or a #rrggbb color, an unknown background, unknown or repeated names: ignored.
+    for (const bad of [{ accent: 'red' }, { accent: '#ABCDEF' }, { accent: 'url(x)' }, { nowBg: 'video' },
+      { hide: 'radio,radio' }, { hide: 'spotify' }, { home: 'recent,-recent' }, { home: 'ads' }]) {
+      expect(await put(bad)).toEqual({ accent: '#1a2b3c', nowBg: 'color', hide: '', home: 'popular,-recent' });
+    }
+    await put(null);
+  });
 });
 
 describe('one player at a time (session and takeover)', () => {

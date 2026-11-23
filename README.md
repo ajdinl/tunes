@@ -2,7 +2,7 @@
 
 **A self-hosted music player with no subscription.** It combines the music on your computer with free, legal sources in one interface: independent artists, live concert archives, internet radio and synced lyrics.
 
-The interface is in English, Bosnian, Serbian, Croatian, Slovenian, Macedonian, Albanian, German, Spanish, French, Portuguese and Turkish. It starts in English; pick another language in Settings any time without stopping the music. Your theme, language and player look follow you to every browser and device.
+The interface is in English, Bosnian, Serbian, Croatian, Slovenian, Macedonian, Albanian, German, Spanish, French, Portuguese and Turkish. It starts in English; pick another language in Settings any time without stopping the music. Your theme, colors, language and player look follow you to every browser and device.
 
 [Bosanski README](README.bs.md)
 
@@ -54,6 +54,8 @@ Self-hosted players like Navidrome or Jellyfin are great for your own files, but
 - **SoundCloud links:** paste a song, set or artist link into Search and it plays through SoundCloud's official player (SoundCloud's own search needs a paid API key)
 - Media keys and Control Center on macOS, installable as an app (PWA), keyboard shortcuts
 - Twelve languages; black, "night indigo" and light themes
+- **Make it yours:** eight accent colors, any color you pick, or colors taken from the cover of the song that plays; Now playing over a blurred cover, cover colors or a plain background; small, normal or large text and roomy or compact song lists (per device), with a live preview in Settings
+- **Only what you use:** turn off sources you don't need (they leave the menu, Search, Discover and Home), and choose which sections Home shows and in what order
 - **Add to Home Screen** on iPhone and Android, with a guide that also sets up the Tailscale version
 - **Offline buffer:** the current and next songs are downloaded to the phone, so music keeps playing if the connection drops. Songs not played for 3 days are deleted automatically
 - **App icon:** pick one of four icons in Settings → Appearance; the choice applies to all your devices

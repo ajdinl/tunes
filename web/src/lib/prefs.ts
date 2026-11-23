@@ -1,5 +1,6 @@
 // Appearance choices that follow the user to every browser and device: theme, language,
-// player style and where the player buttons sit. They live on the server (settings.prefs),
+// player style, where the player buttons sit, the accent color, the Now Playing background,
+// hidden sources and the Home sections (the last four are kept in look.ts). They live on the server (settings.prefs),
 // arrive with the state on load and over the event stream when another device changes them,
 // and are also kept in localStorage, so a page starts with them before the server answers.
 // Layout details of one screen (folded menu, compact menu items) and the offline buffer stay
@@ -12,6 +13,7 @@ import { DEVICE_STYLES, DIAL_PREF, STYLE_KEY, getDialStyle, setDialStyle } from 
 import type { DialStyle } from './dial.ts';
 import { api, store } from './store.ts';
 import { shell, DECK_CTRLS } from '../shell/ui.ts';
+import { getLook, homeString, paint, parseHide, parseHome, setAccent, setHidden, setHome, setNowBg } from './look.ts';
 import type { DeckCtrls } from '../shell/ui.ts';
 
 export type { Prefs };
@@ -26,6 +28,7 @@ export function setTheme(t: string): void {
   document.documentElement.dataset.theme = t;
   document.querySelector<HTMLMetaElement>('meta[name=theme-color]')?.setAttribute('content', THEME_COLOR[t]);
   try { localStorage.setItem('tunes.theme', JSON.stringify(t)); } catch { /* storage full or blocked */ }
+  paint(); // the accent has a shade per theme
   for (const l of themeListeners) l();
 }
 export function useTheme(): string {
@@ -34,13 +37,23 @@ export function useTheme(): string {
 
 // The choices this device has, and where each is kept in localStorage. The player style is
 // `dialStyle` on computers and `dialStylePhone` on phones.
-const STORED: Partial<Record<Key, string>> = { theme: 'tunes.theme', lang: 'tunes.lang', [DIAL_PREF]: STYLE_KEY, deckCtrls: 'tunes.deckCtrls' };
-const current = (): Prefs => ({
-  theme: document.documentElement.dataset.theme || 'black',
-  lang,
-  [DIAL_PREF]: getDialStyle(),
-  deckCtrls: shell.get().deckCtrls,
-});
+const STORED: Partial<Record<Key, string>> = {
+  theme: 'tunes.theme', lang: 'tunes.lang', [DIAL_PREF]: STYLE_KEY, deckCtrls: 'tunes.deckCtrls',
+  accent: 'tunes.accent', nowBg: 'tunes.nowBg', hide: 'tunes.hide', home: 'tunes.home',
+};
+const current = (): Prefs => {
+  const look = getLook();
+  return {
+    theme: document.documentElement.dataset.theme || 'black',
+    lang,
+    [DIAL_PREF]: getDialStyle(),
+    deckCtrls: shell.get().deckCtrls,
+    accent: look.accent,
+    nowBg: look.nowBg,
+    hide: look.hide.join(','),
+    home: homeString(look.home),
+  };
+};
 
 // Takes over choices made on another device (or saved earlier). Nothing is sent back.
 export async function applyPrefs(p: Prefs | null | undefined): Promise<void> {
@@ -49,6 +62,10 @@ export async function applyPrefs(p: Prefs | null | undefined): Promise<void> {
   const style = p[DIAL_PREF];
   if (style && DEVICE_STYLES.includes(style as DialStyle)) setDialStyle(style as DialStyle);
   if (p.deckCtrls && DECK_CTRLS.includes(p.deckCtrls as DeckCtrls) && p.deckCtrls !== shell.get().deckCtrls) shell.set({ deckCtrls: p.deckCtrls as DeckCtrls });
+  if (p.accent) setAccent(p.accent);
+  if (p.nowBg) setNowBg(p.nowBg);
+  if (typeof p.hide === 'string' && p.hide !== current().hide) setHidden(parseHide(p.hide));
+  if (typeof p.home === 'string' && p.home !== current().home) setHome(parseHome(p.home));
   if (p.lang && p.lang !== lang) await setLang(p.lang);
 }
 
@@ -67,7 +84,7 @@ export async function syncPrefs(): Promise<void> {
   for (const [key, storageKey] of Object.entries(STORED) as [Key, string][]) {
     let mine: string | null = null;
     try { mine = localStorage.getItem(storageKey); } catch { /* blocked */ }
-    if (!server[key] && mine && now[key]) up[key] = now[key];
+    if (server[key] === undefined && mine && now[key] !== undefined) up[key] = now[key];
   }
   await applyPrefs(server);
   if (Object.keys(up).length) {

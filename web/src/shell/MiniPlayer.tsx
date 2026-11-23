@@ -15,6 +15,7 @@ import { tr } from '../lib/i18n.ts';
 import { fmtTime, cx } from '../lib/format.ts';
 import { toggleFav } from '../lib/actions.ts';
 import { media } from '../lib/media.ts';
+import { onPaint } from '../lib/look.ts';
 import { videoPipSupported, videoMiniOpen, onVideoMiniChange, prepareVideoMini, openVideoMini, closeVideoMini } from './MiniVideo.ts';
 
 interface PipApi { requestWindow(opts: { width: number; height: number }): Promise<Window> }
@@ -43,12 +44,21 @@ export function useMiniOpen(): boolean {
   return useSyncExternalStore(onVideoMiniChange, videoMiniOpen) || Boolean(w);
 }
 
+// Theme, accent color, text size and language of the main window.
+function copyLook(d: Document): void {
+  const from = document.documentElement, to = d.documentElement;
+  to.lang = from.lang;
+  for (const key of Object.keys(to.dataset)) delete to.dataset[key];
+  Object.assign(to.dataset, from.dataset);
+  to.dataset.theme = from.dataset.theme || 'black';
+  to.style.cssText = from.style.cssText;
+}
+
 // The window gets the app's styles, theme and language, so it looks like the rest of Tunes.
 function dress(w: Window): void {
   const d = w.document;
   d.title = 'Tunes';
-  d.documentElement.lang = document.documentElement.lang;
-  d.documentElement.dataset.theme = document.documentElement.dataset.theme || 'black';
+  copyLook(d);
   // The rules themselves go into a <style>: nothing to download, no unstyled flash, and it
   // works in a fresh window where a <link> may not load. Relative url()s (fonts) are made
   // absolute against the sheet they came from.
@@ -94,11 +104,9 @@ function MiniContent({ w }: { w: Window }) {
   const dur = p.duration;
   const progress = t && !t.live && Number.isFinite(dur) && dur > 0 ? Math.min(1, p.time / dur) : t?.live ? 1 : 0;
 
-  // Follow the theme and language of the main window.
-  useEffect(() => {
-    w.document.documentElement.dataset.theme = document.documentElement.dataset.theme || 'black';
-    w.document.documentElement.lang = document.documentElement.lang;
-  });
+  // Follow the theme, accent and language of the main window.
+  useEffect(() => { copyLook(w.document); });
+  useEffect(() => onPaint(() => copyLook(w.document)), [w]);
 
   // Space, arrows and M also work while the mini window has focus.
   useEffect(() => {

@@ -12,6 +12,7 @@ import { store, useStore, api } from '../lib/store.ts';
 import type { Track } from '../lib/store.ts';
 import type { Route } from '../lib/router.ts';
 import { STANDALONE } from '../lib/env.ts';
+import { useLook } from '../lib/look.ts';
 
 const AUDIUS_GENRES = ['', 'Electronic', 'Hip-Hop/Rap', 'Lo-Fi', 'Alternative', 'Rock', 'Pop', 'R&B/Soul', 'Jazz', 'Ambient', 'House', 'Techno', 'Classical', 'Acoustic', 'Experimental'];
 const IA_PRESETS: ChipOption[] = [
@@ -29,12 +30,14 @@ const HEARTHIS_GENRES: ChipOption[] = [
   { value: 'drumandbass', label: 'Drum & Bass' }, { value: 'hiphop', label: 'Hip Hop' }, { value: 'chillout', label: 'Chillout' },
 ];
 // Jamendo needs a key, which the phone-only version doesn't ask for.
-const TABS = [
+const ALL_TABS = [
   { value: 'audius', label: 'Audius' },
   { value: 'hearthis', label: 'hearthis.at' },
   { value: 'archive', label: 'Internet Archive' },
   ...(STANDALONE ? [] : [{ value: 'jamendo', label: 'Jamendo' }]),
 ];
+// The tabs whose source isn't turned off in Settings → Music sources.
+export const discoverTabs = (hidden: string[]) => ALL_TABS.filter((t) => !hidden.includes(t.value));
 
 type Load<T> = { state: 'loading' } | { state: 'error'; msg: string } | { state: 'done'; value: T };
 
@@ -55,12 +58,14 @@ function useFetch<T>(url: string): [Load<T>, () => void] {
 }
 
 export function Discover({ route }: { route: Route }) {
-  const tab = route.params.get('source') || 'audius';
+  const tabs = discoverTabs(useLook().hide);
+  const asked = route.params.get('source');
+  const tab = tabs.some((t) => t.value === asked) ? asked : tabs[0]?.value;
   return (
     <div className="view">
       <Header title={tr('Discover')} meta={tr('Free and legal music: artists who share it themselves, archives and Creative Commons.')} />
       <div className="tabs" role="tablist">
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <a key={t.value} className={cx('tab', t.value === tab && 'is-on')} role="tab" href={'/discover?source=' + t.value}
             aria-selected={t.value === tab}>{t.label}</a>
         ))}
@@ -70,6 +75,7 @@ export function Discover({ route }: { route: Route }) {
         {tab === 'hearthis' ? <HearthisTab /> : null}
         {tab === 'archive' ? <ArchiveTab /> : null}
         {tab === 'jamendo' ? <JamendoTab /> : null}
+        {!tab && <p className="empty">{tr('All sources of this page are turned off. Turn them on in Settings → Music sources.')}</p>}
       </div>
     </div>
   );

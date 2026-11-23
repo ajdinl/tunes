@@ -50,6 +50,10 @@ export interface Prefs {
   dialStyle?: string;
   dialStylePhone?: string;
   deckCtrls?: string;
+  accent?: string;   // a preset name, 'cover' (taken from the playing song's cover) or '#rrggbb'
+  nowBg?: string;    // background of the full-screen Now Playing
+  hide?: string;     // comma-separated sources left out of the menu, Search, Discover and Home ('' = none)
+  home?: string;     // Home sections in order, '-' in front of a hidden one
 }
 
 export interface Playlist {

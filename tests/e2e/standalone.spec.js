@@ -59,7 +59,7 @@ test('opens from the link: English, the music sources, no computer parts', async
   // A deep link works too (GitHub Pages answers it with the app's 404.html).
   await phone.goto('settings');
   await expect(phone.locator('#main h1')).toHaveText('Settings');
-  await expect(phone.locator('#main h2')).toHaveText(['Language', 'Appearance', 'Offline playback', 'Backup']);
+  await expect(phone.locator('#main h2')).toHaveText(['Language', 'Appearance', 'Music sources', 'Home screen', 'Offline playback', 'Backup']);
   await expect(phone.locator('.dial-opt')).toHaveCount(0); // phones always use Minimal
   await phone.locator('#navToggle').tap();
   await expect(phone.locator('.nav__phone:not(.nav__install)')).toHaveCount(0); // no "Listen on phone"

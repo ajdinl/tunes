@@ -8,6 +8,8 @@ import { tr } from '../lib/i18n.ts';
 import { cx } from '../lib/format.ts';
 import { useRoute, go } from '../lib/router.ts';
 import { newPlaylist, playlistHref } from '../lib/actions.ts';
+import { useLook } from '../lib/look.ts';
+import { discoverTabs } from '../views/Discover.tsx';
 
 interface NavItem { href: string; name: string; alt?: string[]; label: string; icon: string }
 const NAV: NavItem[] = [
@@ -31,6 +33,9 @@ export function Sidebar() {
   const route = useRoute();
   const install = useInstallMethod();
   const installLabel = IS_PHONE ? tr('Add to Home Screen') : tr('Install app');
+  const look = useLook();
+  // Turned-off sources (Settings → Music sources): Radio goes, Discover once none of its sources is left.
+  const nav = NAV.filter((n) => (n.name !== 'radio' || !look.hide.includes('radio')) && (n.name !== 'discover' || discoverTabs(look.hide).length > 0));
 
   const link = (n: NavItem) => {
     const on = route.name === n.name || Boolean(n.alt?.includes(route.name));
@@ -49,7 +54,7 @@ export function Sidebar() {
         <IconButton icon="sidebar" size={19} className="side__toggle" label={ui.sideMini ? tr('Expand sidebar') : tr('Collapse sidebar')}
           aria-pressed={ui.sideMini} onClick={() => shell.set({ sideMini: !ui.sideMini })} />
       </div>
-      <div className="nav">{NAV.map(link)}</div>
+      <div className="nav">{nav.map(link)}</div>
       <div className="nav"><p className="nav__label">{tr('Collection')}</p>{NAV_LIB.map(link)}</div>
       <div className="nav nav--lists">
         <div className="nav__head">

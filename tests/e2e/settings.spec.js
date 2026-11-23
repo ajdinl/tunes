@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { test, expect, open, settle, sleep, phoneURL } from './helpers.js';
+import { test, expect, open, settle, sleep, phoneURL, appModule } from './helpers.js';
 
 test('choosing an app icon updates favicon, home-screen icon and manifest on every open device', async ({ device, request }) => {
   const laptop = await device();
@@ -154,4 +154,74 @@ test('choices made before syncing existed are sent up once', async ({ device, re
   await open(a, '/');
   await expect.poll(async () => (await (await request.get('/api/state')).json()).settings.prefs).toEqual({ theme: 'indigo', dialStyle: 'mirror' });
   await expect(a.locator('html')).toHaveAttribute('data-theme', 'indigo');
+});
+
+const cssVar = (page, name) => page.evaluate((n) => document.documentElement.style.getPropertyValue(n), name);
+
+test('accent color, Now Playing background, sources and Home sections follow you; text size stays on the device', async ({ device, request }) => {
+  const a = await device();
+  const b = await device();
+  await open(a, '/settings');
+  await open(b, '/');
+  await expect(b.locator('.side .nav__link[data-route="radio"]')).toHaveCount(1);
+
+  await a.locator('.accent-opt[data-accent="teal"]').click();
+  await expect(a.locator('.accent-opt[data-accent="teal"]')).toHaveAttribute('aria-pressed', 'true');
+  expect(await cssVar(a, '--amber')).toBe('#40d3c8');
+  await a.locator('.nowbg-opt[data-nowbg="plain"]').click();
+  await a.locator('.switch[data-source="radio"]').click();
+  await expect(a.locator('.switch[data-source="radio"]')).toHaveAttribute('aria-checked', 'false');
+  // Popular on Audius to the top of Home.
+  for (let i = 0; i < 3; i++) await a.getByRole('button', { name: 'Move Popular this week on Audius up' }).click();
+  await expect(a.locator('.opt-list__item[data-section]').first()).toHaveAttribute('data-section', 'popular');
+  await a.locator('.text-opt[data-text="large"]').click();
+  await a.locator('.density-opt[data-density="compact"]').click();
+  await expect(a.locator('html')).toHaveAttribute('data-text', 'large');
+  await expect(a.locator('html')).toHaveAttribute('data-density', 'compact');
+
+  await expect.poll(async () => (await (await request.get('/api/state')).json()).settings.prefs)
+    .toEqual({ accent: 'teal', nowBg: 'plain', hide: 'radio', home: 'popular,recent,smart,stations' });
+
+  // The other open browser changes along: color, background, menu and Home.
+  await expect.poll(() => cssVar(b, '--amber')).toBe('#40d3c8');
+  await expect(b.locator('html')).toHaveAttribute('data-nowbg', 'plain');
+  await expect(b.locator('.side .nav__link[data-route="radio"]')).toHaveCount(0);
+  await expect(b.locator('.sec__title').first()).toHaveText('Popular this week on Audius');
+  // Text size and density are this device's own.
+  await expect(b.locator('html')).not.toHaveAttribute('data-text', /./);
+  await expect(b.locator('html')).not.toHaveAttribute('data-density', /./);
+
+  // Radio is gone from Search too; the light theme gets the darker shade of the same accent.
+  await open(b, '/search?q=jazz');
+  await expect(b.locator('.searchsrc .chip--audius')).toHaveCount(1);
+  await expect(b.locator('.searchsrc .chip--radio')).toHaveCount(0);
+  await a.locator('.theme-opt', { hasText: 'Light' }).click();
+  expect(await cssVar(a, '--amber')).toBe('#0a8076');
+
+  // Back to amber: the theme's own colors from app.css.
+  await a.locator('.accent-opt[data-accent="amber"]').click();
+  expect(await cssVar(a, '--amber')).toBe('');
+});
+
+test('the accent can follow the cover of the song that plays, or be any color', async ({ device, request }) => {
+  const a = await device();
+  await open(a, '/settings');
+  await a.locator('.accent-opt[data-accent="cover"]').click();
+  expect(await cssVar(a, '--amber')).toBe(''); // nothing plays: the default amber
+  // A song with a red cover (served by the fake internet through the image proxy).
+  await appModule(a, 'player', ({ player }) => player.playList([{
+    id: 'audius:red', source: 'audius', title: 'Red', artist: 'Cover', duration: 100,
+    cover: '/api/img?u=' + encodeURIComponent('https://img.example/cover.png'), stream: '/api/stream/audius/red',
+  }], 0));
+  await expect.poll(() => cssVar(a, '--amber')).toMatch(/^#ff/);
+  const [r, g, bl] = (await cssVar(a, '--amber-rgb')).split(' ').map(Number);
+  expect(r).toBeGreaterThan(200);
+  expect(Math.abs(g - bl)).toBeLessThan(10); // a lighter red, readable on black
+  expect(await cssVar(a, '--cover-rgb')).toBe('255 0 0');
+
+  // A custom color is lightened until it reads on the dark theme; the choice itself is kept.
+  await a.locator('.accent-opt--custom input').fill('#203080');
+  await expect(a.locator('.accent-opt--custom')).toHaveClass(/is-on/);
+  expect(await cssVar(a, '--amber')).not.toBe('#203080');
+  await expect.poll(async () => (await (await request.get('/api/state')).json()).settings.prefs.accent).toBe('#203080');
 });

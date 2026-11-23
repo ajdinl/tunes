@@ -30,13 +30,32 @@ export const defaults = (folders: string[] = []): Data => ({
   radioStations: {},  // id -> track (saved stations)
 });
 
+// Accent colors offered in Settings → Appearance (besides 'cover' and a custom '#rrggbb').
+export const ACCENTS = ['amber', 'coral', 'pink', 'violet', 'blue', 'teal', 'green', 'lime'];
+// Online sources that can be turned off (they disappear from the menu, Search, Discover and Home).
+export const HIDEABLE_SOURCES = ['audius', 'hearthis', 'archive', 'radio', 'jamendo'];
+// Sections of the Home screen, in their default order.
+export const HOME_SECTIONS = ['recent', 'smart', 'stations', 'popular'];
+
+const oneOf = (...values: string[]) => (v: string) => values.includes(v);
+// A comma-separated list of known names, each at most once (optionally with a '-' in front).
+const listOf = (names: string[], minus = false) => (v: string) => {
+  if (v === '') return true;
+  const parts = v.split(',').map((x) => (minus && x.startsWith('-') ? x.slice(1) : x));
+  return parts.every((x) => names.includes(x)) && new Set(parts).size === parts.length;
+};
+
 // Allowed values of the synced appearance choices (Settings → Language and Appearance).
-const PREF_VALUES: Record<keyof Prefs, readonly string[]> = {
-  theme: ['black', 'indigo', 'light'],
-  lang: ['en', 'bs', 'sr', 'hr', 'de', 'tr', 'es', 'fr', 'pt', 'sl', 'mk', 'sq'],
-  dialStyle: ['dial', 'minimal', 'color', 'mirror'],
-  dialStylePhone: ['minimal'], // phones have no spectrum
-  deckCtrls: ['above', 'beside', 'hover'],
+const PREF_VALUES: Record<keyof Prefs, (v: string) => boolean> = {
+  theme: oneOf('black', 'indigo', 'light'),
+  lang: oneOf('en', 'bs', 'sr', 'hr', 'de', 'tr', 'es', 'fr', 'pt', 'sl', 'mk', 'sq'),
+  dialStyle: oneOf('dial', 'minimal', 'color', 'mirror'),
+  dialStylePhone: oneOf('minimal'), // phones have no spectrum
+  deckCtrls: oneOf('above', 'beside', 'hover'),
+  accent: (v) => ACCENTS.includes(v) || v === 'cover' || /^#[0-9a-f]{6}$/.test(v),
+  nowBg: oneOf('cover', 'color', 'plain'),
+  hide: listOf(HIDEABLE_SOURCES),
+  home: listOf(HOME_SECTIONS, true),
 };
 
 export interface SettingsPatch {
@@ -201,7 +220,7 @@ export class DataStore {
       const next: Prefs = { ...(s.prefs || {}) };
       for (const key of Object.keys(PREF_VALUES) as (keyof Prefs)[]) {
         const v = patch.prefs[key];
-        if (typeof v === 'string' && PREF_VALUES[key].includes(v)) next[key] = v;
+        if (typeof v === 'string' && PREF_VALUES[key](v)) next[key] = v;
       }
       s.prefs = next;
     }

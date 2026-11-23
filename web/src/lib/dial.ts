@@ -5,8 +5,8 @@ import { useSyncExternalStore } from 'react';
 import { STANDALONE } from './env.ts';
 import { player } from './player.ts';
 import type { Track } from './store.ts';
+import { onPaint } from './look.ts';
 
-const AMBER = [255, 181, 71];
 const NEEDLE = '#ff5e3a';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -44,16 +44,18 @@ export function useDialStyle(): DialStyle {
   return useSyncExternalStore((cb) => { styleListeners.add(cb); return () => styleListeners.delete(cb); }, () => dialStyle);
 }
 
-// The theme's text color, for the minimal style (read again when the theme changes).
+// The theme's text color (minimal style) and the accent color as "r,g,b", read again when
+// the theme or the accent changes.
 let ink = '';
-let inkTheme = '';
+let accent = '';
+onPaint(() => { ink = ''; accent = ''; });
 function themeInk(): string {
-  const theme = document.documentElement.dataset.theme || '';
-  if (!ink || theme !== inkTheme) {
-    inkTheme = theme;
-    ink = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#ece6d6';
-  }
+  if (!ink) ink = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#ece6d6';
   return ink;
+}
+function accentRgb(): string {
+  if (!accent) accent = (getComputedStyle(document.documentElement).getPropertyValue('--amber-rgb').trim() || '255 181 71').split(/\s+/).join(',');
+  return accent;
 }
 
 const dials = new Set<Dial>();
@@ -163,7 +165,7 @@ export class Dial {
       if (mirror) (live || x < needleX ? lit : dim).rect(x, mid - bh / 2, bw, bh);
       else (live || x < needleX ? lit : dim).rect(x, baseY - bh, bw, bh);
     }
-    let paint: string | CanvasGradient = `rgba(${AMBER},0.95)`;
+    let paint: string | CanvasGradient = `rgba(${accentRgb()},0.95)`;
     if (style === 'color') {
       // Low notes cool, high notes warm.
       const grad = g.createLinearGradient(x0, 0, x1, 0);
@@ -174,17 +176,17 @@ export class Dial {
       paint = grad;
     }
     g.save();
-    g.shadowColor = style === 'color' ? 'rgba(255,255,255,0.35)' : `rgba(${AMBER},0.75)`;
+    g.shadowColor = style === 'color' ? 'rgba(255,255,255,0.35)' : `rgba(${accentRgb()},0.75)`;
     g.shadowBlur = this.big ? 14 : 8;
     g.fillStyle = paint;
     g.fill(lit);
     g.shadowBlur = 0;
     if (style === 'color') { g.globalAlpha = 0.3; g.fill(dim); }
-    else { g.fillStyle = `rgba(${AMBER},0.32)`; g.fill(dim); }
+    else { g.fillStyle = `rgba(${accentRgb()},0.32)`; g.fill(dim); }
     g.restore();
     // ---- ticks and labels
-    g.strokeStyle = `rgba(${AMBER},0.55)`;
-    g.fillStyle = `rgba(${AMBER},0.7)`;
+    g.strokeStyle = `rgba(${accentRgb()},0.55)`;
+    g.fillStyle = `rgba(${accentRgb()},0.7)`;
     g.lineWidth = 1;
     g.font = `500 ${this.big ? 11 : 9.5}px ${this.font}`;
     g.textBaseline = 'top';
@@ -265,7 +267,7 @@ export class Dial {
     g.strokeStyle = text;
     g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke();
     g.globalAlpha = 1;
-    g.strokeStyle = `rgb(${AMBER})`;
+    g.strokeStyle = `rgb(${accentRgb()})`;
     g.beginPath(); g.moveTo(x0, y); g.lineTo(live ? x1 : Math.max(x0, knobX), y); g.stroke();
     if (this.hoverX !== null && !live && dur > 0) {
       g.globalAlpha = 0.35;

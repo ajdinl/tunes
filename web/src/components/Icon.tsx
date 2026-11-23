@@ -39,6 +39,7 @@ const ICON_PATHS: Record<string, string> = {
   sidebar: '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M9.5 4.5v15"/>',
   chevronUp: '<path d="M6 15l6-6 6 6"/>',
   chevronDown: '<path d="M6 9l6 6 6-6"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   cloud: '<path d="M7 18.5h10.5a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7.4 9.1 4.7 4.7 0 0 0 7 18.5z"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
   trash: '<path d="M5 7h14M10 7V5h4v2M7 7l1 12.5h8L17 7"/>',
