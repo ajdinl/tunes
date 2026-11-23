@@ -10,9 +10,10 @@ import { norm, songs, safeHttp } from './format.ts';
 import { go } from './router.ts';
 import { STANDALONE } from './env.ts';
 import { offline } from './offline.ts';
-import { canShare, shareLink } from '../../../lib/share.ts';
+import { canShare, playlistLink, shareLink, shareable } from '../../../lib/share.ts';
 import { IS_PHONE } from './install.ts';
 import { shell } from '../shell/ui.ts';
+import type { Sharing } from '../shell/ui.ts';
 
 export const artistHref = (name: string): string => '/artist/' + encodeURIComponent(norm(name));
 export const albumHref = (key: string): string => '/album/' + encodeURIComponent(key);
@@ -43,16 +44,35 @@ async function addAllToPlaylist(tracks: Track[]): Promise<void> {
   toast(tr('Created playlist “{name}”', { name: p.name }), { action: tr('Open'), onAction: () => go(playlistHref(p.id)) });
 }
 
-// Share a song: the phone's own share sheet (WhatsApp, Messages…), else a dialog with the link
-// and a QR code. Files on the computer can't be shared (callers hide the button for them).
-export async function shareTrack(t: Track): Promise<void> {
-  const url = shareLink(t);
-  if (!url) return;
+// Share a song or a playlist: the phone's own share sheet (WhatsApp, Messages…), else a dialog
+// with the link and a QR code. Files on the computer can't be shared: callers hide the button
+// for such a song, and a playlist leaves them out.
+async function share(item: Sharing, text: string): Promise<void> {
   if (IS_PHONE && navigator.share) {
-    try { await navigator.share({ title: t.title, text: tr('Listen to “{title}”', { title: t.title + (t.artist ? ' – ' + t.artist : '') }), url }); return; }
-    catch (e) { if ((e as Error).name === 'AbortError') return; } // closed by the user; anything else: the dialog
+    try {
+      await navigator.share({ title: item.title, text, url: item.link });
+      if (item.left) toast(tr('Left out because others can’t play them: {n}', { n: songs(item.left) }));
+      return;
+    } catch (e) { if ((e as Error).name === 'AbortError') return; } // closed by the user; anything else: the dialog
   }
-  shell.set({ share: t });
+  shell.set({ share: item });
+}
+
+export async function shareTrack(t: Track): Promise<void> {
+  const link = shareLink(t);
+  if (!link) return;
+  await share({ kind: 'song', title: t.title, sub: t.artist, covers: [t.cover], link, left: 0 },
+    tr('Listen to “{title}”', { title: t.title + (t.artist ? ' – ' + t.artist : '') }));
+}
+
+export const canSharePlaylist = (p: Playlist): boolean => p.tracks.some((t) => canShare(t));
+
+export async function sharePlaylist(p: Playlist): Promise<void> {
+  const link = await playlistLink(p.name, p.tracks);
+  if (!link) return;
+  const n = shareable(p.tracks).length;
+  await share({ kind: 'playlist', title: p.name, sub: songs(n), covers: p.tracks.map((t) => t.cover), link, left: p.tracks.length - n },
+    tr('Listen to my playlist “{name}”', { name: p.name }));
 }
 
 // Copies text; without a secure context (the phone over http) the selected field is copied.

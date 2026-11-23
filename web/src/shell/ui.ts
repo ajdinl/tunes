@@ -3,7 +3,6 @@
 import { useSyncExternalStore } from 'react';
 
 import { STANDALONE } from '../lib/env.ts';
-import type { Track } from '../lib/store.ts';
 
 // Where the player buttons sit on computers: above the dial, beside it (one row, the bar is
 // lower), or only while the mouse is over the bar (the default; without a mouse it looks like
@@ -28,7 +27,17 @@ export interface ShellState {
   scMin: boolean;
   phone: boolean;
   install: boolean;
-  share: Track | null; // the song in the Share dialog
+  share: Sharing | null; // what the Share dialog shows
+}
+
+// A song or a playlist in the Share dialog, with its link already made.
+export interface Sharing {
+  kind: 'song' | 'playlist';
+  title: string;
+  sub?: string;
+  covers: (string | null | undefined)[];
+  link: string;
+  left: number; // songs left out because others can't play them
 }
 
 const saved = (key: string): boolean => { try { return JSON.parse(localStorage.getItem(key) || 'false') === true; } catch { return false; } };

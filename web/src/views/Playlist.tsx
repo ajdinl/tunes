@@ -1,4 +1,4 @@
-// One playlist: play, rename, export, delete, reorder by dragging.
+// One playlist: play, share, rename, export, delete, reorder by dragging.
 import { Header, Collage, NotFound, playButtons } from '../components/common.tsx';
 import { TrackList } from '../components/TrackList.tsx';
 import { Icon } from '../components/Icon.tsx';
@@ -6,7 +6,7 @@ import { tr } from '../lib/i18n.ts';
 import { totalMeta } from '../lib/format.ts';
 import { store, useStore } from '../lib/store.ts';
 import { toast, ask } from '../lib/feedback.ts';
-import { playlistHref } from '../lib/actions.ts';
+import { canSharePlaylist, playlistHref, sharePlaylist } from '../lib/actions.ts';
 import { go } from '../lib/router.ts';
 import type { Route } from '../lib/router.ts';
 import { STANDALONE } from '../lib/env.ts';
@@ -38,6 +38,7 @@ export function Playlist({ route }: { route: Route }) {
         actions={[
           ...playButtons(p.tracks, ctx),
           <DownloadButton key="dl" tracks={p.tracks} />,
+          canSharePlaylist(p) && <button key="share" type="button" className="btn btn--ghost pl__share" onClick={() => sharePlaylist(p)}><Icon name="share" size={16} />{tr('Share')}</button>,
           <button key="rename" type="button" className="btn btn--ghost" onClick={rename}>{tr('Rename')}</button>,
           p.tracks.length && !STANDALONE ? <a key="m3u" className="btn btn--ghost" href={`/api/playlists/${p.id}/m3u`} download=""><Icon name="download" size={16} />{tr('Export M3U')}</a> : null,
           <button key="delete" type="button" className="btn btn--ghost" onClick={remove}><Icon name="trash" size={16} />{tr('Delete')}</button>,

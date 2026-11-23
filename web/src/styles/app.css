@@ -723,6 +723,8 @@ a.rank__name:hover { text-decoration: underline; }
 .phone__qr svg { display: block; width: 100%; height: auto; }
 .share__song { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .share__cv { width: 64px; flex: none; border-radius: var(--r-sm); }
+.share__cv .tile__cv { border-radius: var(--r-sm); }
+.share__left { margin: 0; }
 .share__meta { min-width: 0; }
 .share__title { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 .share__artist { margin: 2px 0 0; }

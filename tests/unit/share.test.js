@@ -1,7 +1,7 @@
-// Sharing a song by link (lib/share.ts): what can be shared, and what a received link may carry.
+// Sharing a song or a playlist by link (lib/share.ts): what can be shared, and what a received link may carry.
 import { describe, expect, it } from 'vitest';
 
-import { PUBLIC_APP, canShare, readShared, shareLink } from '../../lib/share.ts';
+import { PUBLIC_APP, canShare, isPlaylistHash, playlistLink, readShared, readSharedPlaylist, shareLink, shareable } from '../../lib/share.ts';
 
 const AUDIUS = {
   id: 'audius:D7KyD', source: 'audius', title: 'Harbor Lights — ćevapi', artist: 'Nadia', duration: 214,
@@ -53,5 +53,48 @@ describe('share links', () => {
     const t = readShared(encode({ ...AUDIUS, link: 'javascript:alert(1)', cover: 'http://img.example/a.svg', download: '/api/export', kind: 'evil', artistRef: '../x' }));
     expect(t).toMatchObject({ id: AUDIUS.id, title: AUDIUS.title });
     for (const k of ['link', 'cover', 'download', 'kind', 'artistRef']) expect(t[k], k).toBeUndefined();
+  });
+});
+
+describe('playlist links', () => {
+  const LOCAL = { id: 'abc', source: 'local', title: 'Mine', stream: '/api/stream/local/abc' };
+  const ARCHIVE = { id: 'ia:gd77/01.mp3', source: 'archive', title: 'Live', stream: '/api/stream/url?u=' + encodeURIComponent('https://archive.org/download/gd77/01.mp3') };
+  const hashOfList = async (...a) => (await playlistLink(...a)).split('#')[1];
+  // A link made by hand, to see what a tampered one turns into.
+  const packed = async (value) => {
+    const bytes = new Uint8Array(await new Response(new Blob([JSON.stringify(value)]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer());
+    return 'p1.' + btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  };
+
+  it('carry the name and the songs others can play, leaving files on the computer out', async () => {
+    const link = await playlistLink('Road trip — ljeto', [AUDIUS, LOCAL, ARCHIVE]);
+    expect(link.startsWith(PUBLIC_APP + 'shared#p1.')).toBe(true);
+    expect(link.split('#')[1]).toMatch(/^p1\.[\w-]+$/);
+    expect(isPlaylistHash('#' + link.split('#')[1])).toBe(true);
+    expect(isPlaylistHash('#' + hashOf(AUDIUS))).toBe(false);
+    expect(await readSharedPlaylist('#' + link.split('#')[1])).toEqual({ name: 'Road trip — ljeto', tracks: [AUDIUS, ARCHIVE] });
+    expect(shareable([AUDIUS, LOCAL])).toEqual([AUDIUS]);
+    expect(await playlistLink('Only mine', [LOCAL])).toBeNull();
+  });
+
+  it('stay short enough for a chat message: 100 songs well under 10 kB', async () => {
+    const tracks = Array.from({ length: 100 }, (_, i) => ({ ...AUDIUS, id: 'audius:t' + i, stream: '/api/stream/audius/t' + i, title: 'Song ' + i }));
+    expect((await playlistLink('Long', tracks)).length).toBeLessThan(10_000);
+  });
+
+  it('drop songs that fail the song checks, and repeats; nothing playable is a broken link', async () => {
+    const hash = await packed({ name: '  Mix  ', tracks: [AUDIUS, { ...AUDIUS, stream: 'https://evil.example/a.mp3', id: 'audius:x' }, AUDIUS, LOCAL, 'junk', null] });
+    expect(await readSharedPlaylist(hash)).toEqual({ name: 'Mix', tracks: [AUDIUS] });
+    expect(await readSharedPlaylist(await packed({ name: 'x', tracks: [LOCAL] }))).toBeNull();
+    expect(await readSharedPlaylist(await packed({ name: 'x' }))).toBeNull();
+    expect(await readSharedPlaylist('#p1.not-deflate')).toBeNull();
+    expect(await readSharedPlaylist('#' + (await hashOfList('a', [AUDIUS])).slice(0, -12))).toBeNull(); // cut short in a chat app
+    expect(await readSharedPlaylist('#' + hashOf(AUDIUS))).toBeNull();
+  });
+
+  it('refuse a small link that unpacks into something huge', async () => {
+    const hash = await packed({ name: 'x', tracks: [AUDIUS], pad: ' '.repeat(3_000_000) });
+    expect(hash.length).toBeLessThan(10_000);
+    expect(await readSharedPlaylist(hash)).toBeNull();
   });
 });

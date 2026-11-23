@@ -8,7 +8,7 @@ import { answer } from '../support/fake-net.js';
 import { makeWav } from '../support/fixtures.js';
 import { IPHONE_UA, sleep } from './helpers.js';
 import { PAGES_URL } from '../../playwright.config.js';
-import { shareLink } from '../../lib/share.ts';
+import { playlistLink, shareLink } from '../../lib/share.ts';
 
 const SONG = makeWav(245);
 const CORS = { 'Access-Control-Allow-Origin': '*' };
@@ -218,4 +218,20 @@ test('a shared song opens ready to play, keep or add to a playlist; a broken lin
 
   await phone.goto('shared#bm90LWEtc29uZw');
   await expect(phone.locator('.empty')).toContainText('This link is broken or incomplete');
+});
+
+test('a shared playlist opens on the phone, plays and is kept on the phone', async ({ phone }) => {
+  const link = await playlistLink('Road trip', [
+    { id: 'my-file', source: 'local', title: 'On my computer', stream: '/api/stream/local/my-file' },
+    { id: 'audius:D7KyD', source: 'audius', title: 'Harbor Lights', artist: 'Nadia Vale', duration: 245, stream: '/api/stream/audius/D7KyD' },
+  ], PAGES_URL);
+  await phone.goto(link);
+  await expect(phone.locator('#main h1')).toHaveText('Road trip');
+  await expect(phone.locator('#main .tr')).toHaveCount(1);
+  await phone.locator('#main .hd .btn--primary').tap();
+  await expect.poll(() => playing(phone)).toBe(true);
+  expect(await app(phone, () => window.__tunes.player.fx.src)).toBe('https://api.audius.co/v1/tracks/D7KyD/stream?app_name=Tunes');
+  await phone.locator('.shared__keep').tap();
+  await expect(phone.locator('.shared__open')).toBeVisible();
+  expect(await app(phone, () => window.__tunes.store.playlists.map((p) => [p.name, p.tracks.map((t) => t.id)]))).toEqual([['Road trip', ['audius:D7KyD']]]);
 });
