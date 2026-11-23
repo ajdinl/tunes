@@ -52,7 +52,7 @@ Self-hosted players like Navidrome or Jellyfin are great for your own files, but
 - **Away from home through [Tailscale](https://tailscale.com):** a second QR code that works anywhere your phone has internet
 - **Continue on another device:** start a set on your laptop, tap *Continue here* on your phone and it picks up at the same second while the laptop pauses. Music plays on one device (or tab) at a time
 - **SoundCloud links:** paste a song, set or artist link into Search and it plays through SoundCloud's official player (SoundCloud's own search needs a paid API key)
-- Media keys and Control Center on macOS, installable as an app (PWA), keyboard shortcuts
+- Media keys and Control Center on macOS; on the iPhone lock screen and in CarPlay's Now Playing: song, cover, previous/next; installable as an app (PWA), keyboard shortcuts
 - Twelve languages; black, "night indigo" and light themes
 - **Make it yours:** eight accent colors, any color you pick, or colors taken from the cover of the song that plays; Now playing over a blurred cover, cover colors or a plain background; small, normal or large text and roomy or compact song lists (per device), with a live preview in Settings. Settings are split into three tabs: Appearance, Music, and Playback & data
 - **Share a song:** send a link to anyone (WhatsApp, Messages…; on a computer copy it or show a QR code). It opens in the free phone-only version, ready to play, keep or add to a playlist, with no account or app. Online songs and stations only: files on your computer stay yours

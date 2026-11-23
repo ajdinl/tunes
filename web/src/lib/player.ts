@@ -12,6 +12,7 @@ import { media } from './media.ts';
 import { toast } from './feedback.ts';
 import { offline } from './offline.ts';
 import { SoundCloudElement } from './soundcloud.ts';
+import { IS_IOS } from './install.ts';
 
 const STALL_MS = 8000; // stalled this long while offline: switch to the downloaded copy
 const STALL_ONLINE_MS = 15000; // same, when the browser still claims to be online
@@ -553,6 +554,9 @@ class Player extends EventTarget {
     set('nexttrack', () => this.next());
     set('previoustrack', () => this.prev());
     set('seekto', (e) => this.seek(e.seekTime || 0));
+    // iOS shows either ±10 s or previous/next on the lock screen and in CarPlay, and picks
+    // ±10 s whenever these exist. Songs matter more than 10 seconds, so iPhones skip them.
+    if (IS_IOS) return;
     set('seekbackward', (e) => this.seek(this.time - (e.seekOffset || 10)));
     set('seekforward', (e) => this.seek(this.time + (e.seekOffset || 10)));
   }

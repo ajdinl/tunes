@@ -69,7 +69,7 @@ Da izgleda kao prava aplikacija: klikni **Instaliraj aplikaciju** u lijevom meni
 - Nastavak slušanja na drugom uređaju od iste sekunde (laptop → mobitel i obrnuto); muzika svira samo na jednom uređaju ili tabu
 - SoundCloud linkovi: zalijepi link pjesme, seta ili izvođača u pretragu i svira preko zvaničnog SoundCloud plejera
 - Ikonica aplikacije: četiri varijante u Postavke → Izgled; izbor važi na svim uređajima
-- Tasteri za muziku na Mac-u i kontrolni centar (Media Session)
+- Tasteri za muziku na Mac-u i kontrolni centar; na zaključanom ekranu iPhonea i u CarPlay ekranu Now Playing: pjesma, omot, prethodna/sljedeća
 - Čuvanje legalno preuzimljivih pjesama (Internet Archive, Jamendo, Audius gdje je dozvoljeno) u biblioteku
 - Uvoz Spotify plejlisti preko Exportify CSV-a: pronalazi pjesme koje već imaš i pokazuje šta nedostaje
 - Verzija samo za telefon na <https://ajdinl.github.io/tunes/>: bez računara i servera, otvori link na telefonu i dodaj ga na početni ekran. Online izvori, omiljene, plejliste, historija i preuzimanja, sve se čuva na telefonu

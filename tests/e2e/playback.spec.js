@@ -132,7 +132,7 @@ test('Media Session shows the song and handles the lock-screen buttons', async (
   const meta = await page.evaluate(() => ({ title: navigator.mediaSession.metadata?.title, artist: navigator.mediaSession.metadata?.artist, album: navigator.mediaSession.metadata?.album }));
   expect(meta).toEqual({ title: 'Northbound', artist: 'The Fen Lights', album: 'Static' });
   const actions = await page.evaluate(() => Object.keys(window.__ms));
-  expect(actions).toEqual(expect.arrayContaining(['play', 'pause', 'previoustrack', 'nexttrack', 'seekto']));
+  expect(actions).toEqual(expect.arrayContaining(['play', 'pause', 'previoustrack', 'nexttrack', 'seekto', 'seekbackward', 'seekforward']));
   await page.evaluate(() => window.__ms.pause());
   await expectPlaying(page, false);
   await page.evaluate(() => window.__ms.play());

@@ -87,6 +87,21 @@ test('iPhone: opaque status bar, safe areas, and no Web Audio graph on mobile', 
   expect(await appModule(phone, 'player', (m) => ({ mobile: m.player.mobile, graph: Boolean(m.player.ctx) }))).toEqual({ mobile: true, graph: false });
 });
 
+test('iPhone lock screen and CarPlay get previous/next, not ±10 s', async ({ device }) => {
+  const phone = await device({ mobile: true });
+  // iOS shows ±10 s instead of previous/next whenever seek handlers are registered.
+  await phone.addInitScript(() => {
+    window.__ms = {};
+    const orig = navigator.mediaSession.setActionHandler.bind(navigator.mediaSession);
+    navigator.mediaSession.setActionHandler = (action, fn) => { window.__ms[action] = fn; return orig(action, fn); };
+  });
+  await playSong(phone, 'Northbound');
+  const actions = await phone.evaluate(() => Object.keys(window.__ms));
+  expect(actions).toEqual(expect.arrayContaining(['play', 'pause', 'previoustrack', 'nexttrack', 'seekto']));
+  expect(actions).not.toContain('seekforward');
+  expect(actions).not.toContain('seekbackward');
+});
+
 test('desktop uses the Web Audio graph (equalizer and spectrum)', async ({ page }) => {
   await playSong(page, 'Slow River');
   expect(await appModule(page, 'player', (m) => ({ mobile: m.player.mobile, graph: Boolean(m.player.ctx), filters: m.player.filters?.length }))).toEqual({ mobile: false, graph: true, filters: 10 });
