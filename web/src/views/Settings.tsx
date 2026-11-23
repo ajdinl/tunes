@@ -427,7 +427,7 @@ function DeckControlsPicker() {
       <h3 className="form__label">{tr('Player buttons')}</h3>
       <div className="theme-pick" role="group" aria-label={tr('Player buttons')}>
         {opts.map(([value, label]) => (
-          <button key={value} type="button" className="theme-opt ctrls-opt" data-ctrls={value} aria-pressed={ui.deckCtrls === value}
+          <button key={value} type="button" className="theme-opt theme-opt--text ctrls-opt" data-ctrls={value} aria-pressed={ui.deckCtrls === value}
             onClick={() => { shell.set({ deckCtrls: value }); savePref('deckCtrls', value); }}>{tr(label)}</button>
         ))}
       </div>
@@ -528,7 +528,7 @@ function NowBgPicker() {
       <h3 className="form__label">{tr('Now playing background')}</h3>
       <div className="theme-pick" role="group" aria-label={tr('Now playing background')}>
         {NOW_BGS.map((v) => (
-          <button key={v} type="button" className="theme-opt nowbg-opt" data-nowbg={v} aria-pressed={look.nowBg === v}
+          <button key={v} type="button" className="theme-opt theme-opt--text nowbg-opt" data-nowbg={v} aria-pressed={look.nowBg === v}
             onClick={() => { setNowBg(v); savePref('nowBg', v); }}>{tr(NOW_BG_LABELS[v])}</button>
         ))}
       </div>
@@ -547,14 +547,14 @@ function TextPickers() {
       <h3 className="form__label">{tr('Text size')}</h3>
       <div className="theme-pick" role="group" aria-label={tr('Text size')}>
         {TEXT_SIZES.map((v) => (
-          <button key={v} type="button" className="theme-opt text-opt" data-text={v} aria-pressed={look.text === v}
+          <button key={v} type="button" className="theme-opt theme-opt--text text-opt" data-text={v} aria-pressed={look.text === v}
             onClick={() => setTextSize(v)}>{tr(TEXT_LABELS[v])}</button>
         ))}
       </div>
       <h3 className="form__label">{tr('Song lists')}</h3>
       <div className="theme-pick" role="group" aria-label={tr('Song lists')}>
         {DENSITIES.map((v) => (
-          <button key={v} type="button" className="theme-opt density-opt" data-density={v} aria-pressed={look.density === v}
+          <button key={v} type="button" className="theme-opt theme-opt--text density-opt" data-density={v} aria-pressed={look.density === v}
             onClick={() => setDensity(v)}>{tr(DENSITY_LABELS[v])}</button>
         ))}
       </div>
