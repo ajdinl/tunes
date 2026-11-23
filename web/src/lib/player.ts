@@ -86,7 +86,7 @@ class Player extends EventTarget {
       el.addEventListener('play', () => this.emit('state'));
       el.addEventListener('pause', () => this.emit('state'));
       el.addEventListener('waiting', () => this.emit('state'));
-      el.addEventListener('playing', () => { this.errors = 0; if (IS_IOS) this.dropSkipButtons(); this.emit('state'); });
+      el.addEventListener('playing', () => { this.errors = 0; this.setupMediaSession(); this.emit('state'); });
       el.addEventListener('timeupdate', () => this.onTime(el));
       el.addEventListener('durationchange', () => this.emit('time'));
       el.addEventListener('ended', () => this.onEnded(el));
@@ -100,6 +100,8 @@ class Player extends EventTarget {
     // Inside a SoundCloud set the song changes without Tunes loading anything.
     this.sc.addEventListener('sound', () => { this.updateMediaSession(); this.emit('sound'); });
     this.sc.addEventListener('blocked', () => { if (this.el === this.sc) this.emit('scblocked'); });
+    // Registered again whenever audio starts: WebKit drops the handlers it got while no audio
+    // session existed and then offers its defaults (±15 s on the lock screen) instead.
     this.setupMediaSession();
     this.restore();
   }
@@ -548,26 +550,17 @@ class Player extends EventTarget {
   setupMediaSession(): void {
     const ms = navigator.mediaSession;
     if (!ms) return;
-    const set = (a: MediaSessionAction, f: MediaSessionActionHandler) => { try { ms.setActionHandler(a, f); } catch { /* unsupported */ } };
+    const set = (a: MediaSessionAction, f: MediaSessionActionHandler | null) => { try { ms.setActionHandler(a, f); } catch { /* unsupported */ } };
     set('play', () => this.play());
     set('pause', () => this.pause());
     set('nexttrack', () => this.next());
     set('previoustrack', () => this.prev());
     set('seekto', (e) => this.seek(e.seekTime || 0));
-    if (IS_IOS) this.dropSkipButtons();
-    else {
-      set('seekbackward', (e) => this.seek(this.time - (e.seekOffset || 10)));
-      set('seekforward', (e) => this.seek(this.time + (e.seekOffset || 10)));
-    }
-  }
-
-  // iOS shows either ±10 s or previous/next on the lock screen and in CarPlay, and picks ±10 s
-  // unless the page removes them: WebKit offers them by default, so leaving the handlers out is
-  // not enough. Repeated when a song starts, because a new audio session gets the defaults again.
-  dropSkipButtons(): void {
-    for (const a of ['seekbackward', 'seekforward'] as MediaSessionAction[]) {
-      try { navigator.mediaSession?.setActionHandler(a, null); } catch { /* unsupported */ }
-    }
+    // iOS shows either ±15 s or previous/next on the lock screen and in CarPlay, and picks the
+    // skip buttons whenever they are offered. Songs matter more than 15 seconds, so iPhones drop them.
+    const skip = !IS_IOS;
+    set('seekbackward', skip ? (e) => this.seek(this.time - (e.seekOffset || 10)) : null);
+    set('seekforward', skip ? (e) => this.seek(this.time + (e.seekOffset || 10)) : null);
   }
 
   updateMediaSession(): void {
