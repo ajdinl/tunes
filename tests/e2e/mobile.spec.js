@@ -89,17 +89,18 @@ test('iPhone: opaque status bar, safe areas, and no Web Audio graph on mobile', 
 
 test('iPhone lock screen and CarPlay get previous/next, not ±10 s', async ({ device }) => {
   const phone = await device({ mobile: true });
-  // iOS shows ±10 s instead of previous/next whenever seek handlers are registered.
+  // WebKit offers ±10 s by default and prefers it to previous/next, so the seek handlers
+  // must be removed explicitly (set to null), not just left out.
   await phone.addInitScript(() => {
     window.__ms = {};
     const orig = navigator.mediaSession.setActionHandler.bind(navigator.mediaSession);
     navigator.mediaSession.setActionHandler = (action, fn) => { window.__ms[action] = fn; return orig(action, fn); };
   });
   await playSong(phone, 'Northbound');
-  const actions = await phone.evaluate(() => Object.keys(window.__ms));
-  expect(actions).toEqual(expect.arrayContaining(['play', 'pause', 'previoustrack', 'nexttrack', 'seekto']));
-  expect(actions).not.toContain('seekforward');
-  expect(actions).not.toContain('seekbackward');
+  const handlers = await phone.evaluate(() => Object.fromEntries(Object.entries(window.__ms).map(([a, fn]) => [a, typeof fn])));
+  for (const a of ['play', 'pause', 'previoustrack', 'nexttrack', 'seekto']) expect(handlers[a]).toBe('function');
+  expect(handlers.seekforward).toBe('object');
+  expect(handlers.seekbackward).toBe('object');
 });
 
 test('desktop uses the Web Audio graph (equalizer and spectrum)', async ({ page }) => {
