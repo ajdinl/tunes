@@ -5,6 +5,8 @@ import type { CSSProperties, FormEvent } from 'react';
 
 import { Header, Section } from '../components/common.tsx';
 import { Icon, IconButton } from '../components/Icon.tsx';
+import { OptionGroup, Switch, Tabs } from '../components/controls.tsx';
+import type { Option } from '../components/controls.tsx';
 import { OfflineSettings } from './OfflineSettings.tsx';
 import { tr, setLang, LANGUAGES, useLang } from '../lib/i18n.ts';
 import type { LangCode } from '../lib/i18n.ts';
@@ -14,8 +16,8 @@ import { norm, songs, SOURCES, cx } from '../lib/format.ts';
 import { Cover } from '../components/common.tsx';
 import { usePlayer } from '../lib/player.ts';
 import { media } from '../lib/media.ts';
-import { ACCENTS, PRESETS, NOW_BGS, TEXT_SIZES, DENSITIES, HIDEABLE_SOURCES, homeString, setAccent, setNowBg, setTextSize, setDensity, setHidden, setHome, useLook } from '../lib/look.ts';
-import type { HomeSection } from '../lib/look.ts';
+import { ACCENTS, PRESETS, HIDEABLE_SOURCES, homeString, setAccent, setNowBg, setTextSize, setDensity, setHidden, setHome, useLook } from '../lib/look.ts';
+import type { Density, HomeSection, NowBg, TextSize } from '../lib/look.ts';
 import { store, useStore, api } from '../lib/store.ts';
 import type { Track } from '../lib/store.ts';
 import { toast } from '../lib/feedback.ts';
@@ -52,12 +54,7 @@ export function Settings({ route }: { route: Route }) {
   return (
     <div className="view view--narrow">
       <Header title={tr('Settings')} />
-      <div className="tabs settings-tabs" role="tablist">
-        {TABS.map((t) => (
-          <a key={t.value} className={cx('tab', t.value === tab && 'is-on')} role="tab" href={t.value === 'look' ? '/settings' : '/settings?tab=' + t.value}
-            aria-selected={t.value === tab} data-tab={t.value}>{tr(t.label)}</a>
-        ))}
-      </div>
+      <Tabs className="settings-tabs" value={tab} tabs={TABS.map((t) => ({ ...t, href: t.value === 'look' ? '/settings' : '/settings?tab=' + t.value }))} />
       {tab === 'look' && <LookTab />}
       {tab === 'music' && <MusicTab />}
       {tab === 'more' && <MoreTab />}
@@ -91,14 +88,8 @@ function LookTab() {
 
       <Section title={tr('Theme and colors')}>
         <div className="form">
-          <div className="theme-pick" role="group" aria-label={tr('Theme')}>
-            {THEMES.map((t) => (
-              <button key={t.value} type="button" className="theme-opt" aria-pressed={theme === t.value}
-                onClick={() => { setTheme(t.value); savePref('theme', t.value); }}>
-                <span className="theme-opt__sw" style={{ '--sw': t.sw } as CSSProperties} aria-hidden="true" />{tr(t.label)}
-              </button>
-            ))}
-          </div>
+          <OptionGroup label="Theme" value={theme} onPick={(t) => { setTheme(t); savePref('theme', t); }}
+            options={THEMES.map((t) => ({ ...t, icon: <span className="theme-opt__sw" style={{ '--sw': t.sw } as CSSProperties} aria-hidden="true" /> }))} />
           <AccentPicker />
           <LookPreview />
           <NowBgPicker />
@@ -108,7 +99,7 @@ function LookTab() {
       <Section title={tr('Player and lists')}>
         <div className="form">
           {/* Phones have only Minimal (no spectrum there), so nothing to choose. */}
-          {DEVICE_STYLES.length > 1 && <><h3 className="form__label">{tr('Player style')}</h3><DialStylePicker /></>}
+          {DEVICE_STYLES.length > 1 && <DialStylePicker />}
           {!IS_PHONE && <DeckControlsPicker />}
           <TextPickers />
         </div>
@@ -392,13 +383,8 @@ function DialPreview({ style }: { style: DialStyle }) {
 function AppIconPicker({ icon, pick }: { icon: string; pick: (value: string) => void }) {
   return (
     <div className="form">
-      <div className="theme-pick" role="group" aria-label={tr('App icon')}>
-        {ICON_OPTS.map((o) => (
-          <button key={o.value} type="button" className="theme-opt" aria-pressed={icon === o.value} onClick={() => pick(o.value)}>
-            <img className="theme-opt__icon" src={asset(`icons/${o.value}/icon.svg`)} alt="" width={34} height={34} />{tr(o.label)}
-          </button>
-        ))}
-      </div>
+      <OptionGroup label="App icon" value={icon} onPick={pick}
+        options={ICON_OPTS.map((o) => ({ ...o, icon: <img className="theme-opt__icon" src={asset(`icons/${o.value}/icon.svg`)} alt="" width={34} height={34} /> }))} />
       <p className="muted">{STANDALONE
         ? tr('Pick it before adding Tunes to your Home Screen. A shortcut already there keeps its old icon until you add it again.')
         : tr('The icon changes on all your devices. A shortcut already on a home screen keeps its old icon until you add it again.')}</p>
@@ -420,35 +406,21 @@ async function downloadLocalBackup(): Promise<void> {
 // Computers only (phones have their own player layout). "Only on hover" needs a mouse.
 function DeckControlsPicker() {
   const ui = useShell();
-  const opts: [DeckCtrls, string][] = [['above', 'Above the progress bar'], ['beside', 'Beside the progress bar']];
-  if (CAN_HOVER) opts.push(['hover', 'Only on hover']);
+  const opts: Option<DeckCtrls>[] = [{ value: 'above', label: 'Above the progress bar' }, { value: 'beside', label: 'Beside the progress bar' }];
+  if (CAN_HOVER) opts.push({ value: 'hover', label: 'Only on hover' });
   return (
-    <>
-      <h3 className="form__label">{tr('Player buttons')}</h3>
-      <div className="theme-pick" role="group" aria-label={tr('Player buttons')}>
-        {opts.map(([value, label]) => (
-          <button key={value} type="button" className="theme-opt theme-opt--text ctrls-opt" data-ctrls={value} aria-pressed={ui.deckCtrls === value}
-            onClick={() => { shell.set({ deckCtrls: value }); savePref('deckCtrls', value); }}>{tr(label)}</button>
-        ))}
-      </div>
-      <p className="muted">{tr('Beside the progress bar, or only when the mouse is over it, the player bar takes less room.')}</p>
-    </>
+    <OptionGroup title="Player buttons" kind="ctrls" options={opts} value={ui.deckCtrls}
+      onPick={(v) => { shell.set({ deckCtrls: v }); savePref('deckCtrls', v); }}
+      hint="Beside the progress bar, or only when the mouse is over it, the player bar takes less room." />
   );
 }
 
 function DialStylePicker() {
   const current = useDialStyle();
   return (
-    <>
-      <div className="theme-pick" role="group" aria-label={tr('Player style')}>
-        {DIAL_OPTS.filter((o) => DEVICE_STYLES.includes(o.value)).map((o) => (
-          <button key={o.value} type="button" className="theme-opt dial-opt" data-style={o.value} aria-pressed={current === o.value} onClick={() => { setDialStyle(o.value); savePref(DIAL_PREF, o.value); }}>
-            <DialPreview style={o.value} />{tr(o.label)}
-          </button>
-        ))}
-      </div>
-      <p className="muted">{tr('How the progress bar looks on this device. Minimal doesn\'t move with the music.')}</p>
-    </>
+    <OptionGroup title="Player style" kind="dial" attr="style" value={current} onPick={(v) => { setDialStyle(v); savePref(DIAL_PREF, v); }}
+      options={DIAL_OPTS.filter((o) => DEVICE_STYLES.includes(o.value)).map((o) => ({ ...o, icon: <DialPreview style={o.value} /> }))}
+      hint="How the progress bar looks on this device. Minimal doesn't move with the music." />
   );
 }
 
@@ -519,46 +491,24 @@ function LookPreview() {
   );
 }
 
-const NOW_BG_LABELS: Record<string, string> = { cover: 'Blurred cover', color: 'Cover colors', plain: 'Plain' };
+const NOW_BG_OPTS: Option<NowBg>[] = [{ value: 'cover', label: 'Blurred cover' }, { value: 'color', label: 'Cover colors' }, { value: 'plain', label: 'Plain' }];
 
 function NowBgPicker() {
   const look = useLook();
-  return (
-    <>
-      <h3 className="form__label">{tr('Now playing background')}</h3>
-      <div className="theme-pick" role="group" aria-label={tr('Now playing background')}>
-        {NOW_BGS.map((v) => (
-          <button key={v} type="button" className="theme-opt theme-opt--text nowbg-opt" data-nowbg={v} aria-pressed={look.nowBg === v}
-            onClick={() => { setNowBg(v); savePref('nowBg', v); }}>{tr(NOW_BG_LABELS[v])}</button>
-        ))}
-      </div>
-    </>
-  );
+  return <OptionGroup title="Now playing background" kind="nowbg" options={NOW_BG_OPTS} value={look.nowBg} onPick={(v) => { setNowBg(v); savePref('nowBg', v); }} />;
 }
 
 // Text size and list density are per device: a phone may want bigger text than the computer.
-const TEXT_LABELS: Record<string, string> = { small: 'Small', normal: 'Normal', large: 'Large' };
-const DENSITY_LABELS: Record<string, string> = { comfortable: 'Roomy', compact: 'Compact' };
+const TEXT_OPTS: Option<TextSize>[] = [{ value: 'small', label: 'Small' }, { value: 'normal', label: 'Normal' }, { value: 'large', label: 'Large' }];
+const DENSITY_OPTS: Option<Density>[] = [{ value: 'comfortable', label: 'Roomy' }, { value: 'compact', label: 'Compact' }];
 
 function TextPickers() {
   const look = useLook();
   return (
     <>
-      <h3 className="form__label">{tr('Text size')}</h3>
-      <div className="theme-pick" role="group" aria-label={tr('Text size')}>
-        {TEXT_SIZES.map((v) => (
-          <button key={v} type="button" className="theme-opt theme-opt--text text-opt" data-text={v} aria-pressed={look.text === v}
-            onClick={() => setTextSize(v)}>{tr(TEXT_LABELS[v])}</button>
-        ))}
-      </div>
-      <h3 className="form__label">{tr('Song lists')}</h3>
-      <div className="theme-pick" role="group" aria-label={tr('Song lists')}>
-        {DENSITIES.map((v) => (
-          <button key={v} type="button" className="theme-opt theme-opt--text density-opt" data-density={v} aria-pressed={look.density === v}
-            onClick={() => setDensity(v)}>{tr(DENSITY_LABELS[v])}</button>
-        ))}
-      </div>
-      <p className="muted">{tr('Text size and song lists are set for each device separately.')}</p>
+      <OptionGroup title="Text size" kind="text" options={TEXT_OPTS} value={look.text} onPick={setTextSize} />
+      <OptionGroup title="Song lists" kind="density" options={DENSITY_OPTS} value={look.density} onPick={setDensity}
+        hint="Text size and song lists are set for each device separately." />
     </>
   );
 }
@@ -583,7 +533,7 @@ function SourceSettings() {
           return (
             <li key={s} className={cx('opt-list__item', !on && 'is-off')}>
               <span className="opt-list__text"><span className="opt-list__name" id={id}>{tr(SOURCES[s].name)}</span><span className="opt-list__about">{tr(SOURCES[s].about)}</span></span>
-              <button type="button" className="switch" role="switch" aria-checked={on} aria-labelledby={id} data-source={s} onClick={() => toggle(s)}><span className="switch__knob" /></button>
+              <Switch on={on} labelledBy={id} data-source={s} onChange={() => toggle(s)} />
             </li>
           );
         })}
@@ -623,8 +573,7 @@ function HomeSettings() {
               </span>
               <IconButton size={18} icon="chevronUp" label={tr('Move {name} up', { name })} disabled={i === 0} onClick={() => move(i, -1)} />
               <IconButton size={18} icon="chevronDown" label={tr('Move {name} down', { name })} disabled={i === look.home.length - 1} onClick={() => move(i, 1)} />
-              <button type="button" className="switch" role="switch" aria-checked={sec.on} aria-labelledby={id}
-                onClick={() => save(look.home.map((x) => (x.key === sec.key ? { ...x, on: !x.on } : x)))}><span className="switch__knob" /></button>
+              <Switch on={sec.on} labelledBy={id} onChange={(on) => save(look.home.map((x) => (x.key === sec.key ? { ...x, on } : x)))} />
             </li>
           );
         })}

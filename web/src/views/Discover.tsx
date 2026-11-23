@@ -7,12 +7,13 @@ import { TrackList } from '../components/TrackList.tsx';
 import { archiveTile } from './tiles.tsx';
 import type { ArchiveResult } from './tiles.tsx';
 import { tr } from '../lib/i18n.ts';
-import { byKind, cx } from '../lib/format.ts';
+import { byKind } from '../lib/format.ts';
 import { store, useStore, api } from '../lib/store.ts';
 import type { Track } from '../lib/store.ts';
 import type { Route } from '../lib/router.ts';
 import { STANDALONE } from '../lib/env.ts';
 import { useLook } from '../lib/look.ts';
+import { Tabs } from '../components/controls.tsx';
 
 const AUDIUS_GENRES = ['', 'Electronic', 'Hip-Hop/Rap', 'Lo-Fi', 'Alternative', 'Rock', 'Pop', 'R&B/Soul', 'Jazz', 'Ambient', 'House', 'Techno', 'Classical', 'Acoustic', 'Experimental'];
 const IA_PRESETS: ChipOption[] = [
@@ -60,16 +61,11 @@ function useFetch<T>(url: string): [Load<T>, () => void] {
 export function Discover({ route }: { route: Route }) {
   const tabs = discoverTabs(useLook().hide);
   const asked = route.params.get('source');
-  const tab = tabs.some((t) => t.value === asked) ? asked : tabs[0]?.value;
+  const tab = tabs.find((t) => t.value === asked)?.value ?? tabs[0]?.value;
   return (
     <div className="view">
       <Header title={tr('Discover')} meta={tr('Free and legal music: artists who share it themselves, archives and Creative Commons.')} />
-      <div className="tabs" role="tablist">
-        {tabs.map((t) => (
-          <a key={t.value} className={cx('tab', t.value === tab && 'is-on')} role="tab" href={'/discover?source=' + t.value}
-            aria-selected={t.value === tab}>{t.label}</a>
-        ))}
-      </div>
+      <Tabs value={tab} tabs={tabs.map((t) => ({ ...t, href: '/discover?source=' + t.value }))} />
       <div>
         {tab === 'audius' && <AudiusTab />}
         {tab === 'hearthis' && <HearthisTab />}

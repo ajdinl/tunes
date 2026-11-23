@@ -15,10 +15,10 @@ import type { RGB } from './color.ts';
 import { media } from './media.ts';
 import { player } from './player.ts';
 
-export { ACCENTS, HIDEABLE_SOURCES, HOME_SECTIONS };
-export const NOW_BGS = ['cover', 'color', 'plain'] as const;
-export const TEXT_SIZES = ['small', 'normal', 'large'] as const;
-export const DENSITIES = ['comfortable', 'compact'] as const;
+export { ACCENTS, HIDEABLE_SOURCES };
+const NOW_BGS = ['cover', 'color', 'plain'] as const;
+const TEXT_SIZES = ['small', 'normal', 'large'] as const;
+const DENSITIES = ['comfortable', 'compact'] as const;
 export type NowBg = (typeof NOW_BGS)[number];
 export type TextSize = (typeof TEXT_SIZES)[number];
 export type Density = (typeof DENSITIES)[number];
@@ -51,7 +51,7 @@ const read = <T,>(key: string, ok: (v: unknown) => boolean, fallback: T): T => {
 };
 const write = (key: string, v: unknown): void => { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* storage full or blocked */ } };
 
-export const validAccent = (v: unknown): v is string => typeof v === 'string' && (ACCENTS.includes(v) || v === 'cover' || /^#[0-9a-f]{6}$/.test(v));
+const validAccent = (v: unknown): v is string => typeof v === 'string' && (ACCENTS.includes(v) || v === 'cover' || /^#[0-9a-f]{6}$/.test(v));
 const validNowBg = (v: unknown) => NOW_BGS.includes(v as NowBg);
 
 // "radio,-recent" style strings (as stored) ⇄ lists.
@@ -82,7 +82,6 @@ export const getLook = (): Look => look;
 export function useLook(): Look {
   return useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => look);
 }
-export const sourceOn = (s: string): boolean => !look.hide.includes(s);
 
 function set(patch: Partial<Look>): void {
   look = { ...look, ...patch };
@@ -105,7 +104,7 @@ export function setTextSize(v: TextSize): void { if (v !== look.text) set({ text
 export function setDensity(v: Density): void { if (v !== look.density) set({ density: v }); }
 
 // The accent color for a theme (null: the theme's own amber from app.css).
-export function accentFor(accent: string, theme: string): RGB | null {
+function accentFor(accent: string, theme: string): RGB | null {
   const light = theme === 'light';
   if (accent === 'cover') return coverRgb ? fitTo(coverRgb, BACKGROUND[theme] || BACKGROUND.black, light) : null;
   if (accent.startsWith('#')) return fitTo(hexRgb(accent), BACKGROUND[theme] || BACKGROUND.black, light);

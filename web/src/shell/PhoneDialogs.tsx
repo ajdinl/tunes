@@ -8,9 +8,9 @@ import { shell, useShell } from './ui.ts';
 import { useInstallMethod, promptInstall, IS_IOS, IS_PHONE } from '../lib/install.ts';
 import { api, store } from '../lib/store.ts';
 import { tr } from '../lib/i18n.ts';
-import { cx } from '../lib/format.ts';
 import { toast } from '../lib/feedback.ts';
 import { STANDALONE } from '../lib/env.ts';
+import { Tabs } from '../components/controls.tsx';
 
 function Modal({ open, label, onClose, children }: { open: boolean; label: string; onClose: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -87,11 +87,8 @@ export function PhoneDialog() {
     body = (
       <>
         {err && <p className="err">{err}</p>}
-        <div className="tabs tabs--small phone__tabs" role="tablist">
-          {([['wifi', tr('At home (Wi-Fi)')], ['tailscale', tr('Away from home (Tailscale)')]] as const).map(([k, label]) => (
-            <button key={k} type="button" role="tab" className={cx('tab', tab === k && 'is-on')} aria-selected={tab === k} onClick={() => setTab(k)}>{label}</button>
-          ))}
-        </div>
+        <Tabs small className="phone__tabs" value={tab} onPick={setTab}
+          tabs={[{ value: 'wifi', label: 'At home (Wi-Fi)' }, { value: 'tailscale', label: 'Away from home (Tailscale)' }]} />
         {cur?.qr ? (
           <>
             {/* The QR SVG comes from our own server (qrcode package). */}

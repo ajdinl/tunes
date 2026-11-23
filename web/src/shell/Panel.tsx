@@ -12,6 +12,7 @@ import { songs, cx } from '../lib/format.ts';
 import { openMenu } from '../lib/feedback.ts';
 import { trackMenu } from '../lib/actions.ts';
 import { toPath } from '../lib/router.ts';
+import { Tabs } from '../components/controls.tsx';
 
 export function Panel() {
   const ui = useShell();
@@ -21,12 +22,8 @@ export function Panel() {
       {tab && (
         <>
           <div className="panel__head">
-            <div className="tabs tabs--small" role="tablist">
-              {(['queue', 'lyrics'] as const).map((k) => (
-                <button key={k} type="button" role="tab" className={cx('tab', tab === k && 'is-on')} aria-selected={tab === k}
-                  onClick={() => shell.set({ panel: k })}>{k === 'queue' ? tr('Queue') : tr('Lyrics')}</button>
-              ))}
-            </div>
+            <Tabs small value={tab} onPick={(panel) => shell.set({ panel })}
+              tabs={[{ value: 'queue', label: 'Queue' }, { value: 'lyrics', label: 'Lyrics' }]} />
             <IconButton icon="close" size={18} label={tr('Close panel')} onClick={() => shell.set({ panel: null })} />
           </div>
           {tab === 'lyrics' ? <Lyrics /> : <Queue />}

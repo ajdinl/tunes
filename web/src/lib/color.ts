@@ -7,14 +7,14 @@ export const hexRgb = (hex: string): RGB => {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 };
 export const rgbHex = (c: RGB): string => '#' + c.map((x) => Math.round(x).toString(16).padStart(2, '0')).join('');
-export const mix = (a: RGB, b: RGB, t: number): RGB => [0, 1, 2].map((i) => a[i] + (b[i] - a[i]) * t) as RGB;
+const mix = (a: RGB, b: RGB, t: number): RGB => [0, 1, 2].map((i) => a[i] + (b[i] - a[i]) * t) as RGB;
 
 // WCAG relative luminance and contrast ratio.
 function luminance(c: RGB): number {
   const [r, g, b] = c.map((x) => { const v = x / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
-export function contrast(a: RGB, b: RGB): number {
+function contrast(a: RGB, b: RGB): number {
   const la = luminance(a), lb = luminance(b);
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }

@@ -6,6 +6,7 @@ import { shell, useShell } from './ui.ts';
 import { player, usePlayer, EQ_FREQS, EQ_PRESETS } from '../lib/player.ts';
 import { tr } from '../lib/i18n.ts';
 import { cx } from '../lib/format.ts';
+import { Switch } from '../components/controls.tsx';
 
 const fmtDb = (v: number) => (v > 0 ? '+' : '') + (v || 0);
 const fmtFreq = (f: number) => (f >= 1000 ? f / 1000 + 'k' : String(f));
@@ -26,8 +27,7 @@ export function Equalizer() {
         <>
           <div className="eq__head">
             <h2 className="eq__title">{tr('Equalizer')}</h2>
-            <button type="button" className="switch" role="switch" aria-checked={eq.enabled} aria-label={tr('Equalizer on')}
-              onClick={() => player.setEq({ enabled: !player.eq.enabled })}><span className="switch__knob" /></button>
+            <Switch on={eq.enabled} label="Equalizer on" onChange={(enabled) => player.setEq({ enabled })} />
             <IconButton icon="close" size={18} label={tr('Close equalizer')} onClick={() => shell.set({ eq: false })} />
           </div>
           <div className="eq__presets chips" role="group" aria-label={tr('Sound presets')}>

@@ -8,6 +8,7 @@ import { songs } from '../lib/format.ts';
 import { offline, fmtSize, HOME } from '../lib/offline.ts';
 import type { OfflineSettings as Prefs } from '../lib/offline.ts';
 import { toast } from '../lib/feedback.ts';
+import { Switch } from '../components/controls.tsx';
 
 const LIMITS = [100, 250, 500, 1024, 2048, 4096, 8192];
 const NARROW: CSSProperties = { width: 'auto', minWidth: '0', flex: 'none' };
@@ -48,8 +49,7 @@ export function OfflineSettings() {
     <div className="form">
       <p className="muted">{tr('Downloads the current song and the next ones in the queue to this device, so music keeps playing when the connection drops.')}</p>
       <div className="row">
-        <button type="button" className="switch" role="switch" aria-labelledby={id + '-on'} aria-checked={prefs.enabled}
-          onClick={() => offline.setSettings({ enabled: !offline.settings.enabled })}><span className="switch__knob" /></button>
+        <Switch on={prefs.enabled} labelledBy={id + '-on'} onChange={(enabled) => offline.setSettings({ enabled })} />
         <span id={id + '-on'}>{tr('Download songs ahead')}</span>
       </div>
       <div className="row">
