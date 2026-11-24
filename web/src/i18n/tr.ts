@@ -165,6 +165,7 @@ export const TR = {
  "Favorites from Audius, Archive and Jamendo": "Audius, Archive ve Jamendo'dan favoriler",
  "Favorites not played in over a month": "Bir aydan uzun süredir çalınmayan favoriler",
  "Favorites, playlists and history in one JSON file.": "Favoriler, çalma listeleri ve geçmiş tek bir JSON dosyasında.",
+ "Featured stations": "Öne çıkan istasyonlar",
  "Filter albums": "Albümleri filtrele",
  "Filter artists": "Sanatçıları filtrele",
  "Filter songs": "Şarkıları filtrele",

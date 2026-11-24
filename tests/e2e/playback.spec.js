@@ -517,3 +517,14 @@ test('search: a form with a Search key; Enter searches without leaving the scree
   expect(new URL(page.url()).pathname + new URL(page.url()).search).toBe('/search?q=river');
   await expect(field).toBeFocused(); // with a keyboard you can keep typing
 });
+
+test('Radio shows the featured stations; a tap starts one', async ({ page }) => {
+  await open(page, '/radio');
+  const featured = page.locator('#main .sec', { has: page.locator('.sec__title', { hasText: 'Featured stations' }) });
+  await expect(featured.locator('.station__name')).toContainText(['Radio Paradise', 'NTS Radio 1', 'FIP', 'KEXP', 'Radio Swiss Jazz']);
+  await featured.locator('.station', { hasText: 'KEXP' }).locator('.station__main').click();
+  // The fake internet has no such station, so only check what the player was asked to play.
+  const track = await appModule(page, 'player', (m) => m.player.track);
+  expect(track).toMatchObject({ id: 'radio:dd02972f-8d91-449d-8d64-bd636a4a9ed0', live: true });
+  expect(new URLSearchParams(track.stream.split('?')[1]).get('u')).toBe('https://kexp.streamguys1.com/kexp160.aac');
+});

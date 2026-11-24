@@ -165,6 +165,7 @@ export const MK = {
  "Favorites from Audius, Archive and Jamendo": "Омилени од Audius, Archive и Jamendo",
  "Favorites not played in over a month": "Омилени што не се пуштени повеќе од еден месец",
  "Favorites, playlists and history in one JSON file.": "Омилени, плејлисти и историја во една JSON-датотека.",
+ "Featured stations": "Издвоени станици",
  "Filter albums": "Филтрирај албуми",
  "Filter artists": "Филтрирај изведувачи",
  "Filter songs": "Филтрирај песни",

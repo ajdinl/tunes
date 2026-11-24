@@ -37,6 +37,7 @@ Self-hosted players like Navidrome or Jellyfin are great for your own files, but
 - **One click or tap plays a song** in any list; on the song that is playing it pauses and resumes, and on phones that song always shows its pause button
 - **Sets & mixes detection:** recordings of 20+ minutes and titles like "DJ set", "mixtape" or "Boiler Room" are recognized automatically
 - **Discover:** popular and trending music from Audius, DJ mixes by genre from hearthis.at, popular DJ sets and radio shows by genre from Mixcloud, concerts from the Internet Archive
+- **Featured radio stations:** hand-picked listener-supported stations without ads (Radio Paradise, NTS, FIP, KEXP, Radio Swiss Jazz) at the top of the Radio page, checked to play on the computer and on the phone
 - **Library by artists and albums**, built from tags (or the folder structure when tags are missing). New files appear on their own. Audius artist pages with all their songs and sets
 - **Playlists** that mix local and online songs, drag-and-drop reordering, M3U export
 - **Smart playlists:** My mix, Most played, Forgotten favorites, Recently added, Never played

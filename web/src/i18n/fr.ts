@@ -165,6 +165,7 @@ export const FR = {
  "Favorites from Audius, Archive and Jamendo": "Favoris d'Audius, d'Archive et de Jamendo",
  "Favorites not played in over a month": "Favoris non écoutés depuis plus d'un mois",
  "Favorites, playlists and history in one JSON file.": "Favoris, playlists et historique dans un seul fichier JSON.",
+ "Featured stations": "Stations à la une",
  "Filter albums": "Filtrer les albums",
  "Filter artists": "Filtrer les artistes",
  "Filter songs": "Filtrer les titres",

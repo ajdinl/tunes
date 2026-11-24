@@ -53,6 +53,7 @@ Da izgleda kao prava aplikacija: klikni **Instaliraj aplikaciju** u lijevom meni
 - Pretraga kroz sve izvore odjednom, sa kategorijama: pjesme, setovi i miksevi, albumi i koncerti, izvođači, radio. Kad pređeš mišem preko izvora, piše šta on nudi. Na iPhoneu tastatura ima dugme Search, koje i skloni tastaturu
 - Jedan klik ili dodir pušta pjesmu u svakoj listi; na pjesmi koja svira pauzira i nastavlja, a na telefonu ta pjesma uvijek pokazuje dugme za pauzu
 - Otkrij: popularna muzika sa Audius-a, DJ miksevi po žanru sa hearthis.at, popularni DJ setovi i radio emisije po žanru sa Mixclouda, koncerti sa Internet Archive-a
+- Izdvojene radio stanice: ručno odabrane stanice bez reklama koje podržavaju slušaoci (Radio Paradise, NTS, FIP, KEXP, Radio Swiss Jazz) na vrhu stranice Radio, provjerene da sviraju i na računaru i na telefonu
 - Stranice izvođača sa Audius-a (sve njihove pjesme i setovi)
 - Izvođači, albumi, pjesme, omiljene
 - Historija svega što pustiš (pjesme, miksevi i radio stanice), svaka stavka jednom po danu, s brojem slušanja, plus najslušaniji izvođači. ListenBrainz (opciono) dobija pjesmu po svom pravilu: pola pjesme ili 4 minuta

@@ -165,6 +165,7 @@ export const SR = {
  "Favorites from Audius, Archive and Jamendo": "Omiljene sa Audiusa, Archive-a i Jamenda",
  "Favorites not played in over a month": "Omiljene koje nisu puštene više od mesec dana",
  "Favorites, playlists and history in one JSON file.": "Omiljene, plejliste i istorija u jednom JSON fajlu.",
+ "Featured stations": "Izdvojene stanice",
  "Filter albums": "Filtriraj albume",
  "Filter artists": "Filtriraj izvođače",
  "Filter songs": "Filtriraj pesme",

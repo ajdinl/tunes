@@ -1,4 +1,4 @@
-// Internet radio: saved stations and a search over radio-browser.info.
+// Internet radio: saved stations, a few featured ones and a search over radio-browser.info.
 import { useEffect, useRef, useState } from 'react';
 
 import { Icon } from '../components/Icon.tsx';
@@ -9,6 +9,7 @@ import { tr } from '../lib/i18n.ts';
 import { store, useStore, api } from '../lib/store.ts';
 import type { Track } from '../lib/store.ts';
 import type { Route } from '../lib/router.ts';
+import { FEATURED_STATIONS } from '../../../lib/stations.ts';
 
 const RADIO_TAGS = ['pop', 'rock', 'jazz', 'classical', 'electronic', 'chillout', 'lounge', 'hits', '80s', '90s', 'folk', 'news'];
 const COUNTRIES: ChipOption[] = [
@@ -53,6 +54,7 @@ export function Radio({ route }: { route: Route }) {
     <div className="view">
       <Header title="Radio" meta={tr('Over 40,000 internet stations from the open radio-browser.info database')} />
       {saved.length > 0 && <Section title={tr('My stations')}><StationGrid list={saved} /></Section>}
+      <Section title={tr('Featured stations')}><StationGrid list={FEATURED_STATIONS} /></Section>
       <Section title={tr('Find a station')}>
         <div>
           <div className="toolbar">

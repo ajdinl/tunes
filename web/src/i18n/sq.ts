@@ -165,6 +165,7 @@ export const SQ = {
  "Favorites from Audius, Archive and Jamendo": "Të preferuarat nga Audius, Archive dhe Jamendo",
  "Favorites not played in over a month": "Të preferuara që s'janë luajtur për më shumë se një muaj",
  "Favorites, playlists and history in one JSON file.": "Të preferuarat, luajlistat dhe historiku në një skedar JSON.",
+ "Featured stations": "Stacione të veçuara",
  "Filter albums": "Filtro albumet",
  "Filter artists": "Filtro artistët",
  "Filter songs": "Filtro këngët",

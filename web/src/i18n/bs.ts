@@ -165,6 +165,7 @@ export const BS = {
  "Favorites from Audius, Archive and Jamendo": "Omiljene sa Audius-a, Archive-a i Jamendo-a",
  "Favorites not played in over a month": "Omiljene koje nisu puštene više od mjesec dana",
  "Favorites, playlists and history in one JSON file.": "Omiljene, plejliste i historija u jednom JSON fajlu.",
+ "Featured stations": "Izdvojene stanice",
  "Filter albums": "Filtriraj albume",
  "Filter artists": "Filtriraj izvođače",
  "Filter songs": "Filtriraj pjesme",
