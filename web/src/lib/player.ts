@@ -17,6 +17,10 @@ import { IS_IOS } from './install.ts';
 
 const STALL_MS = 8000; // stalled this long while offline: switch to the downloaded copy
 const STALL_ONLINE_MS = 15000; // same, when the browser still claims to be online
+const HANDOFF_FADE_IN_MS = 3000; // continued from another device: the music comes in gently
+// iOS ignores the volume of media elements (the buttons on the phone set it), so there a
+// fade would only delay the pause.
+const CAN_FADE = (() => { const a = new Audio(); a.volume = 0.5; return a.volume === 0.5; })();
 
 export const EQ_FREQS = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 export const EQ_PRESETS: Record<string, number[]> = {
@@ -79,7 +83,8 @@ class Player extends EventTarget {
   pendingSeek = 0;
   private prefetchTimer: ReturnType<typeof setTimeout> | undefined;
   private lastPersist = 0;
-  private fading = false;
+  private ramp: { timer: ReturnType<typeof setInterval>; el: MediaEl; out: boolean } | null = null;
+  private fadeInNext = false; // the next start fades in (continued from another device)
 
   constructor() {
     super();
@@ -89,7 +94,12 @@ class Player extends EventTarget {
       el.addEventListener('play', () => this.emit('state'));
       el.addEventListener('pause', () => this.emit('state'));
       el.addEventListener('waiting', () => this.emit('state'));
-      el.addEventListener('playing', () => { this.errors = 0; this.setupMediaSession(); this.emit('state'); });
+      el.addEventListener('playing', () => {
+        this.errors = 0;
+        this.setupMediaSession();
+        if (this.fadeInNext && el === this.el) { this.fadeInNext = false; this.rampTo(this.volume, HANDOFF_FADE_IN_MS); }
+        this.emit('state');
+      });
       el.addEventListener('timeupdate', () => this.onTime(el));
       el.addEventListener('durationchange', () => this.emit('time'));
       el.addEventListener('ended', () => this.onEnded(el));
@@ -209,6 +219,8 @@ class Player extends EventTarget {
     this.context = context || null;
     this.pendingSeek = time > 1 ? time : 0;
     this.load(Math.min(Math.max(0, index), queue.length - 1), true);
+    // Start silent and fade in, while the other device fades out.
+    if (CAN_FADE) { this.el.volume = 0; this.fadeInNext = true; }
     this.emit('queue');
   }
 
@@ -282,6 +294,8 @@ class Player extends EventTarget {
 
   // ------------------------------------------------------------ playback
   load(i: number, autoplay: boolean): void {
+    this.stopRamp();
+    this.fadeInNext = false;
     this.index = i;
     const t = this.track;
     if (!t) return;
@@ -342,6 +356,7 @@ class Player extends EventTarget {
       if (pool.length) this.playList(pool, 0, { context: { label: tr('My mix'), href: '/smart/mix' } });
       return;
     }
+    this.stopRamp(); // a press during a fade ends it: full volume, or paused right away
     if (this.el.paused) {
       this.ensureGraph();
       // After a pause radio restarts, so it doesn't play a stale buffer.
@@ -388,6 +403,7 @@ class Player extends EventTarget {
   }
 
   setVolume(v: number): void {
+    this.stopRamp(false);
     this.volume = Math.max(0, Math.min(1, v));
     this.muted = this.volume === 0 ? this.muted : false;
     this.fx.volume = this.plain.volume = this.sc.volume = this.mc.volume = this.volume;
@@ -537,23 +553,43 @@ class Player extends EventTarget {
 
   clearSleep(): void { this.sleep = null; this.emit('sleep'); }
 
-  fadeOutAndStop(): void {
-    if (this.fading) return;
-    this.fading = true;
-    const start = this.el.volume;
-    let step = 0;
-    const iv = setInterval(() => {
-      step++;
-      this.el.volume = Math.max(0, start * (1 - step / 40));
-      if (step >= 40) {
-        clearInterval(iv);
-        this.el.pause();
-        this.el.volume = this.volume;
-        this.fading = false;
-        this.clearSleep();
-      }
-    }, 250);
+  fadeOutAndStop(): void { this.fadeOut(10000, () => this.clearSleep()); }
+
+  // ------------------------------------------------------------ fades
+  // A fade moves the playing element's volume; the user's volume stays the goal.
+  get fadingOut(): boolean { return Boolean(this.ramp?.out); }
+
+  // Fades out, then pauses: another device took over, or the sleep timer ran out.
+  fadeOut(ms: number, then?: () => void): void {
+    if (this.ramp?.out) return;
+    if (!this.playing || !CAN_FADE) { this.el.pause(); then?.(); return; }
+    this.rampTo(0, ms, () => { this.el.pause(); this.el.volume = this.volume; then?.(); });
   }
+
+  private rampTo(to: number, ms: number, done?: () => void): void {
+    this.stopRamp(false);
+    const el = this.el;
+    const from = el.volume;
+    const t0 = performance.now();
+    const timer = setInterval(() => {
+      const k = Math.min(1, (performance.now() - t0) / ms);
+      el.volume = from + (to - from) * k;
+      if (k < 1) return;
+      clearInterval(timer);
+      this.ramp = null;
+      done?.();
+    }, 80);
+    this.ramp = { timer, el, out: to === 0 };
+  }
+
+  // Ends a fade where it is; `restore` puts the user's volume back.
+  private stopRamp(restore = true): void {
+    if (!this.ramp) return;
+    clearInterval(this.ramp.timer);
+    if (restore) this.ramp.el.volume = this.volume;
+    this.ramp = null;
+  }
+
 
   // ------------------------------------------------------------ Media Session
   setupMediaSession(): void {

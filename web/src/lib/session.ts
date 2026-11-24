@@ -60,7 +60,8 @@ export function remoteTime(r: RemoteSession | null = remote): number {
 
 function reportSession(force = false): void {
   const t = player.track;
-  if (!t || !activeHere) return;
+  // Fading out after another device took over: still audible, but no longer ours.
+  if (!t || !activeHere || player.fadingOut) return;
   // Playback just started here: take it over first, or the server would tell us to yield.
   if (player.playing && !ownsPlayback) { claimPlayback().then(() => reportSession(true)); return; }
   const now = Date.now();
@@ -77,7 +78,7 @@ function reportSession(force = false): void {
 function yieldTo(device: string): void {
   ownsPlayback = false;
   if (!player.playing) return;
-  player.pause();
+  player.fadeOut(2000); // the other device fades in meanwhile
   toast(tr('Music continues on: {d}', { d: deviceName(device) }));
 }
 

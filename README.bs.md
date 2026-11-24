@@ -34,7 +34,7 @@ Za telefon: klikni **Slušaj na mobitelu** u lijevom meniju i skeniraj QR kod ka
 
 Van kuće: instaliraj [Tailscale](https://tailscale.com/download) na računar i telefon (isti nalog) i koristi karticu **Van kuće (Tailscale)**. Računar mora ostati upaljen.
 
-Kad nešto svira na jednom uređaju, na drugom se pojavi traka **Nastavi ovdje**. Dodirni je i slušanje se nastavlja od iste sekunde, a prvi uređaj se pauzira.
+Kad nešto svira na jednom uređaju, na drugom se pojavi traka **Nastavi ovdje**. Dodirni je i slušanje se nastavlja od iste sekunde: muzika se tu blago pojačava, a na prvom uređaju blago utišava i pauzira.
 
 Da izgleda kao prava aplikacija: klikni **Instaliraj aplikaciju** u lijevom meniju. U Chrome-u, Edge-u i Brave-u to odmah otvori instalaciju, a u ostalim preglednicima pokaže samo korake za taj preglednik (Safari: **File → Add to Dock**). Na telefonu se isto dugme zove **Dodaj na početni ekran**.
 
@@ -69,7 +69,7 @@ Da izgleda kao prava aplikacija: klikni **Instaliraj aplikaciju** u lijevom meni
 - Na telefonu: kompaktna traka plejera, a sve kontrole su u „Sada svira”. **Dodaj na početni ekran** (iPhone i Android), uz uputstvo i za Tailscale verziju
 - Slušanje na mobitelu kod kuće (Wi-Fi) i van kuće (Tailscale), preko QR koda
 - Offline buffer: trenutna i sljedeće pjesme se skidaju na telefon, pa muzika svira i kad nestane interneta. Pjesme koje nisu puštane 3 dana brišu se same
-- Nastavak slušanja na drugom uređaju od iste sekunde (laptop → mobitel i obrnuto); muzika svira samo na jednom uređaju ili tabu
+- Nastavak slušanja na drugom uređaju od iste sekunde (laptop → mobitel i obrnuto), sa blagim prelazom umjesto naglog prekida (sam iPhone staje odmah: iOS aplikacijama ne da mijenjati jačinu zvuka); muzika svira samo na jednom uređaju ili tabu
 - Mixcloud: DJ setovi i radio emisije u pretrazi (Sve, Setovi i miksevi) i u Otkrij, puštaju se preko zvaničnog Mixcloud plejera koji stoji u malom prozoru koji se može spustiti
 - SoundCloud linkovi: zalijepi link pjesme, seta ili izvođača u pretragu i svira preko zvaničnog SoundCloud plejera
 - Ikonica aplikacije: četiri varijante u Postavke → Izgled; izbor važi na svim uređajima

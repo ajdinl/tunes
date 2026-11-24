@@ -53,7 +53,7 @@ Self-hosted players like Navidrome or Jellyfin are great for your own files, but
 - **Spotify playlist import** through an [Exportify](https://exportify.app) CSV: finds the songs you already own and lists what's missing
 - **Listen on your phone:** one click shows a QR code; the link carries a secret key, so nobody else on the network can get in. On phones the player is a compact bar, and all the controls are in "Now playing"
 - **Away from home through [Tailscale](https://tailscale.com):** a second QR code that works anywhere your phone has internet
-- **Continue on another device:** start a set on your laptop, tap *Continue here* on your phone and it picks up at the same second while the laptop pauses. Music plays on one device (or tab) at a time
+- **Continue on another device:** start a set on your laptop, tap *Continue here* on your phone and it picks up at the same second while the laptop pauses, with a short crossfade instead of a hard cut (the iPhone itself stops at once: iOS doesn't let apps change the volume). Music plays on one device (or tab) at a time
 - **Mixcloud:** DJ sets and radio shows in Search (All, Sets & mixes) and in Discover, played through Mixcloud's official player, which stays in a small foldable dock
 - **SoundCloud links:** paste a song, set or artist link into Search and it plays through SoundCloud's official player (SoundCloud's own search needs a paid API key)
 - Media keys and Control Center on macOS; on the iPhone lock screen and in CarPlay's Now Playing: song, cover, previous/next; installable as an app (PWA), keyboard shortcuts
@@ -95,7 +95,7 @@ Click **Listen on phone** in the left menu and scan the QR code with your phone 
 
 On the phone, **Add to Home Screen** in the menu shows how to install Tunes as an app on that phone (iPhone: Share → Add to Home Screen). To listen away from home, install [Tailscale](https://tailscale.com/download) on the computer and the phone (same account) and use the **Away from home (Tailscale)** tab. The computer has to stay on.
 
-When something is playing on one device, the other one shows a **Continue here** bar. Tap it to pick up the same song at the same second.
+When something is playing on one device, the other one shows a **Continue here** bar. Tap it to pick up the same song at the same second; the music fades in there while it fades out on the other device.
 
 ### As an app
 

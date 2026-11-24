@@ -1,5 +1,7 @@
 // Music plays on one device (and one tab) at a time, and can move between devices.
-import { test, expect, open, playSong, expectPlaying, isPlaying, position, deckTitle, toasts, sleep } from './helpers.js';
+import { test, expect, open, playSong, expectPlaying, isPlaying, position, deckTitle, toasts, sleep, appModule } from './helpers.js';
+
+const volume = (page) => appModule(page, 'player', (m) => ({ now: m.player.el.volume, goal: m.player.volume, out: m.player.fadingOut }));
 
 test('handoff: the phone continues at the same second and the computer pauses', async ({ device }) => {
   const laptop = await device();
@@ -25,7 +27,14 @@ test('handoff: the phone continues at the same second and the computer pauses', 
   await expect(phone.locator('.deck__title')).toHaveText('Morning Light');
   await expectPlaying(phone);
   expect(Math.abs((await position(phone)) - at)).toBeLessThanOrEqual(4);
+  // No hard cut: the computer fades out while the phone fades in.
+  await expect.poll(async () => (await volume(laptop)).out).toBe(true);
+  expect(await isPlaying(laptop)).toBe(true);
+  const rising = await volume(phone);
+  expect(rising.now).toBeLessThan(rising.goal);
   await expectPlaying(laptop, false);
+  expect(await volume(laptop)).toMatchObject({ out: false, now: (await volume(laptop)).goal }); // ready for next time
+  await expect.poll(async () => { const v = await volume(phone); return v.now === v.goal; }).toBe(true);
   expect((await toasts(laptop)).join(' ')).toContain('Music continues on: Phone');
   await expect(banner).toBeHidden();
 });
