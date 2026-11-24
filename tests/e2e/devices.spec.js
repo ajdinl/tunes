@@ -29,13 +29,14 @@ test('handoff: the phone continues at the same second and the computer pauses', 
   expect(Math.abs((await position(phone)) - at)).toBeLessThanOrEqual(4);
   // No hard cut: the computer fades out while the phone fades in.
   await expect.poll(async () => (await volume(laptop)).out).toBe(true);
+  // The toast comes with the fade-out and lasts 3.5 s, shorter than both fades together.
+  await expect.poll(async () => (await toasts(laptop)).join(' ')).toContain('Music continues on: Phone');
   expect(await isPlaying(laptop)).toBe(true);
   const rising = await volume(phone);
   expect(rising.now).toBeLessThan(rising.goal);
   await expectPlaying(laptop, false);
   expect(await volume(laptop)).toMatchObject({ out: false, now: (await volume(laptop)).goal }); // ready for next time
   await expect.poll(async () => { const v = await volume(phone); return v.now === v.goal; }).toBe(true);
-  expect((await toasts(laptop)).join(' ')).toContain('Music continues on: Phone');
   await expect(banner).toBeHidden();
 });
 
