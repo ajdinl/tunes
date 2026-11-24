@@ -1,6 +1,6 @@
 // Shapes shared by the server modules and sent to the browser as JSON.
 
-export type Source = 'local' | 'audius' | 'archive' | 'radio' | 'jamendo' | 'soundcloud';
+export type Source = 'local' | 'audius' | 'archive' | 'radio' | 'jamendo' | 'hearthis' | 'mixcloud' | 'soundcloud';
 
 // One playable item. Local files, online songs and radio stations all use this shape.
 export interface Track {

@@ -57,6 +57,7 @@ export const SOURCES: Record<string, { name: string; short: string; about: strin
   radio: { name: 'Radio', short: 'Radio', about: 'Internet radio stations from around the world' },
   jamendo: { name: 'Jamendo', short: 'Jamendo', about: 'Free Creative Commons music' },
   hearthis: { name: 'hearthis.at', short: 'hearthis', about: 'DJ mixes and electronic music' },
+  mixcloud: { name: 'Mixcloud', short: 'Mixcloud', about: 'DJ sets and radio shows' },
   soundcloud: { name: 'SoundCloud', short: 'SoundCloud', about: 'Plays through SoundCloud’s own player' },
 };
 

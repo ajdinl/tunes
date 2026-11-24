@@ -20,7 +20,7 @@ import { findSoundCloudUrl } from '../lib/soundcloud.ts';
 import { getLook, useLook } from '../lib/look.ts';
 
 // The online sources you picked are remembered while the app is open.
-let lastSources = ['audius', 'hearthis', 'archive', 'radio', 'jamendo'];
+let lastSources = ['audius', 'hearthis', 'mixcloud', 'archive', 'radio', 'jamendo'];
 
 type Kind = 'all' | 'songs' | 'sets' | 'albums' | 'artists' | 'radio';
 const KINDS: ChipOption<Kind>[] = [
@@ -33,9 +33,9 @@ const KINDS: ChipOption<Kind>[] = [
 ];
 // Which online sources each category needs.
 const KIND_SOURCES: Record<Kind, string[]> = {
-  all: ['audius', 'artists', 'hearthis', 'archive', 'radio', 'jamendo'],
+  all: ['audius', 'artists', 'hearthis', 'mixcloud', 'archive', 'radio', 'jamendo'],
   songs: ['audius', 'hearthis', 'jamendo'],
-  sets: ['audius', 'hearthis', 'jamendo'],
+  sets: ['audius', 'hearthis', 'mixcloud', 'jamendo'],
   albums: ['archive'],
   artists: ['artists'],
   radio: ['radio'],
@@ -45,7 +45,7 @@ const HINTS = ['lofi', 'jazz', 'techno set', 'boiler room', 'Grateful Dead', 'am
 const TOUCH = matchMedia('(hover: none)').matches;
 
 interface Block { items?: unknown[]; error?: string }
-type BlockKey = 'artists' | 'audius' | 'hearthis' | 'jamendo' | 'archive' | 'radio';
+type BlockKey = 'artists' | 'audius' | 'hearthis' | 'mixcloud' | 'jamendo' | 'archive' | 'radio';
 type SearchData = Partial<Record<BlockKey, Block>>;
 type Online =
   | { state: 'idle' }
@@ -173,7 +173,7 @@ export function Search({ route }: { route: Route }) {
     );
   }
 
-  const onlineSrc = ['audius', 'hearthis', 'archive', 'radio'].concat(store.settings.hasJamendo ? ['jamendo'] : []).filter((s) => !look.hide.includes(s));
+  const onlineSrc = ['audius', 'hearthis', 'mixcloud', 'archive', 'radio'].concat(store.settings.hasJamendo ? ['jamendo'] : []).filter((s) => !look.hide.includes(s));
   // Radio turned off in Settings → Music sources: no radio category either (your collection has no stations).
   const kinds = look.hide.includes('radio') ? KINDS.filter((x) => x.value !== 'radio') : KINDS;
 
@@ -232,6 +232,7 @@ function OnlineResults({ online, q, kind, here, retry }: { online: Online; q: st
       {block<AudiusArtist>('artists', tr('Artists on Audius'), (items) => <Grid items={(kind === 'all' ? items.slice(0, 6) : items).map(audiusArtistTile)} round />)}
       {block<Track>('audius', tracksTitle('Audius') || tr('Audius: independent artists'), (items) => <TrackList tracks={items} context={ctx('Audius')} />, byKind(kind))}
       {block<Track>('hearthis', tracksTitle('hearthis.at') || tr('hearthis.at: DJ mixes and electronic music'), (items) => <TrackList tracks={items} context={ctx('hearthis.at')} />, byKind(kind))}
+      {block<Track>('mixcloud', tracksTitle('Mixcloud') || tr('Mixcloud: DJ sets and radio shows'), (items) => <TrackList tracks={items} context={ctx('Mixcloud')} />, byKind(kind))}
       {block<Track>('jamendo', tracksTitle('Jamendo') || tr('Jamendo: Creative Commons'), (items) => <TrackList tracks={items} context={ctx('Jamendo')} />, byKind(kind))}
       {block<ArchiveResult>('archive', tr('Internet Archive: concerts and releases'), (items) => <Grid items={items.map(archiveTile)} />)}
       {block<Track>('radio', tr('Radio stations'), (items) => <StationGrid list={items} />)}

@@ -15,7 +15,7 @@ import QRCode from 'qrcode';
 import { Store, cleanTrack, ICONS, DEFAULT_ICON, tildify } from './lib/store.ts';
 import type { PlaylistPatch, SettingsPatch } from './lib/store.ts';
 import { Library, MIME, AUDIO_EXT } from './lib/library.ts';
-import { audius, archive, radio, jamendo, hearthis, lyrics, listenbrainz, soundcloud } from './lib/sources.ts';
+import { audius, archive, radio, jamendo, hearthis, mixcloud, lyrics, listenbrainz, soundcloud } from './lib/sources.ts';
 import { proxyAudio, SAFE_HEADERS } from './lib/proxy.ts';
 import { assertPublicUrl } from './lib/netguard.ts';
 import { httpError } from './lib/types.ts';
@@ -155,12 +155,12 @@ function pageCsp(file: string): string {
     .map((m) => `'sha256-${crypto.createHash('sha256').update(m[1]).digest('base64')}'`);
   const value = [
     "default-src 'self'",
-    `script-src 'self' ${hashes.join(' ')} https://w.soundcloud.com`,
+    `script-src 'self' ${hashes.join(' ')} https://w.soundcloud.com https://widget.mixcloud.com`,
     "style-src 'self' 'unsafe-inline'", // the mini player window gets the app's CSS as a <style>
     "img-src 'self' data: blob: https: http:",
     "media-src 'self' blob: https: http:", // the direct radio fallback plays stations as they are
     "connect-src 'self'",
-    'frame-src https://w.soundcloud.com',
+    'frame-src https://w.soundcloud.com https://player-widget.mixcloud.com',
     "font-src 'self'", "worker-src 'self'", "manifest-src 'self'",
     "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
   ].join('; ');
@@ -263,6 +263,7 @@ route('GET', /^\/api\/search$/, async (req, res, m, q) => {
     radio: () => radio.search({ q: term, limit: 30 }),
     jamendo: () => jamendo.search(term, store.data.settings.jamendoClientId, many ? 100 : 30),
     hearthis: () => hearthis.search(term, many ? 100 : 40),
+    mixcloud: () => mixcloud.search(term, many ? 100 : 40),
   };
   const keys = wanted.filter((k) => jobs[k] && (k !== 'jamendo' || store.data.settings.jamendoClientId));
   const results = await Promise.allSettled(keys.map((k) => jobs[k]()));
@@ -289,6 +290,8 @@ route('GET', /^\/api\/radio\/search$/, async (req, res, m, q) =>
 route('GET', /^\/api\/radio\/top$/, async (req, res) => json(res, 200, await radio.top()));
 
 route('GET', /^\/api\/hearthis\/popular$/, async (req, res, m, q) => json(res, 200, await hearthis.popular(q.get('genre') || '')));
+
+route('GET', /^\/api\/mixcloud\/popular$/, async (req, res, m, q) => json(res, 200, await mixcloud.popular(q.get('tag') || '')));
 
 route('GET', /^\/api\/jamendo\/popular$/, async (req, res, m, q) =>
   json(res, 200, await jamendo.popular(store.data.settings.jamendoClientId, q.get('tag') || '')));

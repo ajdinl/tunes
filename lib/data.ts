@@ -33,7 +33,7 @@ export const defaults = (folders: string[] = []): Data => ({
 // Accent colors offered in Settings → Appearance (besides 'cover' and a custom '#rrggbb').
 export const ACCENTS = ['amber', 'coral', 'pink', 'violet', 'blue', 'teal', 'green', 'lime'];
 // Online sources that can be turned off (they disappear from the menu, Search, Discover and Home).
-export const HIDEABLE_SOURCES = ['audius', 'hearthis', 'archive', 'radio', 'jamendo'];
+export const HIDEABLE_SOURCES = ['audius', 'hearthis', 'mixcloud', 'archive', 'radio', 'jamendo'];
 // Sections of the Home screen, in their default order.
 export const HOME_SECTIONS = ['recent', 'smart', 'stations', 'popular'];
 

@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { installFakeNet, LRCLIB_SONG, RADIO_STATION, ARCHIVE_DOC } from '../support/fake-net.js';
+import { installFakeNet, requests, LRCLIB_SONG, RADIO_STATION, ARCHIVE_DOC } from '../support/fake-net.js';
 import {
   audius, archive, radio, jamendo, soundcloud, lyrics, listenbrainz, sameSong, lyricKey, mainArtist, parseLength,
-  hearthis,
+  hearthis, mixcloud,
 } from '../../lib/sources.ts';
 
 let uninstall;
@@ -106,6 +106,30 @@ describe('hearthis.at', () => {
     });
     expect(list[1].download).toBeNull();
     expect((await hearthis.popular('afrohouse')).length).toBe(2);
+  });
+});
+
+describe('Mixcloud', () => {
+  it('maps shows to tracks that play through the widget; foreign addresses are dropped', async () => {
+    const list = await mixcloud.search('river sessions');
+    expect(list.map((t) => t.title)).toEqual(['River Sessions #12', 'Late Night Mix']);
+    expect(list[0]).toMatchObject({
+      source: 'mixcloud', artist: 'Harbor Sessions', duration: 3600, year: 2024, genre: 'Deep House',
+      cover: 'https://thumbnailer.mixcloud.com/unsafe/600x600/river-sessions-12.jpg',
+      link: 'https://www.mixcloud.com/harbor-sessions/river-sessions-12/', stream: 'https://www.mixcloud.com/harbor-sessions/river-sessions-12/',
+    });
+    expect(list[0].id).toMatch(/^mixcloud:[0-9a-f]{16}$/);
+    expect(list[0].download).toBeUndefined();
+    expect(list[1].cover).toBeNull();
+    // The same show always gets the same id (favorites and history rely on it).
+    expect((await mixcloud.search('river sessions'))[0].id).toBe(list[0].id);
+  });
+
+  it('popular lists: a known genre tag, otherwise the overall list', async () => {
+    const before = requests.length;
+    await mixcloud.popular('deep-house');
+    await mixcloud.popular('../../etc');
+    expect(requests.slice(before).map((u) => new URL(u).pathname)).toEqual(['/discover/deep-house/popular/', '/popular/']);
   });
 });
 

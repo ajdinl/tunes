@@ -12,6 +12,7 @@ import { media } from './media.ts';
 import { toast } from './feedback.ts';
 import { offline } from './offline.ts';
 import { SoundCloudElement } from './soundcloud.ts';
+import { MixcloudElement } from './mixcloud.ts';
 import { IS_IOS } from './install.ts';
 
 const STALL_MS = 8000; // stalled this long while offline: switch to the downloaded copy
@@ -33,9 +34,10 @@ export interface Eq { enabled: boolean; preset: string; gains: number[] }
 export type Sleep = { mode: 'end' } | { mode: 'time'; until: number; minutes: number };
 export type PlayerEvent = 'state' | 'time' | 'track' | 'queue' | 'mode' | 'volume' | 'eq' | 'sleep' | 'icy' | 'sound' | 'error' | 'scblocked';
 
-// The three things that can play: an <audio> through Web Audio, a plain <audio> for
-// stations that fail through the proxy, and the SoundCloud widget.
-type MediaEl = HTMLAudioElement | SoundCloudElement;
+// The things that can play: an <audio> through Web Audio, a plain <audio> for stations
+// that fail through the proxy, and the SoundCloud and Mixcloud widgets.
+type MediaEl = HTMLAudioElement | SoundCloudElement | MixcloudElement;
+type WidgetEl = SoundCloudElement | MixcloudElement;
 
 const LS = {
   get<T>(k: string, d: T): T { try { const v = localStorage.getItem('tunes.' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
@@ -48,6 +50,7 @@ class Player extends EventTarget {
   fx = new Audio();      // goes through the equalizer and analyser
   plain = new Audio();   // fallback for stations that don't work through the proxy
   sc = new SoundCloudElement(); // SoundCloud links, through the official embedded player
+  mc = new MixcloudElement();   // Mixcloud shows, through the official embedded player
   el: MediaEl = this.fx;
   queue: Track[] = [];
   unshuffled: Track[] | null = null;
@@ -81,7 +84,7 @@ class Player extends EventTarget {
   constructor() {
     super();
     this.fx.preload = 'metadata';
-    for (const el of [this.fx, this.plain, this.sc] as MediaEl[]) {
+    for (const el of [this.fx, this.plain, this.sc, this.mc] as MediaEl[]) {
       el.volume = this.volume;
       el.addEventListener('play', () => this.emit('state'));
       el.addEventListener('pause', () => this.emit('state'));
@@ -99,7 +102,7 @@ class Player extends EventTarget {
     for (const type of ['playing', 'timeupdate', 'pause', 'emptied']) this.fx.addEventListener(type, () => this.clearStall());
     // Inside a SoundCloud set the song changes without Tunes loading anything.
     this.sc.addEventListener('sound', () => { this.updateMediaSession(); this.emit('sound'); });
-    this.sc.addEventListener('blocked', () => { if (this.el === this.sc) this.emit('scblocked'); });
+    for (const w of [this.sc, this.mc]) w.addEventListener('blocked', () => { if (this.el === w) this.emit('scblocked'); });
     // Registered again whenever audio starts: WebKit drops the handlers it got while no audio
     // session existed and then offers its defaults (±15 s on the lock screen) instead.
     this.setupMediaSession();
@@ -295,20 +298,21 @@ class Player extends EventTarget {
     const seq = ++this.loadSeq;
     const at = this.pendingSeek && !t.live ? this.pendingSeek : 0;
     this.pendingSeek = 0;
-    if (t.source === 'soundcloud') {
+    const widget = this.widgetFor(t);
+    for (const w of [this.sc, this.mc]) if (w !== widget) w.unload();
+    if (widget) {
       this.fx.pause();
       this.fx.removeAttribute('src');
       this.fx.load();
       this.offlineSrc = false;
-      this.el = this.sc;
-      this.sc.load(t.link || t.stream || '', { autoplay, at });
+      this.el = widget;
+      widget.load(t.link || t.stream || '', { autoplay, at });
       this.updateMediaSession();
       this.emit('track', t);
       this.emit('state');
       this.persist();
       return;
     }
-    this.sc.unload();
     const start = (src: string, isCopy: boolean) => {
       this.offlineSrc = isCopy;
       this.fx.src = src;
@@ -347,6 +351,11 @@ class Player extends EventTarget {
   }
 
   play(): void { if (this.el.paused) this.toggle(); }
+
+  // SoundCloud and Mixcloud play only through their own embedded players.
+  widgetFor(t: Track | null): WidgetEl | null {
+    return t?.source === 'soundcloud' ? this.sc : t?.source === 'mixcloud' ? this.mc : null;
+  }
   pause(): void { this.el.pause(); }
 
   next(auto = false): void {
@@ -381,15 +390,15 @@ class Player extends EventTarget {
   setVolume(v: number): void {
     this.volume = Math.max(0, Math.min(1, v));
     this.muted = this.volume === 0 ? this.muted : false;
-    this.fx.volume = this.plain.volume = this.sc.volume = this.volume;
-    this.fx.muted = this.plain.muted = this.sc.muted = this.muted;
+    this.fx.volume = this.plain.volume = this.sc.volume = this.mc.volume = this.volume;
+    this.fx.muted = this.plain.muted = this.sc.muted = this.mc.muted = this.muted;
     LS.set('volume', this.volume);
     this.emit('volume');
   }
 
   toggleMute(): void {
     this.muted = !this.muted;
-    this.fx.muted = this.plain.muted = this.sc.muted = this.muted;
+    this.fx.muted = this.plain.muted = this.sc.muted = this.mc.muted = this.muted;
     this.emit('volume');
   }
 
@@ -606,15 +615,16 @@ class Player extends EventTarget {
     const t = this.track;
     if (!t) return;
     const time = s.time || 0;
-    if (t.source === 'soundcloud') {
-      this.el = this.sc;
+    const widget = this.widgetFor(t);
+    if (widget) {
+      this.el = widget;
       // Wait for the app to give the widget its dock.
-      queueMicrotask(() => this.sc.load(t.link || t.stream || '', { autoplay: false, at: time }));
+      queueMicrotask(() => widget.load(t.link || t.stream || '', { autoplay: false, at: time }));
     } else if (!t.live) { // radio isn't preloaded: toggle() starts it only on Play
       this.fx.src = media(t.stream);
       this.restoreCopy(t, time);
+      if (time) this.seekOnLoad(time);
     }
-    if (time && !t.live && t.source !== 'soundcloud') this.seekOnLoad(time);
     this.listened = 0;
     this.logged = false;
     this.scrobbled = false;

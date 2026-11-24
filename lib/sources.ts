@@ -350,6 +350,53 @@ export const hearthis = {
   },
 };
 
+// ---------------------------------------------------------------- Mixcloud
+// DJ sets and radio shows. Search and the popular lists need no key (CORS allowed);
+// the shows play only through Mixcloud's own embedded player (web/src/lib/mixcloud.ts),
+// so there is no download, equalizer or spectrum for them.
+const MIXCLOUD = 'https://api.mixcloud.com';
+
+interface MixcloudShowRaw {
+  key?: string; url?: string; name?: string; audio_length?: number; created_time?: string;
+  tags?: { name?: string }[]; pictures?: Record<string, string>; user?: { name?: string; username?: string };
+}
+
+async function mixcloudShow(c: MixcloudShowRaw | null | undefined): Promise<Track | null> {
+  const link = webUrl(c?.url);
+  if (!c?.key || !c.name || !link || new URL(link).hostname !== 'www.mixcloud.com') return null;
+  const year = c.created_time ? Number(c.created_time.slice(0, 4)) : NaN;
+  const p = c.pictures || {};
+  return {
+    id: 'mixcloud:' + (await sha1(c.key)).slice(0, 16),
+    source: 'mixcloud',
+    title: c.name,
+    artist: c.user?.name || c.user?.username || 'Mixcloud',
+    duration: Number(c.audio_length) || 0,
+    genre: c.tags?.[0]?.name || null,
+    year: Number.isFinite(year) ? year : null,
+    cover: webUrl(p['640wx640h'] || p.extra_large || p.large),
+    link,
+    stream: link, // played by the Mixcloud widget, never downloaded
+  };
+}
+
+async function mixcloudList(d: { data?: unknown } | null): Promise<Track[]> {
+  const list = Array.isArray(d?.data) ? (d.data as MixcloudShowRaw[]) : [];
+  return (await Promise.all(list.map(mixcloudShow))).filter((t): t is Track => t !== null);
+}
+
+export const mixcloud = {
+  // Mixcloud's own genre tags (/discover/<tag>/popular/); '' is the overall popular list.
+  TAGS: ['house', 'deep-house', 'afro-house', 'techno', 'drum-and-bass', 'hip-hop', 'soul', 'jazz', 'ambient'],
+  async search(q: string, count = 40): Promise<Track[]> {
+    return mixcloudList(await getJSON(`${MIXCLOUD}/search/?q=${enc(q)}&type=cloudcast&limit=${count}`));
+  },
+  async popular(tag = '', count = 40): Promise<Track[]> {
+    const path = this.TAGS.includes(tag) ? `/discover/${tag}/popular/` : '/popular/';
+    return mixcloudList(await getJSON(`${MIXCLOUD}${path}?limit=${count}`));
+  },
+};
+
 // ---------------------------------------------------------------- SoundCloud
 // SoundCloud's API needs a paid key, so pasted links play through the official embedded
 // player (Widget API) in the browser. The server only checks the link and reads the title
@@ -498,7 +545,7 @@ export const listenbrainz = {
     if (track.duration) info.duration_ms = Math.round(track.duration * 1000);
     if (track.link) info.origin_url = track.link;
     if (track.source && track.source !== 'local') {
-      info.music_service_name = ({ audius: 'Audius', archive: 'Internet Archive', jamendo: 'Jamendo', hearthis: 'hearthis.at', radio: 'Internet radio' } as Record<string, string>)[track.source];
+      info.music_service_name = ({ audius: 'Audius', archive: 'Internet Archive', jamendo: 'Jamendo', hearthis: 'hearthis.at', mixcloud: 'Mixcloud', soundcloud: 'SoundCloud', radio: 'Internet radio' } as Record<string, string>)[track.source];
     }
     const meta: Record<string, unknown> = { artist_name: track.artist, track_name: track.title, additional_info: info };
     if (track.album) meta.release_name = track.album;

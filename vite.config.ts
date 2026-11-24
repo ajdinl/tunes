@@ -63,12 +63,12 @@ function standaloneFiles(base: string): Plugin {
         .map((m) => `'sha256-${crypto.createHash('sha256').update(m[1]).digest('base64')}'`);
       const csp = [
         "default-src 'self'",
-        `script-src 'self' ${hashes.join(' ')} https://w.soundcloud.com`,
+        `script-src 'self' ${hashes.join(' ')} https://w.soundcloud.com https://widget.mixcloud.com`,
         "style-src 'self' 'unsafe-inline'", // the mini player window gets the app's CSS as a <style>
         "img-src 'self' data: blob: https:",
         "media-src 'self' blob: https:",
         "connect-src 'self' https:", // sources, and songs downloaded for offline
-        'frame-src https://w.soundcloud.com',
+        'frame-src https://w.soundcloud.com https://player-widget.mixcloud.com',
         "font-src 'self'", "worker-src 'self'", "manifest-src 'self'",
         "object-src 'none'", "base-uri 'none'", "form-action 'none'",
       ].join('; ');

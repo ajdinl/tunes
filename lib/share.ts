@@ -10,7 +10,7 @@ export const PUBLIC_APP = 'https://ajdinl.github.io/tunes/';
 
 // Files on the computer can't be reached by anyone else; a Jamendo address carries the
 // user's own client id.
-const SHAREABLE = ['audius', 'archive', 'hearthis', 'radio', 'soundcloud'];
+const SHAREABLE = ['audius', 'archive', 'hearthis', 'mixcloud', 'radio', 'soundcloud'];
 const FIELDS = ['source', 'id', 'title', 'artist', 'album', 'duration', 'cover', 'stream', 'link', 'live', 'kind', 'year', 'artistRef'] as const;
 
 export const canShare = (t: Track | null | undefined): t is Track => Boolean(t && SHAREABLE.includes(String(t.source)) && t.stream && t.id);
@@ -112,6 +112,7 @@ const STREAM_OK: Record<string, (s: string) => boolean> = {
   hearthis: (s) => host(inner(s, '/api/stream/url?'), 'hearthis.at'),
   radio: (s) => Boolean(inner(s, '/api/stream/radio?')),
   soundcloud: (s) => host(url(s), 'soundcloud.com'),
+  mixcloud: (s) => url(s)?.hostname === 'www.mixcloud.com',
 };
 
 const coverOk = (c: unknown): boolean => {

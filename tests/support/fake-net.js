@@ -38,6 +38,15 @@ const hearthisMix = (id, title, downloadable) => ({
 export const HEARTHIS_FREE = hearthisMix('sunset-set', 'Sunset Afro Set', true);
 export const HEARTHIS_STREAM = hearthisMix('club-night', 'Club Night Mix', false);
 
+// Mixcloud: two shows (one without a picture) and one with a foreign address, which is dropped.
+const mixcloudShow = (key, name, user, seconds, pictures = { extra_large: `https://thumbnailer.mixcloud.com/unsafe/600x600/${key}.jpg` }) => ({
+  key: `/${user}/${key}/`, url: `https://www.mixcloud.com/${user}/${key}/`, name, audio_length: seconds, created_time: '2024-05-01T20:00:00Z',
+  tags: [{ name: 'Deep House' }], pictures, user: { name: user === 'harbor-sessions' ? 'Harbor Sessions' : 'Lena Moss', username: user },
+});
+export const MIXCLOUD_SHOW = mixcloudShow('river-sessions-12', 'River Sessions #12', 'harbor-sessions', 3600);
+export const MIXCLOUD_SHOW_2 = mixcloudShow('late-night-mix', 'Late Night Mix', 'lena-moss', 2700, {});
+const MIXCLOUD_FOREIGN = { ...MIXCLOUD_SHOW, key: '/x/y/', url: 'https://evil.example/x/y/' };
+
 export const ARCHIVE_DOC = { identifier: 'fen1999-06-12.sbd', title: 'The Fen Lights Live at the Mill', creator: 'The Fen Lights', year: '1999' };
 export const ARCHIVE_META = {
   metadata: { identifier: 'fen1999-06-12.sbd', title: 'The Fen Lights Live at the Mill', creator: 'The Fen Lights', date: '1999-06-12', description: '<p>Soundboard <b>recording</b>.</p>', licenseurl: 'https://creativecommons.org/licenses/by-nc-sa/3.0/' },
@@ -102,6 +111,9 @@ export function answer(url, init) {
 
   if (host === 'api-v2.hearthis.at' && (p === '/search/' || p === '/feed/')) return json([HEARTHIS_FREE, HEARTHIS_STREAM, { ...HEARTHIS_FREE, id: 'secret', private: '1' }]);
 
+  if (host === 'api.mixcloud.com' && (p === '/search/' || p === '/popular/' || /^\/discover\/[\w-]+\/popular\/$/.test(p))) {
+    return json({ data: [MIXCLOUD_SHOW, MIXCLOUD_SHOW_2, MIXCLOUD_FOREIGN] });
+  }
   if (host === 'archive.org') {
     if (p.startsWith('/download/')) return new Response(new Uint8Array([0xff, 0xfb, 0x90, 0x64, 0, 0, 0, 0]), { status: 200, headers: { 'Content-Type': 'audio/mpeg' } });
     if (p === '/advancedsearch.php') return json({ response: { docs: [ARCHIVE_DOC] } });

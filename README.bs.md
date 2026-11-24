@@ -9,6 +9,7 @@ Lični muzički player bez pretplate. Na jednom mjestu spaja muziku sa računara
 | Internet Archive | Live Music Archive (koncerti uz dozvolu izvođača), netlabel izdanja, stare ploče | – |
 | Radio Browser | Preko 40.000 internet radio stanica, sa nazivom pjesme koja ide uživo | – |
 | hearthis.at | DJ miksevi i elektronska muzika (offline kopije gdje izvođač dozvoljava preuzimanje) | – |
+| Mixcloud | DJ setovi i radio emisije, u Mixcloudovom plejeru (bez preuzimanja) | – |
 | SoundCloud | Pjesme, setovi i izvođači preko zalijepljenog linka, u SoundCloudovom plejeru | – |
 | LRCLIB | Tekstovi pjesama, često sinhronizovani sa muzikom | – |
 | ListenBrainz | Historija slušanja, statistike i preporuke (opciono) | token |
@@ -51,7 +52,7 @@ Da izgleda kao prava aplikacija: klikni **Instaliraj aplikaciju** u lijevom meni
 - Samo ono što koristiš: isključi izvore koji ti ne trebaju (nestanu iz menija, Pretrage, Otkrij i Početne) i izaberi koje sekcije Početna prikazuje i kojim redom
 - Pretraga kroz sve izvore odjednom, sa kategorijama: pjesme, setovi i miksevi, albumi i koncerti, izvođači, radio. Kad pređeš mišem preko izvora, piše šta on nudi. Na iPhoneu tastatura ima dugme Search, koje i skloni tastaturu
 - Jedan klik ili dodir pušta pjesmu u svakoj listi; na pjesmi koja svira pauzira i nastavlja, a na telefonu ta pjesma uvijek pokazuje dugme za pauzu
-- Otkrij: popularna muzika sa Audius-a, DJ miksevi po žanru sa hearthis.at, koncerti sa Internet Archive-a
+- Otkrij: popularna muzika sa Audius-a, DJ miksevi po žanru sa hearthis.at, popularni DJ setovi i radio emisije po žanru sa Mixclouda, koncerti sa Internet Archive-a
 - Stranice izvođača sa Audius-a (sve njihove pjesme i setovi)
 - Izvođači, albumi, pjesme, omiljene
 - Historija svega što pustiš (pjesme, miksevi i radio stanice), svaka stavka jednom po danu, s brojem slušanja, plus najslušaniji izvođači. ListenBrainz (opciono) dobija pjesmu po svom pravilu: pola pjesme ili 4 minuta
@@ -68,6 +69,7 @@ Da izgleda kao prava aplikacija: klikni **Instaliraj aplikaciju** u lijevom meni
 - Slušanje na mobitelu kod kuće (Wi-Fi) i van kuće (Tailscale), preko QR koda
 - Offline buffer: trenutna i sljedeće pjesme se skidaju na telefon, pa muzika svira i kad nestane interneta. Pjesme koje nisu puštane 3 dana brišu se same
 - Nastavak slušanja na drugom uređaju od iste sekunde (laptop → mobitel i obrnuto); muzika svira samo na jednom uređaju ili tabu
+- Mixcloud: DJ setovi i radio emisije u pretrazi (Sve, Setovi i miksevi) i u Otkrij, puštaju se preko zvaničnog Mixcloud plejera koji stoji u malom prozoru koji se može spustiti
 - SoundCloud linkovi: zalijepi link pjesme, seta ili izvođača u pretragu i svira preko zvaničnog SoundCloud plejera
 - Ikonica aplikacije: četiri varijante u Postavke → Izgled; izbor važi na svim uređajima
 - Tasteri za muziku na Mac-u i kontrolni centar; na zaključanom ekranu iPhonea i u CarPlay ekranu Now Playing: pjesma, omot, prethodna/sljedeća

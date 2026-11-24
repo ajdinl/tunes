@@ -2,6 +2,8 @@
 // Pages under /tunes/, keeps the user's data in the browser and asks the music sources
 // itself. The sources answer from the same fake internet the server tests use
 // (tests/support/fake-net.js), with CORS headers like the real ones; songs are short WAVs.
+import fs from 'node:fs';
+
 import { test as base, expect } from '@playwright/test';
 
 import { answer } from '../support/fake-net.js';
@@ -197,6 +199,23 @@ test('hearthis.at DJ mixes: played straight from the source, downloadable only w
   await expect(phone.locator('.menu__item', { hasText: 'Open on source website' })).toBeVisible();
   await expect(phone.locator('.menu__item', { hasText: 'Download' })).toHaveCount(0);
   expect(await app(phone, async () => window.__tunes.offline.pin([{ id: 'hearthis:club-night', source: 'hearthis', title: 'x', stream: '/api/stream/url?u=x' }]))).toBe(0);
+});
+
+test('Mixcloud shows: asked straight from the phone, played in Mixcloud\'s own player, never downloaded', async ({ phone }) => {
+  const widget = fs.readFileSync(new URL('../support/fake-mixcloud-widget.js', import.meta.url), 'utf8');
+  await phone.ctx.route('https://widget.mixcloud.com/media/js/widgetApi.js', (r) => r.fulfill({ contentType: 'text/javascript', body: widget }));
+  await phone.ctx.route('https://player-widget.mixcloud.com/widget/iframe/?**', (r) => r.fulfill({ contentType: 'text/html', body: '<!doctype html><title>widget</title>' }));
+  await phone.goto('discover?source=mixcloud');
+  await ready(phone);
+  const show = phone.locator('#main .tr', { hasText: 'River Sessions #12' });
+  await expect(show).toBeVisible();
+  expect(phone.asked.some((u) => u.startsWith('https://api.mixcloud.com/popular/'))).toBe(true);
+  await show.locator('.tr__title').tap();
+  await expect.poll(() => playing(phone)).toBe(true); // the page's CSP lets the widget in
+  await expect(phone.locator('.scdock iframe')).toHaveAttribute('src', /^https:\/\/player-widget\.mixcloud\.com\/widget\/iframe\/\?feed=%2Fharbor-sessions%2Friver-sessions-12%2F/);
+  await show.locator('.tr__more').tap();
+  await expect(phone.locator('.menu__item', { hasText: 'Open on source website' })).toBeVisible();
+  await expect(phone.locator('.menu__item', { hasText: 'Download' })).toHaveCount(0);
 });
 
 test('a shared song opens ready to play, keep or add to a playlist; a broken link says so', async ({ phone }) => {

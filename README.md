@@ -25,6 +25,7 @@ Self-hosted players like Navidrome or Jellyfin are great for your own files, but
 | [Internet Archive](https://archive.org/details/etree) | Live Music Archive (concerts shared with the artists' permission), netlabels, old 78 rpm records | – |
 | [Radio Browser](https://www.radio-browser.info) | 40,000+ internet radio stations, with the song playing live | – |
 | [hearthis.at](https://hearthis.at) | DJ mixes and electronic music (offline copies where the artist allows downloads) | – |
+| [Mixcloud](https://www.mixcloud.com) | DJ sets and radio shows, through Mixcloud's own player (no downloads) | – |
 | [SoundCloud](https://soundcloud.com) | Songs, sets and artists from a pasted link, through SoundCloud's own player | – |
 | [LRCLIB](https://lrclib.net) | Lyrics, often synced to the music | – |
 | [ListenBrainz](https://listenbrainz.org) | Listening history, stats and recommendations (optional) | token |
@@ -35,7 +36,7 @@ Self-hosted players like Navidrome or Jellyfin are great for your own files, but
 - **One search across every source**, with categories: songs, sets & mixes, albums & concerts, artists, radio stations. Hover a source to see what it offers. On the iPhone the keyboard has a Search key that also tucks the keyboard away
 - **One click or tap plays a song** in any list; on the song that is playing it pauses and resumes, and on phones that song always shows its pause button
 - **Sets & mixes detection:** recordings of 20+ minutes and titles like "DJ set", "mixtape" or "Boiler Room" are recognized automatically
-- **Discover:** popular and trending music from Audius, DJ mixes by genre from hearthis.at, concerts from the Internet Archive
+- **Discover:** popular and trending music from Audius, DJ mixes by genre from hearthis.at, popular DJ sets and radio shows by genre from Mixcloud, concerts from the Internet Archive
 - **Library by artists and albums**, built from tags (or the folder structure when tags are missing). New files appear on their own. Audius artist pages with all their songs and sets
 - **Playlists** that mix local and online songs, drag-and-drop reordering, M3U export
 - **Smart playlists:** My mix, Most played, Forgotten favorites, Recently added, Never played
@@ -52,6 +53,7 @@ Self-hosted players like Navidrome or Jellyfin are great for your own files, but
 - **Listen on your phone:** one click shows a QR code; the link carries a secret key, so nobody else on the network can get in. On phones the player is a compact bar, and all the controls are in "Now playing"
 - **Away from home through [Tailscale](https://tailscale.com):** a second QR code that works anywhere your phone has internet
 - **Continue on another device:** start a set on your laptop, tap *Continue here* on your phone and it picks up at the same second while the laptop pauses. Music plays on one device (or tab) at a time
+- **Mixcloud:** DJ sets and radio shows in Search (All, Sets & mixes) and in Discover, played through Mixcloud's official player, which stays in a small foldable dock
 - **SoundCloud links:** paste a song, set or artist link into Search and it plays through SoundCloud's official player (SoundCloud's own search needs a paid API key)
 - Media keys and Control Center on macOS; on the iPhone lock screen and in CarPlay's Now Playing: song, cover, previous/next; installable as an app (PWA), keyboard shortcuts
 - Twelve languages; black, "night indigo" and light themes
@@ -112,9 +114,9 @@ Your data lives in `data/db.json`. You can download a backup under **Settings �
 
 - `server.ts`: a small Node.js HTTP server in TypeScript with no framework. Node 22.18+ runs it directly (no build step); `npm run typecheck` checks the types
 - `lib/library.ts`: scans folders, reads tags with [music-metadata](https://github.com/Borewit/music-metadata) and watches for changes
-- `lib/sources.ts`: Audius, Internet Archive, Radio Browser, Jamendo, hearthis.at, SoundCloud (oEmbed), LRCLIB and ListenBrainz clients
+- `lib/sources.ts`: Audius, Internet Archive, Radio Browser, Jamendo, hearthis.at, Mixcloud, SoundCloud (oEmbed), LRCLIB and ListenBrainz clients
 - `lib/proxy.ts`: streams audio through the local server, so the equalizer and spectrum analyzer work for every source, and reads live song titles (ICY metadata) from radio streams
-- `web/`: the interface in React + TypeScript, built with [Vite](https://vite.dev) into `web/dist`. `web/src/lib` holds the parts without UI (player engine, offline buffer, SoundCloud adapter, router, translations); `web/src/shell` the player bar, panels and dialogs; `web/src/views` the screens
+- `web/`: the interface in React + TypeScript, built with [Vite](https://vite.dev) into `web/dist`. `web/src/lib` holds the parts without UI (player engine, offline buffer, SoundCloud and Mixcloud adapters, router, translations); `web/src/shell` the player bar, panels and dialogs; `web/src/views` the screens
 - `lib/types.ts`: the data shapes shared by the server and the interface
 - `public/`: icons, the web app manifest and the service worker
 

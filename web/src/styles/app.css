@@ -26,6 +26,7 @@
   --c-jamendo: #f5a3d0;
   --c-hearthis: #6fd6b8;
   --c-soundcloud: #ff8a4c;
+  --c-mixcloud: #a796ff;
 
   --r-sm: 6px;
   --r: 8px;
@@ -80,6 +81,7 @@
   --c-jamendo: #b03c78;
   --c-hearthis: #13836a;
   --c-soundcloud: #c9500f;
+  --c-mixcloud: #5a3fd1;
   --bg-clear: rgba(244, 244, 246, 0);
   --deck-a: #ffffff;
   --deck-b: #f0f0f4;
@@ -311,6 +313,7 @@ select.field:disabled { opacity: 0.5; cursor: default; }
 .chip--radio { --c: var(--c-radio); }
 .chip--jamendo { --c: var(--c-jamendo); }
 .chip--hearthis { --c: var(--c-hearthis); }
+.chip--mixcloud { --c: var(--c-mixcloud); }
 .chip--soundcloud { --c: var(--c-soundcloud); }
 
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
@@ -519,6 +522,7 @@ body.is-playing .tr.is-playing .tr__num::before { animation: bars 0.9s ease-in-o
 .src--jamendo { --c: var(--c-jamendo); }
 .src--soundcloud { --c: var(--c-soundcloud); }
 .src--hearthis { --c: var(--c-hearthis); }
+.src--mixcloud { --c: var(--c-mixcloud); }
 
 /* ------------------------------------------------------------ grid */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 24px 20px; }
@@ -1164,6 +1168,9 @@ kbd { border: 1px solid var(--line); border-bottom-width: 2px; background: var(-
 .scdock__body { height: 166px; overflow: hidden; transition: height 0.18s ease-out; }
 .scdock.is-min .scdock__body { height: 0; }
 .scdock__frame { display: block; width: 100%; height: 166px; border: 0; }
+/* Mixcloud's mini player is one 60 px row. */
+.scdock--mixcloud .scdock__body, .scdock--mixcloud .scdock__frame { height: 60px; }
+.scdock--mixcloud .scdock__label { color: var(--c-mixcloud); }
 
 @media (max-width: 1240px) {
   .deck { grid-template-columns: minmax(180px, 240px) minmax(0, 1fr) auto; gap: 20px; }

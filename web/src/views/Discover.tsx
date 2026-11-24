@@ -1,4 +1,4 @@
-// Discover: popular on Audius and hearthis.at, Internet Archive collections, Jamendo.
+// Discover: popular on Audius, hearthis.at and Mixcloud, Internet Archive collections, Jamendo.
 import { useEffect, useState } from 'react';
 
 import { Header, ChipPicker, Grid, Loading, ErrorBox } from '../components/common.tsx';
@@ -30,10 +30,16 @@ const HEARTHIS_GENRES: ChipOption[] = [
   { value: 'house', label: 'House' }, { value: 'deephouse', label: 'Deep House' }, { value: 'techno', label: 'Techno' },
   { value: 'drumandbass', label: 'Drum & Bass' }, { value: 'hiphop', label: 'Hip Hop' }, { value: 'chillout', label: 'Chillout' },
 ];
+const MIXCLOUD_TAGS: ChipOption[] = [
+  { value: '', label: 'All genres' }, { value: 'house', label: 'House' }, { value: 'deep-house', label: 'Deep House' },
+  { value: 'afro-house', label: 'Afro House' }, { value: 'techno', label: 'Techno' }, { value: 'drum-and-bass', label: 'Drum & Bass' },
+  { value: 'hip-hop', label: 'Hip Hop' }, { value: 'soul', label: 'Soul' }, { value: 'jazz', label: 'Jazz' }, { value: 'ambient', label: 'Ambient' },
+];
 // Jamendo needs a key, which the phone-only version doesn't ask for.
 const ALL_TABS = [
   { value: 'audius', label: 'Audius' },
   { value: 'hearthis', label: 'hearthis.at' },
+  { value: 'mixcloud', label: 'Mixcloud' },
   { value: 'archive', label: 'Internet Archive' },
   ...(STANDALONE ? [] : [{ value: 'jamendo', label: 'Jamendo' }]),
 ];
@@ -69,6 +75,7 @@ export function Discover({ route }: { route: Route }) {
       <div>
         {tab === 'audius' && <AudiusTab />}
         {tab === 'hearthis' && <HearthisTab />}
+        {tab === 'mixcloud' && <MixcloudTab />}
         {tab === 'archive' && <ArchiveTab />}
         {tab === 'jamendo' && <JamendoTab />}
         {!tab && <p className="empty">{tr('All sources of this page are turned off. Turn them on in Settings → Music sources.')}</p>}
@@ -121,6 +128,25 @@ function HearthisTab() {
         {res.state === 'loading' && <Loading />}
         {res.state === 'error' && <ErrorBox msg={tr('hearthis.at isn\'t responding: ') + res.msg} retry={retry} />}
         {res.state === 'done' && <TrackList tracks={res.value} context={{ label: 'hearthis.at' + (genre ? ', ' + label : ''), href: '/discover?source=hearthis' }} />}
+      </div>
+    </>
+  );
+}
+
+function MixcloudTab() {
+  const [tag, setTag] = useState('');
+  const [res, retry] = useFetch<Track[]>('/api/mixcloud/popular?tag=' + encodeURIComponent(tag));
+  const label = MIXCLOUD_TAGS.find((g) => g.value === tag)?.label;
+  return (
+    <>
+      <p className="muted pad">{tr('DJ sets and radio shows. They play in Mixcloud\'s own player, so there is no download or equalizer for them.')}</p>
+      <div className="toolbar">
+        <ChipPicker options={MIXCLOUD_TAGS} initial="" onPick={setTag} label={tr('Genre')} />
+      </div>
+      <div>
+        {res.state === 'loading' && <Loading />}
+        {res.state === 'error' && <ErrorBox msg={tr('Mixcloud isn\'t responding: ') + res.msg} retry={retry} />}
+        {res.state === 'done' && <TrackList tracks={res.value} context={{ label: 'Mixcloud' + (tag ? ', ' + label : ''), href: '/discover?source=mixcloud' }} />}
       </div>
     </>
   );
