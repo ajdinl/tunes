@@ -32,7 +32,8 @@ Self-hosted players like Navidrome or Jellyfin are great for your own files, but
 
 ## Features
 
-- **One search across every source**, with categories: songs, sets & mixes, albums & concerts, artists, radio stations. Hover a source to see what it offers
+- **One search across every source**, with categories: songs, sets & mixes, albums & concerts, artists, radio stations. Hover a source to see what it offers. On the iPhone the keyboard has a Search key that also tucks the keyboard away
+- **One click or tap plays a song** in any list; on the song that is playing it pauses and resumes, and on phones that song always shows its pause button
 - **Sets & mixes detection:** recordings of 20+ minutes and titles like "DJ set", "mixtape" or "Boiler Room" are recognized automatically
 - **Discover:** popular and trending music from Audius, DJ mixes by genre from hearthis.at, concerts from the Internet Archive
 - **Library by artists and albums**, built from tags (or the folder structure when tags are missing). New files appear on their own. Audius artist pages with all their songs and sets

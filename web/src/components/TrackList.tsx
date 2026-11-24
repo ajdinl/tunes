@@ -13,8 +13,6 @@ import { openMenu } from '../lib/feedback.ts';
 import { toggleFav, trackMenu } from '../lib/actions.ts';
 import { offline, useOffline } from '../lib/offline.ts';
 
-const TOUCH = matchMedia('(hover: none)').matches;
-
 const CHUNK = 200;
 
 export interface TrackListProps {
@@ -34,7 +32,8 @@ export interface TrackListProps {
 type Drag = { from: number; over: number };
 
 export function TrackList({ tracks, context = null, numbered = false, album = true, coverArt = true, playlist = null, leading, onReorder, emptyText }: TrackListProps) {
-  const playingId = usePlayer('track').track?.id;
+  const p = usePlayer('track', 'state');
+  const currentId = p.track?.id;
   useStore('favorites');
   useOffline();
   const [shown, setShown] = useState(CHUNK);
@@ -51,7 +50,11 @@ export function TrackList({ tracks, context = null, numbered = false, album = tr
 
   if (!tracks.length) return <Empty>{emptyText ?? tr('No songs.')}</Empty>;
 
-  const play = (i: number) => player.playList(tracks, i, { shuffle: false, context });
+  // One click or tap plays a song; on the song that is already on, it pauses and resumes instead.
+  const play = (t: Track, i: number) => {
+    if (t.id === currentId) player.toggle();
+    else player.playList(tracks, i, { shuffle: false, context });
+  };
   const menuFor = (t: Track, i: number) => trackMenu(t, { playlist, index: i, list: tracks });
 
   // Moving a row by its handle. The pointer is captured by the handle, so a finger can travel
@@ -111,9 +114,9 @@ export function TrackList({ tracks, context = null, numbered = false, album = tr
   return (
     <div className={cx('tl', !album && 'tl--noalbum', !coverArt && 'tl--nocover', onReorder && 'tl--sortable', drag && 'is-dragging')} role="list">
       {tracks.slice(0, shown).map((t, i) => (
-        <Row key={t.id + ':' + i} t={t} i={i} playing={t.id === playingId} fav={store.isFav(t.id)}
+        <Row key={t.id + ':' + i} t={t} i={i} current={t.id === currentId} paused={!p.playing} fav={store.isFav(t.id)}
           lead={leading ? leading(t, i) : numbered ? (t.trackNo || i + 1) : i + 1}
-          album={album} coverArt={coverArt} onPlay={() => play(i)} menu={() => menuFor(t, i)}
+          album={album} coverArt={coverArt} onPlay={() => play(t, i)} menu={() => menuFor(t, i)}
           grip={onReorder ? { onPointerDown: (e) => startDrag(e, i), onKeyDown: (e) => gripKey(e, i) } : null}
           dragState={!drag ? null : drag.from === i ? 'drag' : drag.over === i && drag.over !== drag.from ? (drag.over < drag.from ? 'before' : 'after') : null} />
       ))}
@@ -127,8 +130,8 @@ interface GripHandlers {
   onKeyDown: (e: ReactKeyboardEvent<HTMLButtonElement>) => void;
 }
 
-function Row({ t, i, playing, fav, lead, album, coverArt, onPlay, menu, grip, dragState }: {
-  t: Track; i: number; playing: boolean; fav: boolean; lead: ReactNode; album: boolean; coverArt: boolean;
+function Row({ t, i, current, paused, fav, lead, album, coverArt, onPlay, menu, grip, dragState }: {
+  t: Track; i: number; current: boolean; paused: boolean; fav: boolean; lead: ReactNode; album: boolean; coverArt: boolean;
   onPlay: () => void; menu: () => ReturnType<typeof trackMenu>; grip: GripHandlers | null; dragState: 'drag' | 'before' | 'after' | null;
 }) {
   const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -140,11 +143,12 @@ function Row({ t, i, playing, fav, lead, album, coverArt, onPlay, menu, grip, dr
     if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) { const b = r.getBoundingClientRect(); openMenu(b.left + 40, b.bottom, menu()); e.preventDefault(); }
   };
   return (
-    <div className={cx('tr', playing && 'is-playing', dragState === 'drag' && 'is-drag', dragState === 'before' && 'is-over', dragState === 'after' && 'is-over-after')}
+    <div className={cx('tr', current && 'is-playing', dragState === 'drag' && 'is-drag', dragState === 'before' && 'is-over', dragState === 'after' && 'is-over-after')}
       role="listitem" tabIndex={0} data-id={t.id} data-i={i} aria-label={`${t.title}, ${t.artist || ''}`}
-      onDoubleClick={onPlay} onKeyDown={onKeyDown}
-      // On touch screens one tap on a song plays it (the buttons in the row keep their own job).
-      onClick={TOUCH ? (e) => { if (!(e.target as Element).closest('button, a, input')) onPlay(); } : undefined}
+      onKeyDown={onKeyDown}
+      // The buttons in the row keep their own job. The second click of a double click is ignored,
+      // or it would pause the song the first one started.
+      onClick={(e) => { if (e.detail < 2 && !(e.target as Element).closest('button, a, input')) onPlay(); }}
       onContextMenu={(e) => { e.preventDefault(); openMenu(e.clientX, e.clientY, menu()); }}>
       {grip && (
         <button type="button" className="tr__grip" aria-label={tr('Drag to change the order')} title={tr('Drag to change the order')}
@@ -152,7 +156,8 @@ function Row({ t, i, playing, fav, lead, album, coverArt, onPlay, menu, grip, dr
       )}
       <div className="tr__lead">
         <span className="tr__num">{lead}</span>
-        <button type="button" className="tr__play" aria-label={tr('Play ') + t.title} onClick={(e) => { e.stopPropagation(); onPlay(); }}><Icon name="play" size={16} /></button>
+        <button type="button" className="tr__play" aria-label={current && !paused ? tr('Pause') : tr('Play ') + t.title}
+          onClick={(e) => { e.stopPropagation(); onPlay(); }}><Icon name={current && !paused ? 'pause' : 'play'} size={16} /></button>
       </div>
       {coverArt && <Cover src={t.cover} label={t.title} className="tr__cv" />}
       <div className="tr__main">

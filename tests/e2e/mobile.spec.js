@@ -276,3 +276,27 @@ test('phone: always the Minimal player style, nothing to choose, no equalizer', 
   await expect(phone.locator('.now .dial')).toHaveAttribute('data-style', 'minimal');
   await expect(computer.locator('.deck .dial')).toHaveAttribute('data-style', 'mirror');
 });
+
+test('phone search: the Search key hides the keyboard, one tap plays, a tap on the song that is on pauses it', async ({ device }) => {
+  const phone = await device({ mobile: true });
+  await open(phone, '/search');
+  const field = phone.locator('.searchbar input[type="search"]');
+  await field.fill('river');
+  await field.press('Enter');
+  await expect(field).not.toBeFocused(); // the keyboard goes away, the results are free to tap
+  const row = phone.locator('#main .tr', { has: phone.locator('.tr__title', { hasText: /^Slow River$/ }) });
+  await row.locator('.tr__title').tap();
+  await expect(phone.locator('.deck__title')).toHaveText('Slow River');
+  await expect.poll(() => phone.evaluate(() => document.body.classList.contains('is-playing'))).toBe(true);
+  // The song that is on always shows its pause button on a touch screen.
+  const btn = row.locator('.tr__play');
+  await expect(btn).toHaveAttribute('aria-label', 'Pause');
+  await expect(btn).toHaveCSS('opacity', '1');
+  await sleep(700); // two quick taps are a double tap, whose second tap is ignored on purpose
+  await row.locator('.tr__title').tap();
+  await expect.poll(() => phone.evaluate(() => document.body.classList.contains('is-playing'))).toBe(false);
+  await expect(btn).toHaveAttribute('aria-label', 'Play Slow River');
+  await expect(btn).toHaveCSS('opacity', '1');
+  // Other songs show no play button until tapped (nothing to reveal, so one tap is enough on iPhone).
+  await expect(phone.locator('#main .tr:not(.is-playing) .tr__play').first()).toHaveCSS('opacity', '0');
+});

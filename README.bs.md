@@ -49,7 +49,8 @@ Da izgleda kao prava aplikacija: klikni **Instaliraj aplikaciju** u lijevom meni
 - Prilagodi po svom ukusu: osam boja akcenta, bilo koja boja po izboru ili boja iz omota pjesme koja svira; „Sada svira” preko zamućenog omota, u bojama omota ili na običnoj pozadini; mali, normalni ili veliki tekst i prozračne ili kompaktne liste pjesama (posebno za svaki uređaj), uz pregled uživo u Postavkama. Postavke su podijeljene u tri taba: Izgled, Muzika te Reprodukcija i podaci
 - Podijeli pjesmu ili plejlistu: pošalji link bilo kome (WhatsApp, Poruke…; na računaru ga kopiraj ili pokaži QR kod). Otvara se u besplatnoj verziji za telefon, spremno za puštanje, čuvanje u omiljene ili dodavanje u plejlistu, bez računa i aplikacije; podijeljena plejlista se čuva jednim dodirom. Samo pjesme s interneta i stanice: fajlovi s tvog računara ostaju tvoji, a podijeljena plejlista ih izostavi (i kaže koliko)
 - Samo ono što koristiš: isključi izvore koji ti ne trebaju (nestanu iz menija, Pretrage, Otkrij i Početne) i izaberi koje sekcije Početna prikazuje i kojim redom
-- Pretraga kroz sve izvore odjednom, sa kategorijama: pjesme, setovi i miksevi, albumi i koncerti, izvođači, radio. Kad pređeš mišem preko izvora, piše šta on nudi
+- Pretraga kroz sve izvore odjednom, sa kategorijama: pjesme, setovi i miksevi, albumi i koncerti, izvođači, radio. Kad pređeš mišem preko izvora, piše šta on nudi. Na iPhoneu tastatura ima dugme Search, koje i skloni tastaturu
+- Jedan klik ili dodir pušta pjesmu u svakoj listi; na pjesmi koja svira pauzira i nastavlja, a na telefonu ta pjesma uvijek pokazuje dugme za pauzu
 - Otkrij: popularna muzika sa Audius-a, DJ miksevi po žanru sa hearthis.at, koncerti sa Internet Archive-a
 - Stranice izvođača sa Audius-a (sve njihove pjesme i setovi)
 - Izvođači, albumi, pjesme, omiljene

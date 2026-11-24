@@ -610,15 +610,33 @@ class Player extends EventTarget {
       this.el = this.sc;
       // Wait for the app to give the widget its dock.
       queueMicrotask(() => this.sc.load(t.link || t.stream || '', { autoplay: false, at: time }));
-    } else if (!t.live) this.fx.src = media(t.stream); // radio isn't preloaded: toggle() starts it only on Play
-    if (time && !t.live && t.source !== 'soundcloud') {
-      this.fx.addEventListener('loadedmetadata', () => { this.fx.currentTime = time; this.lastT = time; this.emit('time'); }, { once: true });
+    } else if (!t.live) { // radio isn't preloaded: toggle() starts it only on Play
+      this.fx.src = media(t.stream);
+      this.restoreCopy(t, time);
     }
+    if (time && !t.live && t.source !== 'soundcloud') this.seekOnLoad(time);
     this.listened = 0;
     this.logged = false;
     this.scrobbled = false;
     this.lastT = 0;
     queueMicrotask(() => { this.updateMediaSession(); this.emit('track', t); this.emit('queue'); });
+  }
+
+  // The restored song has a downloaded copy: Play uses it, so the app opened without a
+  // connection plays right away (and with one, it saves the download).
+  private restoreCopy(t: Track, time: number): void {
+    const seq = this.loadSeq;
+    void offline.get(t.id).then((url) => {
+      if (!url || seq !== this.loadSeq || this.el !== this.fx || !this.fx.paused || this.offlineSrc) return;
+      const at = this.fx.currentTime || time;
+      this.offlineSrc = true;
+      this.fx.src = url;
+      if (at) this.seekOnLoad(at);
+    });
+  }
+
+  private seekOnLoad(at: number): void {
+    this.fx.addEventListener('loadedmetadata', () => { this.fx.currentTime = at; this.lastT = at; this.emit('time'); }, { once: true });
   }
 }
 

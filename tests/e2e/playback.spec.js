@@ -485,3 +485,35 @@ test('nothing chosen yet: full screen and the heart wait for a song', async ({ d
   await expect(page.locator('.deck [aria-label="Full screen (F)"]')).toBeEnabled();
   await expect(page.locator('.deck__fav')).toBeEnabled();
 });
+
+test('one click plays a song; a click on the song that is on pauses and resumes it', async ({ page }) => {
+  await open(page, '/songs');
+  const row = (title) => page.locator('#main .tr', { has: page.locator('.tr__title', { hasText: new RegExp(`^${title}$`) }) });
+  await row('Slow River').locator('.tr__title').click();
+  await expect(page.locator('.deck__title')).toHaveText('Slow River');
+  await expectPlaying(page);
+  // On hover the song that is on offers Pause, not Play.
+  await row('Slow River').hover();
+  await expect(row('Slow River').locator('.tr__play')).toHaveAttribute('aria-label', 'Pause');
+  await row('Slow River').locator('.tr__title').click();
+  await expectPlaying(page, false);
+  await expect(row('Slow River').locator('.tr__play')).toHaveAttribute('aria-label', 'Play Slow River');
+  await row('Slow River').locator('.tr__title').click();
+  await expectPlaying(page);
+  // A double click (old habit) plays another song once: its second click doesn't pause it.
+  await row('Paper Boats').locator('.tr__title').dblclick();
+  await expect(page.locator('.deck__title')).toHaveText('Paper Boats');
+  await sleep(400);
+  await expectPlaying(page);
+});
+
+test('search: a form with a Search key; Enter searches without leaving the screen', async ({ page }) => {
+  await open(page, '/search');
+  const field = page.locator('form.searchbar[role="search"] input[type="search"]');
+  await expect(field).toHaveAttribute('enterkeyhint', 'search');
+  await field.fill('river');
+  await field.press('Enter');
+  await expect(page.locator('#main .tr__title', { hasText: 'Slow River' })).toBeVisible();
+  expect(new URL(page.url()).pathname + new URL(page.url()).search).toBe('/search?q=river');
+  await expect(field).toBeFocused(); // with a keyboard you can keep typing
+});

@@ -454,8 +454,19 @@ select.field:disabled { opacity: 0.5; cursor: default; }
   color: var(--text);
   opacity: 0;
 }
-.tr:hover .tr__play, .tr:focus-within .tr__play, .tr__play:focus-visible { opacity: 1; }
-.tr:hover .tr__num, .tr:focus-within .tr__num { opacity: 0; }
+.tr:focus-within .tr__play, .tr__play:focus-visible { opacity: 1; }
+.tr:focus-within .tr__num { opacity: 0; }
+/* Hover reveals only with a real mouse: on iPhone a tap that reveals a button counts as hover,
+   and the song would need a second tap to play. */
+@media (hover: hover) {
+  .tr:hover .tr__play, .tr:hover .tr__fav, .tr:hover .tr__more { opacity: 1; }
+  .tr:hover .tr__num { opacity: 0; }
+}
+/* Touch: the song that is on always shows its pause (or play) button. */
+@media (hover: none) {
+  .tr.is-playing .tr__play { opacity: 1; color: var(--amber); }
+  .tr.is-playing .tr__num { opacity: 0; }
+}
 .tr__cv { width: 40px; border-radius: 4px; }
 .tr__main { display: flex; flex-direction: column; min-width: 0; }
 .tr__title, .tr__artist, .tr__album { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -473,7 +484,7 @@ select.field:disabled { opacity: 0.5; cursor: default; }
   color: var(--faint);
   opacity: 0;
 }
-.tr:hover .tr__fav, .tr:hover .tr__more, .tr:focus-within .tr__fav, .tr:focus-within .tr__more, .tr__fav.is-on { opacity: 1; }
+.tr:focus-within .tr__fav, .tr:focus-within .tr__more, .tr__fav.is-on { opacity: 1; }
 .tr__fav:hover, .tr__more:hover { color: var(--text); background: var(--bg-3); }
 .tr__fav.is-on { color: var(--amber); }
 /* Downloaded for offline: a small filled arrow before the artist, like other music apps. */

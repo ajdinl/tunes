@@ -1,6 +1,6 @@
 // Search: your collection first, then the online sources. A pasted SoundCloud link opens that song, set or artist.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 
 import { Icon } from '../components/Icon.tsx';
 import { Section, Chips, Grid, Loading, ErrorBox } from '../components/common.tsx';
@@ -41,6 +41,8 @@ const KIND_SOURCES: Record<Kind, string[]> = {
   radio: ['radio'],
 };
 const HINTS = ['lofi', 'jazz', 'techno set', 'boiler room', 'Grateful Dead', 'ambient', 'Sarajevo radio'];
+// Phones and tablets: no mouse, an on-screen keyboard.
+const TOUCH = matchMedia('(hover: none)').matches;
 
 interface Block { items?: unknown[]; error?: string }
 type BlockKey = 'artists' | 'audius' | 'hearthis' | 'jamendo' | 'archive' | 'radio';
@@ -100,6 +102,14 @@ export function Search({ route }: { route: Route }) {
     run(init.q, true);
     return () => { clearTimeout(timer.current); token.current++; };
   }, []);
+
+  // Enter or the keyboard's Search key searches right away. On touch screens the keyboard
+  // also goes away, so the results can be seen and tapped.
+  const submit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    run(input, true);
+    if (TOUCH) (document.activeElement as HTMLElement | null)?.blur();
+  };
 
   const toggleSource = (s: string) => {
     const next = sources.includes(s) ? sources.filter((x) => x !== s) : [...sources, s];
@@ -169,13 +179,13 @@ export function Search({ route }: { route: Route }) {
 
   return (
     <div className="view">
-      <div className="searchbar">
+      {/* A form with a search field gives the iPhone keyboard its blue Search key. */}
+      <form className="searchbar" role="search" action="" onSubmit={submit}>
         <Icon name="search" size={22} />
-        <input className="field field--search" type="search" value={input} placeholder={tr('Song, set, artist, album, station…')}
+        <input className="field field--search" type="search" enterKeyHint="search" value={input} placeholder={tr('Song, set, artist, album, station…')}
           aria-label={tr('Search')} autoFocus
-          onChange={(e) => { setInput(e.target.value); run(e.target.value); }}
-          onKeyDown={(e) => { if (e.key === 'Enter') { clearTimeout(timer.current); run(e.currentTarget.value, true); } }} />
-      </div>
+          onChange={(e) => { setInput(e.target.value); run(e.target.value); }} />
+      </form>
       <div className="searchsrc">
         <span className="muted">{tr('Show:')}</span>
         <Chips options={kinds} value={kind} onPick={(v) => run(input, true, v)} label={tr('Category')} />
